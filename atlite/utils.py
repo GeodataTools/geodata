@@ -23,12 +23,16 @@ Light-weight version of Aarhus RE Atlas for converting weather data to power sys
 """
 
 import progressbar as pgb
+import glob
+import xarray as xr
+import itertools
+import numpy as np
 
 def make_optional_progressbar(show, prefix, max_value):
     if show:
         widgets = [
             pgb.widgets.Percentage(),
-            ' ', pgb.widgets.SimpleProgress(format='(%s)' % pgb.widgets.SimpleProgress.DEFAULT_FORMAT),
+            ' ', pgb.widgets.SimpleProgress(),
             ' ', pgb.widgets.Bar(),
             ' ', pgb.widgets.Timer(),
             ' ', pgb.widgets.ETA()

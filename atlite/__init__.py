@@ -24,6 +24,7 @@ Light-weight version of Aarhus RE Atlas for converting weather data to power sys
 from __future__ import absolute_import
 
 from .cutout import Cutout
+from .dataset import Dataset
 from .gis import compute_indicatormatrix, regrid
 
 from ._version import __version__

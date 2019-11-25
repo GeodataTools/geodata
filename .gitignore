@@ -1,8 +1,14 @@
 *~
 *.py[cod]
 .~*
+.DS_Store
 __pycache__
 doc/_build/
 build/
 dist/
 atlite.egg-info/
+
+output/
+.ipynb_checkpoints/
+
+trim/

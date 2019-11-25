@@ -25,7 +25,8 @@ from __future__ import absolute_import
 import xarray as xr
 import numpy as np
 import os, sys
-from six import string_types
+from six import string_types, itervalues, iteritems
+
 
 import logging
 logger = logging.getLogger(__name__)
@@ -33,148 +34,179 @@ logger = logging.getLogger(__name__)
 from . import config, datasets
 
 from .convert import (convert_and_aggregate, heat_demand, hydro, temperature,
-                      wind, pv, runoff, solar_thermal, soil_temperature)
+					  wind, pv, runoff, solar_thermal, soil_temperature)
 from .preparation import (cutout_do_task, cutout_prepare,
-                          cutout_produce_specific_dataseries,
-                          cutout_get_meta, cutout_get_meta_view)
+						  cutout_produce_specific_dataseries,
+						  cutout_get_meta, cutout_get_meta_view)
 from .gis import compute_indicatormatrix
 
 class Cutout(object):
-    def __init__(self, name=None, cutout_dir=config.cutout_dir, **cutoutparams):
-        self.name = name
+	def __init__(self, name=None, cutout_dir=config.cutout_dir, **cutoutparams):
+		self.name = name
+		self.cutout_dir = os.path.join(cutout_dir, name)
+		self.prepared = False
 
-        self.cutout_dir = os.path.join(cutout_dir, name)
-        self.prepared = False
+		if 'bounds' in cutoutparams:
+			# if passed bounds array instead of xs, ys slices
+			x1, y1, x2, y2 = cutoutparams.pop('bounds')
+			cutoutparams.update(xs=slice(x1, x2),
+								ys=slice(y1, y2))
 
-        if 'bounds' in cutoutparams:
-            x1, y1, x2, y2 = cutoutparams.pop('bounds')
-            cutoutparams.update(xs=slice(x1, x2),
-                                ys=slice(y2, y1))
+		# Check if cutout dir and files already exists:
+		if os.path.isdir(self.cutout_dir):
+			if os.path.isfile(self.datasetfn()):
+				self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
+			else:
+				self.meta = meta = None
+			if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
+				# All files are accounted for. Checking basic data and coverage:
+				if 'module' not in meta.attrs:
+					raise TypeError('No module given in meta file of cutout.')
+				# load dataset module based on file metadata
+				self.dataset_module = sys.modules['atlite.datasets.' + meta.attrs['module']]
+				cutoutparams['module'] = meta.attrs['module']
 
-        if os.path.isdir(self.cutout_dir):
-            self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
-            # check datasets very rudimentarily, series and coordinates should be checked as well
-            if all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
-                self.prepared = True
-            else:
-                assert False
+				logger.info("All cutout (%s, %s) files available.", name, cutout_dir)
 
-            if 'module' in meta.attrs:
-                cutoutparams['module'] = meta.attrs['module']
-            else:
-                logger.warning('module not given in meta file of cutout, assuming it is NCEP')
-                cutoutparams['module'] = 'ncep'
+				if {"xs", "ys"}.intersection(cutoutparams):
+					# Passed some subsetting bounds
+					self.meta = meta = self.get_meta_view(**cutoutparams)
+					if not meta is None:
+						# Subset is available
+						self.prepared = True
+						logger.info("Cutout subset prepared: %s", self)
+					else:
+						logger.info("Cutout subset not available: %s", self)
+				else:
+					# No subsetting of bounds. Keep full cutout
+					self.prepared = True
+					logger.info("Cutout prepared: %s", self)
+			else:
+				#   Not all files accounted for
+				self.prepared = False
+				logger.info("Cutout (%s, %s) not complete.", name, cutout_dir)
 
-            if {"xs", "ys", "years", "months"}.intersection(cutoutparams):
-                # Assuming the user is interested in a subview into
-                # the data, update meta in place for the time
-                # dimension and save the xs, ys slices, separately
-                self.meta = meta = self.get_meta_view(**cutoutparams)
-                logger.info("Assuming a view into the prepared cutout: %s", self)
+		# Check if still need to prepare cutout:
+		if not self.prepared:
 
-        else:
-            logger.info("Cutout %s not found in directory %s, building new one", name, cutout_dir)
+			if 'module' not in cutoutparams:
+				raise TypeError('Module is required to create cutout.')
+			# load module from atlite library
+			self.dataset_module = sys.modules['atlite.datasets.' + cutoutparams['module']]
 
-            if 'module' not in cutoutparams:
-                d = config.weather_dataset.copy()
-                d.update(cutoutparams)
-                cutoutparams = d
+			logger.info("Cutout (%s, %s) not found or incomplete.", name, cutout_dir)
 
-        self.dataset_module = sys.modules['atlite.datasets.' + cutoutparams['module']]
+			if {"xs", "ys", "years"}.difference(cutoutparams):
+				raise TypeError("Arguments `xs`, `ys` and `years` need to be specified for a cutout.")
 
-        if not self.prepared:
-            if {"xs", "ys", "years"}.difference(cutoutparams):
-                raise TypeError("Arguments `xs`, `ys` and `years` need to be specified")
-            self.meta = self.get_meta(**cutoutparams)
+			## Main preparation call for metadata
+			#    preparation.cutout_get_meta
+			#    cutout.meta_data_config
+			#    dataset_module.meta_data_config (e.g. prepare_meta_era5)
+			self.meta = self.get_meta(**cutoutparams)
 
-    def datasetfn(self, *args):
-        dataset = None
+			## START HERE: somehow need to call get_meta_view in order to clip on xs, ys
 
-        if len(args) == 2:
-            dataset = args
-        elif len(args) == 1:
-            dataset = args[0]
-        else:
-            dataset = None
-        return os.path.join(self.cutout_dir, ("meta.nc"
-                                              if dataset is None
-                                              else "{}{:0>2}.nc".format(*dataset)))
+	def datasetfn(self, *args):
+		#    Link to dataset (default to meta.nc)
+		dataset = None
 
-    @property
-    def meta_data_config(self):
-        return self.dataset_module.meta_data_config
+		if len(args) == 2:
+			dataset = args
+		elif len(args) == 1:
+			dataset = args[0]
+		else:
+			dataset = None
+		return os.path.join(self.cutout_dir, ("meta.nc"
+											  if dataset is None
+											  else "{}{:0>2}.nc".format(*dataset)))
 
-    @property
-    def weather_data_config(self):
-        return self.dataset_module.weather_data_config
+	@property
+	def meta_data_config(self):
+		return self.dataset_module.meta_data_config
 
-    @property
-    def projection(self):
-        return self.dataset_module.projection
+	@property
+	def weather_data_config(self):
+		return self.dataset_module.weather_data_config
 
-    @property
-    def coords(self):
-        return self.meta.coords
+	@property
+	def projection(self):
+		return self.dataset_module.projection
 
-    @property
-    def shape(self):
-        return len(self.coords["y"]), len(self.coords["x"])
+	@property
+	def coords(self):
+		return self.meta.coords
 
-    @property
-    def extent(self):
-        return (list(self.coords["x"].values[[0, -1]]) +
-                list(self.coords["y"].values[[-1, 0]]))
+	@property
+	def meta_clean(self):
+		# produce clean version of meta file for export to NetCDF (cannot export slices)
+		meta = self.meta
+		if meta.attrs.get('view', {}):
+			view = {}
+			for name, value in iteritems(meta.attrs.get('view', {})):
+				view.append({name: [value.start, value.stop]})
+			meta.attrs['view'] = view
+		return meta
+
+	@property
+	def shape(self):
+		return len(self.coords["y"]), len(self.coords["x"])
+
+	@property
+	def extent(self):
+		return (list(self.coords["x"].values[[0, -1]]) +
+				list(self.coords["y"].values[[-1, 0]]))
 
 
-    def grid_coordinates(self):
-        xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
-        return np.asarray((np.ravel(xs), np.ravel(ys))).T
+	def grid_coordinates(self):
+		xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
+		return np.asarray((np.ravel(xs), np.ravel(ys))).T
 
-    def grid_cells(self):
-        from shapely.geometry import box
-        coords = self.grid_coordinates()
-        span = (coords[self.shape[1]+1] - coords[0]) / 2
-        return [box(*c) for c in np.hstack((coords - span, coords + span))]
+	def grid_cells(self):
+		from shapely.geometry import box
+		coords = self.grid_coordinates()
+		span = (coords[self.shape[1]+1] - coords[0]) / 2
+		return [box(*c) for c in np.hstack((coords - span, coords + span))]
 
-    def __repr__(self):
-        yearmonths = self.coords['year-month'].to_index()
-        return ('<Cutout {} x={:.2f}-{:.2f} y={:.2f}-{:.2f} time={}/{}-{}/{} {}prepared>'
-                .format(self.name,
-                        self.coords['x'].values[0], self.coords['x'].values[-1],
-                        self.coords['y'].values[0], self.coords['y'].values[-1],
-                        yearmonths[0][0],  yearmonths[0][1],
-                        yearmonths[-1][0], yearmonths[-1][1],
-                        "" if self.prepared else "UN"))
+	def __repr__(self):
+		yearmonths = self.coords['year-month'].to_index()
+		return ('<Cutout {} x={:.2f}-{:.2f} y={:.2f}-{:.2f} time={}/{}-{}/{} {}prepared>'
+				.format(self.name,
+						self.coords['x'].values[0], self.coords['x'].values[-1],
+						self.coords['y'].values[0], self.coords['y'].values[-1],
+						yearmonths[0][0],  yearmonths[0][1],
+						yearmonths[-1][0], yearmonths[-1][1],
+						"" if self.prepared else "UN"))
 
-    def indicatormatrix(self, shapes, shapes_proj='latlong'):
-        return compute_indicatormatrix(self.grid_cells(), shapes, self.projection, shapes_proj)
+	def indicatormatrix(self, shapes, shapes_proj='latlong'):
+		return compute_indicatormatrix(self.grid_cells(), shapes, self.projection, shapes_proj)
 
-    ## Preparation functions
+	## Preparation functions
 
-    get_meta = cutout_get_meta
+	get_meta = cutout_get_meta    # preparation.cutout_get_meta
 
-    get_meta_view = cutout_get_meta_view
+	get_meta_view = cutout_get_meta_view  # preparation.cutout_get_meta_view
 
-    prepare = cutout_prepare
+	prepare = cutout_prepare      # preparation.cutout_prepare
 
-    produce_specific_dataseries = cutout_produce_specific_dataseries
+	produce_specific_dataseries = cutout_produce_specific_dataseries
 
-    ## Conversion and aggregation functions
+	## Conversion and aggregation functions
 
-    convert_and_aggregate = convert_and_aggregate
+	convert_and_aggregate = convert_and_aggregate
 
-    heat_demand = heat_demand
+	heat_demand = heat_demand
 
-    temperature = temperature
+	temperature = temperature
 
-    soil_temperature = soil_temperature
+	soil_temperature = soil_temperature
 
-    solar_thermal = solar_thermal
+	solar_thermal = solar_thermal
 
-    wind = wind
+	wind = wind
 
-    pv = pv
+	pv = pv
 
-    runoff = runoff
+	runoff = runoff
 
-    hydro = hydro
+	hydro = hydro
