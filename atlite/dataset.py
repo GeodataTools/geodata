@@ -143,6 +143,10 @@ class Dataset(object):
 			dataset = dict(year=args[0], month=args[1])
 		else:
 			return False
+		if self.dataset_module.spinup_var:
+			spinup = self.dataset_module.spinup_year(dataset['year'])
+			dataset.update({'spinup': spinup})
+			
 		return fn.format_map(dataset)
 
 	def get_data(self, trim=False, testing=False, wind=True, solar=True):

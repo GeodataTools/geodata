@@ -85,6 +85,16 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 	xs = cutout.meta.indexes['x']
 	ys = cutout.meta.indexes['y']
 
+	# TODO: IF WANT TO APPEND NOT RECREATE CUTOUT
+	#	1. (here) uncomment and change yearmonths to only new ones. delete yearmonths line above
+	#	2. (elsewhere) uncomment meta_append / append lines
+
+	# if cutout.meta_append == 1:
+	# 	# appended meta. prepare only new year-months
+	# 	yearmonths = cutout.coords['year-month'].to_index()
+	# else:
+	# 	yearmonths = cutout.coords['year-month'].to_index()
+
 
 	if gebco_height:
 		logger.info("Interpolating gebco to the dataset grid")
@@ -96,7 +106,9 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		shutil.rmtree(cutout_dir)
 
 	os.mkdir(cutout_dir)
-	#
+
+	# Write meta file
+	# TODO
 	(cutout.meta_clean
 		.unstack('year-month')
 		.to_netcdf(cutout.datasetfn()))
@@ -213,6 +225,16 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	ds.coords["year"] = range(years.start, years.stop+1)
 	ds.coords["month"] = range(months.start, months.stop+1)
 	ds = ds.stack(**{'year-month': ('year', 'month')})
+
+	# if cutout.meta_append == 1:
+	# 	# Append to existing meta
+	# 	(ds
+	# 		.unstack('year-month')
+	# 		.to_netcdf(cutout.datasetfn('meta','2')) )
+	#
+	# 	with xr.open_mfdataset([cutout.datasetfn(),cutout.datasetfn('meta','2')], combine='by_coords') as ds_comb:
+	# 		ds = ds_comb
+	# 	ds = ds.stack(**{'year-month': ('year', 'month')})
 
 	return ds
 

@@ -45,6 +45,7 @@ class Cutout(object):
 		self.name = name
 		self.cutout_dir = os.path.join(cutout_dir, name)
 		self.prepared = False
+		self.meta_append = 0
 
 		if 'bounds' in cutoutparams:
 			# if passed bounds array instead of xs, ys slices
@@ -58,8 +59,16 @@ class Cutout(object):
 				self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
 			else:
 				self.meta = meta = None
-			if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
-				# All files are accounted for. Checking basic data and coverage:
+
+			# if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
+			# 	# Meta file exists and all files indicated by it exists
+			# 	self.meta_append = 1
+
+			if not meta is None and 'years' in cutoutparams and\
+									'months' in cutoutparams and\
+									all(os.path.isfile(self.datasetfn([y, m])) for y in range(cutoutparams['years'].start, cutoutparams['years'].stop+1) for m in range(cutoutparams['months'].start, cutoutparams['months'].stop+1) ):
+				# All files are accounted for. Checking basic data and coverage
+
 				if 'module' not in meta.attrs:
 					raise TypeError('No module given in meta file of cutout.')
 				# load dataset module based on file metadata
@@ -81,13 +90,14 @@ class Cutout(object):
 					# No subsetting of bounds. Keep full cutout
 					self.prepared = True
 					logger.info("Cutout prepared: %s", self)
+
 			else:
 				#   Not all files accounted for
 				self.prepared = False
 				logger.info("Cutout (%s, %s) not complete.", name, cutout_dir)
 
-		# Check if still need to prepare cutout:
 		if not self.prepared:
+			# Still need to prepare cutout
 
 			if 'module' not in cutoutparams:
 				raise TypeError('Module is required to create cutout.')

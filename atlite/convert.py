@@ -389,13 +389,39 @@ def convert_wind(ds, turbine, **params):
 
 	return xr.DataArray(np.interp(wnd_hub, V, POW/P), coords=wnd_hub.coords)
 
+
+def convert_windspd(ds, hub_height, **params):
+	"""
+	Convert wind speeds for turbine to wind energy generation.
+	Selects hub height according to turbine model
+
+	- extrapolate wind speeds 			(wind.extrapolate_wind_speed)
+		extrapolate_wind_speed(ds, to_height, extrap_fn = log_ratio, from_height=None, var_height=None)
+
+	Parameters
+	----------
+	hub_height : num
+		extrapolation height
+
+	Optional Parameters
+	------
+
+	extrap_fn : function for extrapolation
+	from_height (int) : fixed height from which to extrapolate
+	var_height (str) : suffix for variables containing wind speed and variable height
+
+	"""
+	wnd_hub = windm.extrapolate_wind_speed(ds, to_height=hub_height, **params)
+
+	return xr.DataArray(wnd_hub, coords=wnd_hub.coords)
+
 def wind(cutout, turbine, smooth=False, **params):
 	"""
 	Generate wind generation time-series
 
 	- loads turbine dict based on passed parameters  	(resource.get_windturbineconfig)
 	- optionally, smooths turbine power curve 			(resource.windturbine_smooth)
-	- calls wind										(convert.convert_and_aggregate)
+	- calls convert_wind								(convert.convert_and_aggregate)
 
 	Parameters
 	----------
@@ -427,6 +453,46 @@ def wind(cutout, turbine, smooth=False, **params):
 
 	return cutout.convert_and_aggregate(convert_func=convert_wind, turbine=turbine,
 										**params)
+
+def windspd(cutout, **params):
+	"""
+	Generate wind speed time-series
+
+	convert.convert_and_aggregate → convert.convert_windspd
+
+	Parameters
+	----------
+	**params
+		Must have 1 of:
+			turbine : str or dict
+				Name of a turbine
+			hub_height : num
+				Extrapolation height
+
+		Can also specify all of the general conversion arguments
+		documented in the `convert_and_aggregate` function.
+			e.g. var_height='lml'
+
+	"""
+
+	if 'turbine' in params:
+		turbine = params.pop('turbine')
+		if isinstance(turbine, string_types):
+			turbine = get_windturbineconfig(turbine)
+		else:
+			raise ValueError(f"Turbine ({turbine}) not found.")
+		hub_height = itemgetter('hub_height')(turbine)
+	elif 'hub_height' in params:
+		hub_height = params.pop('hub_height')
+	elif 'to_height' in params:
+		hub_height = params.pop('to_height')
+	else:
+		raise ValueError(f"Either a turbine or hub_height must be specified.")
+
+	params['hub_height'] = hub_height
+
+	return cutout.convert_and_aggregate(convert_func=convert_windspd, **params)
+
 
 ## solar PV
 
@@ -582,3 +648,27 @@ def hydro(cutout, plants, hydrobasins, flowspeed=1, weight_with_height=False, sh
 	runoff *= (1000. / 24.) * xr.DataArray(basins.shapes.to_crs(dict(proj="aea")).area)
 
 	return hydrom.shift_and_aggregate_runoff_for_plants(basins, runoff, flowspeed, show_progress)
+
+## other functions
+
+def _get_var(ds, var, **params):
+	"""
+	(Internal) Extract a specific variable from cutout
+	See: get_var
+	"""
+	return xr.DataArray(ds[var], coords=ds.coords)
+
+def get_var(cutout, var, **params):
+	"""
+	Extract a specific variable from cutout
+
+	Parameters
+	----------
+	var : str
+		Name of variable to extract from dataset
+
+	Returns: dataarray
+	"""
+	return cutout.convert_and_aggregate(convert_func=_get_var,
+										var=var,
+										**params)

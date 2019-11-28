@@ -296,3 +296,6 @@ daily_files = False
 
 # Latitude stored south to north (ie forward, = True) or north to south
 lat_direction = False
+
+# Spinup variable (necessary for MERRA)
+spinup_var = False

@@ -16,7 +16,7 @@ cutout = atlite.Cutout(name="europe-sub-2011-01",
                        xs=slice(30, 41.56244222),
                        ys=slice(40, 33.56459975),
                        years=slice(2011, 2011),
-                       months=slice(1,1,1) )
+                       months=slice(1,1) )
 # cutout.prepare()
 
 ## Wind profiles

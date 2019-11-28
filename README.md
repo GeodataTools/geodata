@@ -8,7 +8,12 @@ Readme
 
 **Library: `atlite`** (See `README-atlite.rst`)
 
+Default:
 `python setup.py install`
+
+Local install (use same `prefix` folder as python custom installation):
+`python3 setup.py install --prefix=$HOME/opt/python-3.6.9`
+
 
 **Other required libraries:**
 - boto3
@@ -47,8 +52,13 @@ Readme
 - if `module="era5"`: will download raw data to temp folder before extracting cutout
 
 `create_wind.ipynb`
-- loads cutout file from `output/`
-- extracts wind
+- trims variables of downloaded files if necessary
+- creates (or loads existing) cutout files
+- example extracts wind power at given height
+
+`get_data.ipynb` / `get_data.py`
+- download data routines
+
 
 ## To Do
 
@@ -61,7 +71,7 @@ Readme
 4. √ Cutout extension to MERRA
  - ? Rethink `cutout` concept (avoid data duplication)
 5. √ Additional wind speed extrapolation functions (see `matlab/merra`)
-6. Extract cells of given sites and years (`matlab/merra/GD_sites.txt`), format ~ `GD_merra`
+6. in `re-validation/` repo → Extract cells of given sites and years (`matlab/merra/GD_sites.txt`), format ~ `GD_merra`
 
 
 
@@ -108,6 +118,6 @@ Ignore progressbar, set to not display, in `convert.py`:
 maybe_progressbar = make_optional_progressbar(False, prefix, len(yearmonths))
 `
 
-### Long process time during cutout (`Merging variables into monthly compound files`)
-
+### Long process time during cutout
+at step: `Merging variables into monthly compound files`
 ?
