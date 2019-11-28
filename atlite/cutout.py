@@ -53,6 +53,25 @@ class Cutout(object):
 			cutoutparams.update(xs=slice(x1, x2),
 								ys=slice(y1, y2))
 
+		if not 'years' in cutoutparams:
+			raise ValueError("`years` need to be specified")
+		if not isinstance(cutoutparams['years'], slice):
+			years = cutoutparams.pop('years')
+			if isinstance(years, list):
+				cutoutparams.update(years=slice(years[0], years[-1]))
+			else:
+				raise TypeError('Unrecognized years parameter given. Only slice or array accepted.')
+
+		if not 'months' in cutoutparams:
+			logger.info("No months specified, defaulting to 1-12")
+			cutoutparams.update(months=slice(1, 12))
+
+		if 'bounds' in cutoutparams:
+			# if passed bounds array instead of xs, ys slices
+			x1, y1, x2, y2 = cutoutparams.pop('bounds')
+			cutoutparams.update(xs=slice(x1, x2),
+								ys=slice(y1, y2))
+
 		# Check if cutout dir and files already exists:
 		if os.path.isdir(self.cutout_dir):
 			if os.path.isfile(self.datasetfn()):

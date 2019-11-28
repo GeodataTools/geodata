@@ -171,7 +171,7 @@ def convert_and_aggregate(cutout, convert_func, matrix=None,
 	# 	# sum over time
 	# 	results = sum(results)
 	results = xr.concat(results, dim='time')
-	logger.info("Keeping time dimension.")
+	# logger.info("Keeping time dimension.")
 
 	if capacity_factor:
 		assert aggregate_func is aggregate_sum, \
@@ -392,8 +392,7 @@ def convert_wind(ds, turbine, **params):
 
 def convert_windspd(ds, hub_height, **params):
 	"""
-	Convert wind speeds for turbine to wind energy generation.
-	Selects hub height according to turbine model
+	Extract wind speeds at given height
 
 	- extrapolate wind speeds 			(wind.extrapolate_wind_speed)
 		extrapolate_wind_speed(ds, to_height, extrap_fn = log_ratio, from_height=None, var_height=None)
@@ -414,6 +413,33 @@ def convert_windspd(ds, hub_height, **params):
 	wnd_hub = windm.extrapolate_wind_speed(ds, to_height=hub_height, **params)
 
 	return xr.DataArray(wnd_hub, coords=wnd_hub.coords)
+
+
+def convert_windwpd(ds, hub_height, **params):
+	"""
+	Extract wind power density at given height, according to:
+		WPD = 0.5 * Density * Windspd^3
+
+	- extrapolate wind speeds 			(wind.extrapolate_wind_speed)
+		extrapolate_wind_speed(ds, to_height, extrap_fn = log_ratio, from_height=None, var_height=None)
+
+	Parameters
+	----------
+	hub_height : num
+		extrapolation height
+
+	Optional Parameters
+	------
+
+	extrap_fn : function for extrapolation
+	from_height (int) : fixed height from which to extrapolate
+	var_height (str) : suffix for variables containing wind speed and variable height
+
+	"""
+	wnd_hub = windm.extrapolate_wind_speed(ds, to_height=hub_height, **params)
+
+	return xr.DataArray(0.5 * ds['rhoa'] * wnd_hub ** 3 , coords=wnd_hub.coords)
+
 
 def wind(cutout, turbine, smooth=False, **params):
 	"""
@@ -487,12 +513,51 @@ def windspd(cutout, **params):
 	elif 'to_height' in params:
 		hub_height = params.pop('to_height')
 	else:
-		raise ValueError(f"Either a turbine or hub_height must be specified.")
+		raise ValueError("Either a turbine or hub_height must be specified.")
 
 	params['hub_height'] = hub_height
 
 	return cutout.convert_and_aggregate(convert_func=convert_windspd, **params)
 
+
+def windwpd(cutout, **params):
+	"""
+	Generate wind power density time-series
+
+	convert.convert_and_aggregate → convert.convert_windwpd
+
+	Parameters
+	----------
+	**params
+		Must have 1 of:
+			turbine : str or dict
+				Name of a turbine
+			hub_height : num
+				Extrapolation height
+
+		Can also specify all of the general conversion arguments
+		documented in the `convert_and_aggregate` function.
+			e.g. var_height='lml'
+
+	"""
+
+	if 'turbine' in params:
+		turbine = params.pop('turbine')
+		if isinstance(turbine, string_types):
+			turbine = get_windturbineconfig(turbine)
+		else:
+			raise ValueError(f"Turbine ({turbine}) not found.")
+		hub_height = itemgetter('hub_height')(turbine)
+	elif 'hub_height' in params:
+		hub_height = params.pop('hub_height')
+	elif 'to_height' in params:
+		hub_height = params.pop('to_height')
+	else:
+		raise ValueError(f"Either a turbine or hub_height must be specified.")
+
+	params['hub_height'] = hub_height
+
+	return cutout.convert_and_aggregate(convert_func=convert_windwpd, **params)
 
 ## solar PV
 
