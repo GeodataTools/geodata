@@ -734,6 +734,30 @@ def get_var(cutout, var, **params):
 
 	Returns: dataarray
 	"""
+	logger.info("Getting variable: " + str(var))
 	return cutout.convert_and_aggregate(convert_func=_get_var,
 										var=var,
+										**params)
+
+def _compute_var(ds, fn, **params):
+	"""
+	(Internal) Compute a specific function from cutout
+	See: compute_var
+	"""
+	return xr.DataArray(fn(ds), coords=ds.coords)
+
+def compute_var(cutout, fn, **params):
+	"""
+	Compute a specific function from cutout
+
+	Parameters
+	----------
+	var : str
+		Name of variable to extract from dataset
+
+	Returns: dataarray
+	"""
+	logger.info("Computing variable: " + str(fn))
+	return cutout.convert_and_aggregate(convert_func=_compute_var,
+										fn=fn,
 										**params)

@@ -71,11 +71,49 @@ Local install (use same `prefix` folder as python custom installation):
 4. √ Cutout extension to MERRA
  - ? Rethink `cutout` concept (avoid data duplication)
 5. √ Additional wind speed extrapolation functions (see `matlab/merra`)
-6. in `re-validation/` repo → Extract cells of given sites and years (`matlab/merra/GD_sites.txt`), format ~ `GD_merra`
+6. √ in `re-validation/` repo → Extract cells of given sites and years (`matlab/merra/GD_sites.txt`), format ~ `GD_merra`
+7. √ Add stability correction functions
+	- `wind_corrections.ipynb`: stability corrections `stabilityCorrection_linear`, `stabilityCorrection_linearexp`
+	- Obukhov lengths
 
 
 
-## Errors
+## Issues
+
+### `L` Obukhov lengths
+
+**Old**
+$L= - \dfrac{u_{* }^{3}\overline{\theta_{v}}\rho_{a}c_{p,d}}{\kappa gH_{f}}$
+
+for `a=z/L, z=80m`:
+![](output/a_example.png)
+
+**New**
+
+Rose & Apt SI has more complete equation for `L`:
+$L= - \dfrac{u_{* }^{3}\overline{\theta_{v}}\rho_{a}c_{p,d}}{\kappa gH_{v0}}$
+$H_{v0}=H_{f}+0.61C_{p}\dfrac{\overline{\theta}}{L_{e}}H_{L}$
+$\overline{\theta}=\overline{T}\left(p_{0}/p\right)^{\kappa_{p}}$
+
+involves several additional parameters
+- Implemented, but not much difference: virtual heat flux (incl latent heat flux, potential temp)
+- IGNORE FOR NOW: virtual temp (includes humidity)
+	> The difference between the actual and the virtual temperature is small for cold air masses and low specific humidity, but can be several degrees for warm and very humid air masses. (Emeis, p. 19)
+- IGNORE FOR NOW: in terms of $C_p = C_{pd} (1+0.84*q)$ , not $C_{pd}$
+
+### $\psi_m$ Stability correction
+
+`wind_corrections.ipynb`
+- various stability correction fns
+- `_linear`, `_linearexp`, `_linearexpconst`
+- default: `linearexpconst`
+  - linear, exponential and plateau
+  - const = 7 = x/L (above, which $\psi$ is constant)
+
+linearexp:
+![](output/wsp_flux_linearexp_example.png)
+(var = log_law, var2 = log_law_linearexp)
+
 
 ### xarray, dask dependencies (#1)
 
