@@ -61,3 +61,8 @@ Local install (use same `prefix` folder as python custom installation):
 - download data routines
 
 
+## Issues
+
+**See [issues file](issues.md) with rendered equations.**
+
+See [issues markdown](issues.tex.md) without rendered equations.
