@@ -142,6 +142,14 @@ def L_vph(ds):
 	ds['L'] =  - (ds['tlml'] * ds['ustar'] ** 3 * CPD * ds['rhoa']) / ( vonk * grav * ds['vphflux'])
 	return(ds['L'])
 
+def winddir(ds):
+	""" Wind direction using lowest model layer """
+
+	ds['winddir'] = np.degrees(np.arctan(ds['ulml'] / ds['vlml']))
+	ds['winddir'].values[ds['vlml']<0] +=  180
+	ds['winddir'].values[(ds['vlml']>0)&(ds['ulml']<0)] +=  360
+	return(ds['winddir'])
+
 def _log_law_flux(ds, to_height, from_height, from_name, psifn, Lfn = L_vph):
 	""" Compute logarithmic (integration) law given stability correction fn in terms of Obukhov length (derived from heat flux) [1]
 		Called by: log_law_flux_**
