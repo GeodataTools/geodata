@@ -35,6 +35,8 @@ logger = logging.getLogger(__name__)
 
 from ..config import era5_dir
 
+datadir = era5_dir
+
 try:
 	import cdsapi
 	has_cdsapi = True
@@ -274,7 +276,7 @@ def prepare_month_era5(year, month, xs, ys):
 
 		yield (year, month), ds
 
-def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, meta_attrs):
+def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	if not isinstance(xs, slice):
 		xs = slice(*xs.values[[0, -1]])
 	if not isinstance(ys, slice):

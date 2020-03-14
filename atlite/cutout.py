@@ -173,8 +173,8 @@ class Cutout(object):
 		if meta.attrs.get('view', {}):
 			view = {}
 			for name, value in iteritems(meta.attrs.get('view', {})):
-				view.append({name: [value.start, value.stop]})
-			meta.attrs['view'] = view
+				view.update({name: [value.start, value.stop]})
+			meta.attrs['view'] = str(view)
 		return meta
 
 	@property
