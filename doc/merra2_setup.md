@@ -18,3 +18,5 @@ The following procedure is sourced from: https://disc.gsfc.nasa.gov/earthdata-lo
 4. Search for and select the "NASA GESDISC DATA ARCHIVE".  Once you've clicked approve, agree to the ELUA.
 
 5. The data source has now been connected to your account and you can begin downloading MERRA2 data through the *geodata* package.
+
+To confirm access, see the section on Creating Cutouts with MERRA2 data (link here).
