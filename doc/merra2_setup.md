@@ -38,7 +38,7 @@ To download MERRA2 data via **geodata** you'll need to install the API credentia
 * (Windows instructions coming soon.)
 
 
- FInally, you will also need to create a file called `.urs_cookies` to persist cookies across multiple download calls.  You can create this by running:
+ FInally, you will also need to create a file called `.urs_cookies` to persist cookies across multiple download calls.  You can create this by opening a terminal window and running:
 
  ```touch ~/.urs_cookies
  ```

@@ -1,10 +1,10 @@
 # Downloading MERRA2 Data for use with Geodata
 
-A short guide to downloading data for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary) for use with *geodata*.
+A short guide to downloading data for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary) for use with **geodata**.
 
 ## Method 1 - Download using the geodata package itself
 
-Download methods for MERRA2 hourly data are built into the *geodata* package.  A basic example is as follows:
+Download methods for MERRA2 hourly data are built into the **geodata** package.  A basic example is as follows:
 
 ```import logging
 logging.basicConfig(level=logging.INFO)
@@ -26,8 +26,8 @@ Let's breakdown the code above:
 logging.basicConfig(level=logging.INFO)
 import atlite
 ```
-Importing the logging package allows *geodata* to generate console input for download status, errors, etc.
-Importing atlite is necessary to run *geodata*.
+Importing the logging package allows **geodata** to generate console input for download status, errors, etc.
+Importing atlite is necessary to run **geodata**.
 
 ```
 DS = atlite.Dataset(module="merra2",
@@ -64,7 +64,7 @@ Each daily file is about 400mb in size, and contains all 46 variables detailed u
 
 ```DS.trim_variables(downloadedfiles = True)
 ```
-To save hard disk space, *geodata* allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. 
+To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. Running the above code reduces file size from roughly 400mb per daily file to roughly 115mb per daily file.
 
 (Note: determine specific use cases for `downloadedfiles = TRUE` vs not. )
 
@@ -84,3 +84,4 @@ Running the above code iterates over each downloaded file and subsets the data t
 * eflux: total_latent_energy_flux (W m-2)
 
 
+To use downloaded data to create a cutout, see: [Creating Cutouts with MERRA2 Data (WIP)](https://github.com/east-winds/geodata/blob/master/doc/merra2_createcutout.md)
