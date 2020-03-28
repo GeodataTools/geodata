@@ -136,7 +136,7 @@ Attributes:
     RangeEndingDate:                   2012-02-16
     RangeEndingTime:                   23:59:59.000000
     module:                            merra2
-    ```
+```
 
 
 To understand the variables that were downloaded, you can run:

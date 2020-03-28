@@ -6,7 +6,8 @@ A short guide to downloading data for [MERRA2 hourly, single-level surface flux 
 
 Download methods for MERRA2 hourly data are built into the **geodata** package.  A basic example is as follows:
 
-```import logging
+```
+import logging
 logging.basicConfig(level=logging.INFO)
 import atlite
 
@@ -22,7 +23,8 @@ DS.trim_variables(downloadedfiles = True)
 
 Let's breakdown the code above:
 
-```import logging
+```
+import logging
 logging.basicConfig(level=logging.INFO)
 import atlite
 ```
@@ -41,18 +43,21 @@ The `years` and `months` parameters allow you to specify start years/months and 
 
 Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the local directory specified in `config.py`:
 
-```>> INFO:atlite.dataset:Directory /Users/johndoe/desktop/geodata/data/merra2 found, checking for completeness.
+```
+>> INFO:atlite.dataset:Directory /Users/johndoe/desktop/geodata/data/merra2 found, checking for completeness.
 >> INFO:atlite.dataset:Directory complete.
 ```
 
 and returns a `dataset` object indicating whether the data is "prepared."
 
-```<Dataset merra2 years=2012-2012 months=2-2 datadir=/Users/williamhonaker/desktop/davidson/data_for_geodata/merra2 Prepared>
+```
+<Dataset merra2 years=2012-2012 months=2-2 datadir=/Users/williamhonaker/desktop/davidson/data_for_geodata/merra2 Prepared>
 ```
 
 A "prepared" dataset indicates that the directories for storing the data - which take the form `/merra2/{years}/{months}` for every unique year-month combination in the data - have been created and are populated with downloaded data.  
 
-```if DS.prepared == False:
+```
+if DS.prepared == False:
 	DS.get_data()
 ```
 If the dataset is "Unprepared", this conditional statement will download the actual netcdf files from GES DISC.
@@ -62,7 +67,8 @@ Files for the MERRA2 hourly, single-level surface flux diagnostics will be downl
 Each daily file is about 400mb in size, and contains all 46 variables detailed under the "Subset/Get Data" tab here: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
 
-```DS.trim_variables(downloadedfiles = True)
+```
+DS.trim_variables(downloadedfiles = True)
 ```
 To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. Running the above code reduces file size from roughly 400mb per daily file to roughly 115mb per daily file.
 

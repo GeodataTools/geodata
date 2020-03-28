@@ -25,14 +25,16 @@ To download MERRA2 data via **geodata** you'll need to install the API credentia
 
  * For MacOS, create a file in your root directory (`cd ~`) called `.netrc` by opening a terminal window and running `touch ~/.netrc` to create the file and then:
  
-```echo "machine urs.earthdata.nasa.gov [login] [password] " >> .netrc
+```
+echo "machine urs.earthdata.nasa.gov [login] [password] " >> .netrc
 ```
 
  where `[login]` is your Earthdata user name and `[password]` is your Earthdata Login password. 
  
  Alternatively, if you are using VSCode, you can simply open your root folder in a new window, save a new file as `.netrc`, and copy paste in the following:
 
-```machine urs.earthdata.nasa.gov [login] [password] " 
+```
+machine urs.earthdata.nasa.gov [login] [password] " 
 ```
 
 * (Windows instructions coming soon.)
@@ -40,7 +42,8 @@ To download MERRA2 data via **geodata** you'll need to install the API credentia
 
  FInally, you will also need to create a file called `.urs_cookies` to persist cookies across multiple download calls.  You can create this by opening a terminal window and running:
 
- ```touch ~/.urs_cookies
+ ```
+ touch ~/.urs_cookies
  ```
 in your root directory.
 
