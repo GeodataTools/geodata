@@ -171,3 +171,20 @@ To get just the variables that were downloaded for the `surface_flux` configurat
 ```
 cutout.dataset_module.weather_data_config['surface_flux']['variables']
 ```
+
+Which will return a list of the variables included in the cutout when downloaded:
+
+```
+'ustar',
+'z0m',
+'disph',
+'rhoa',
+'ulml',
+'vlml',
+'tstar',
+'hlml',
+'tlml',
+'pblh',
+'hflux',
+'eflux'
+```

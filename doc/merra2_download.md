@@ -41,6 +41,7 @@ DS = atlite.Dataset(module="merra2",
 
 The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for February 2012.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 
+
 Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the local directory specified in `config.py`:
 
 ```
@@ -70,11 +71,13 @@ Each daily file is about 400mb in size, and contains all 46 variables detailed u
 ```
 DS.trim_variables(downloadedfiles = True)
 ```
-To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. Running the above code reduces file size from roughly 400mb per daily file to roughly 115mb per daily file.
+To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. Running the above code reduces file size from roughly 400mb per daily file to roughly 115mb per daily file by subsetting to only variables needed for generating wind and solar outputs.  
 
-(Note: determine specific use cases for `downloadedfiles = TRUE` vs not. )
+By default, `trim_variables()` subsets to both wind and solar data.  To further subset to just a single group of variables, you can pass `wind=False` or `solar=False` to exclude those groups of variables from the trimming process.
 
-Running the above code iterates over each downloaded file and subsets the data to the following variables:
+* Currently, only subsetting for MERRA2 wind data (`surface_flux`) is available.  Subsetting for solar data is planned for the near future.
+
+For MERRA2 data, running `trim_variables()` as specified iterates over each downloaded file and subsets the data to the following wind variables indicated in the `surface_flux` configuration:
 
 * ustar: surface_velocity_scale (m s-1)
 * z0m: surface_roughness (m)
