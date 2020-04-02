@@ -26,7 +26,7 @@ atlite.convert.wind(
 * `smooth` - **bool or dict** - If True smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
 
 *Note* - 
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. var_height='lml'). See [LINK]
+You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). See [LINK]
 
 ### Example Code and Result
 
@@ -62,9 +62,9 @@ atlite.convert.windspd(
 * `cutout` - **string** -  A cutout created by `atlite.Cutout()`
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [LINK]
-    - `hub-height` - **num** Extrapolation height (m)
+    - `hub-height` - **num** - Extrapolation height (m)
 *Note* - 
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. var_height='lml'). See [LINK]
+You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). See [LINK]
 
 ### Example Code and Result
 
@@ -102,7 +102,7 @@ atlite.convert.windwpd(
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [LINK]
     - `hub-height` - **num** Extrapolation height (m)
 *Note* - 
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. var_height='lml'). See [LINK]
+You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). See [LINK]
 
 ### Example Code and Result
 

@@ -27,9 +27,6 @@ MERRA2 surface flux data currently supports the following variable configs:
 MERRA2 surface flux data currently supports the following outputs:
 
 **Wind**
-* [Wind speed for turbine to wind energy generation]
-* [Wind speeds at given height]
-* [Wind power density at given height (WPD = 0.5 * Density * Windspd^3)]
 * [Wind generation time-series]
 * [Wind speed time-series]
 * [Wind power density time-series]
