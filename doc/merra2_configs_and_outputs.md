@@ -1,5 +1,7 @@
 # MERRA2 Configs and Outputs
 
+A list of currently possible **geodata** configs and outputs for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
+
 ## Variable Configurations
 
 MERRA2 surface flux data currently supports the following variable configs:
@@ -26,8 +28,8 @@ MERRA2 surface flux data currently supports the following outputs:
 
 **Wind**
 * [Wind speed for turbine to wind energy generation]
-* Wind speeds at given height
-* Wind power density at given height (WPD = 0.5 * Density * Windspd^3)
-* Wind generation time-series
-* Wind speed time-series
-* Wind power density time-series
+* [Wind speeds at given height]
+* [Wind power density at given height (WPD = 0.5 * Density * Windspd^3)]
+* [Wind generation time-series]
+* [Wind speed time-series]
+* [Wind power density time-series]

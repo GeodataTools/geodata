@@ -1,6 +1,6 @@
 # Creating Cutouts with MERRA2 data
 
-A short guide on how to use **geodata** to create cutout - subsets of data based on specific time and geographic ranges - for MERRA2 data.
+A short guide on how to use **geodata** to create cutouts - subsets of data based on specific time and geographic ranges - for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
 ## Setup
 

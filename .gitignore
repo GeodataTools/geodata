@@ -1,3 +1,6 @@
+merra_starter.ipynb
+merra_wind_test.csv
+cutout_test2.ipynb
 *~
 *.py[cod]
 .~*
@@ -9,6 +12,8 @@ dist/
 atlite.egg-info/
 
 output/
+outputs
 .ipynb_checkpoints/
 
 trim/
+
