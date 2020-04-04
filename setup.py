@@ -4,13 +4,13 @@ from setuptools import setup, find_packages
 from codecs import open
 import six
 
-with open('README-atlite.rst', encoding='utf-8') as f:
+with open('README-geodata.rst', encoding='utf-8') as f:
 	long_description = f.read()
 
-exec(open('atlite/_version.py').read())
+exec(open('geodata/_version.py').read())
 
 setup(
-	name='atlite',
+	name='geodata',
 	version=__version__,
 	author='Jonas Hoersch (FIAS), Tom Brown (FIAS), Gorm Andresen (Aarhus University). Modifications by Michael Davidson (UCSD).',
 	author_email='jonas.hoersch@posteo.de',

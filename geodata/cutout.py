@@ -91,7 +91,7 @@ class Cutout(object):
 				if 'module' not in meta.attrs:
 					raise TypeError('No module given in meta file of cutout.')
 				# load dataset module based on file metadata
-				self.dataset_module = sys.modules['atlite.datasets.' + meta.attrs['module']]
+				self.dataset_module = sys.modules['geodata.datasets.' + meta.attrs['module']]
 				cutoutparams['module'] = meta.attrs['module']
 
 				logger.info("All cutout (%s, %s) files available.", name, cutout_dir)
@@ -120,8 +120,8 @@ class Cutout(object):
 
 			if 'module' not in cutoutparams:
 				raise TypeError('Module is required to create cutout.')
-			# load module from atlite library
-			self.dataset_module = sys.modules['atlite.datasets.' + cutoutparams['module']]
+			# load module from geodata library
+			self.dataset_module = sys.modules['geodata.datasets.' + cutoutparams['module']]
 
 			logger.info("Cutout (%s, %s) not found or incomplete.", name, cutout_dir)
 
