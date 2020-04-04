@@ -1,5 +1,8 @@
 ## Unreleased
 
+## Enhancements
+* Change package name to `geodata` from `atlite`.
+
 ## Documentation
 * [`Introduction.md`] Add introduction to the package.
 * [`tableofcontents.md`] Add list of links to relevant documentation.
