@@ -1,6 +1,6 @@
 # Creating Cutouts with MERRA2 data
 
-A short guide on how to use **geodata** to create cutout - subsets of data based on specific time and geographic ranges - for MERRA2 data.
+A short guide on how to use **geodata** to create cutouts - subsets of data based on specific time and geographic ranges - for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
 ## Setup
 
@@ -170,4 +170,21 @@ To get just the variables that were downloaded for the `surface_flux` configurat
 
 ```
 cutout.dataset_module.weather_data_config['surface_flux']['variables']
+```
+
+Which will return a list of the variables included in the cutout when downloaded:
+
+```
+'ustar',
+'z0m',
+'disph',
+'rhoa',
+'ulml',
+'vlml',
+'tstar',
+'hlml',
+'tlml',
+'pblh',
+'hflux',
+'eflux'
 ```
