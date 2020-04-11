@@ -2,7 +2,7 @@
 
 A short guide to downloading data for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary) for use with **geodata**.
 
-## Method 1 - Download using the geodata package itself
+## Download using the geodata package itself
 
 Download methods for MERRA2 hourly data are built into the **geodata** package.  A basic example is as follows:
 
