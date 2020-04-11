@@ -1,5 +1,16 @@
 ## Unreleased
 
+## Documentation - 04/10/20
+
+### ERA5
+* [`era5_download.md`] Add guide for downloading and creating cutouts from ERA5 data.
+* [`era5_example_output.md`] Add example guide for generating output for ERA5 data.
+* [`era5_outputs.md`] Add guide for outputs for ERA5.
+* [`era5.ipynb`] Add jupyter notebook to walk through entire ERA5 download, cutout, and output process.
+
+### MERRA2
+* [`merra2_outputs.md`] Roll up merra2 output guide files into a single file.
+
 ## Documentation - 04/04/20
 * [`merra2_example_output.md`] Add example guide for generating output for MERRA2.
 * [`merra2_configs_and_outputs.md`] Add guide for configs and outputs for MERRA2.
