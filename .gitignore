@@ -6,11 +6,9 @@ __pycache__
 doc/_build/
 build/
 dist/
-geodata.egg-info/
 
 output/
 .ipynb_checkpoints/
 
 geodata/merra_starter.ipynb
-geodata/config.py
-
+era5_starter.ipynb
