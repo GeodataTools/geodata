@@ -1,0 +1,17 @@
+numpy
+scipy
+pandas>=0.22
+bottleneck
+numexpr
+xarray>=0.11.2
+netcdf4
+dask[complete]>=0.18.0
+boto3
+toolz
+pyproj
+requests
+matplotlib
+rasterio
+shapely
+progressbar2
+geopandas
