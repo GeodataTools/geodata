@@ -29,8 +29,8 @@ class Dataset(object):
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
 		self.module = datasetparams.pop('module')
-		# load module from atlite library
-		self.dataset_module = sys.modules['atlite.datasets.' + self.module]
+		# load module from geodata library
+		self.dataset_module = sys.modules['geodata.datasets.' + self.module]
 
 		if 'datadir' in datasetparams:
 			logger.info("Manual data directory entry not supported. Change in config.py file.")

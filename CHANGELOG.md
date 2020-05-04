@@ -1,5 +1,8 @@
 ## Unreleased
 
+## Enhancements
+* Change package name to `geodata` from `atlite`.
+
 ## Documentation - 04/04/20
 * [`merra2_example_output.md`] Add example guide for generating output for MERRA2.
 * [`merra2_configs_and_outputs.md`] Add guide for configs and outputs for MERRA2.
