@@ -1,5 +1,6 @@
 ## Unreleased
 
+
 ## Documentation - 04/10/20
 
 ### ERA5
@@ -10,6 +11,7 @@
 
 ### MERRA2
 * [`merra2_outputs.md`] Roll up merra2 output guide files into a single file.
+
 
 ## Documentation - 04/04/20
 * [`merra2_example_output.md`] Add example guide for generating output for MERRA2.

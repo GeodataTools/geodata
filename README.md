@@ -11,7 +11,7 @@ See: [README-atlite.rst](README-atlite.rst)
 
 
 Default:
-`python setup.py install`
+`python3 setup.py install`
 
 Local install (use same `prefix` folder as python custom installation):
 `python3 setup.py install --prefix=$HOME/opt/python-3.6.9`

@@ -15,7 +15,7 @@ git clone https://github.com/east-winds/geodata.git
 cd geodata
 ```
 
-Before building the package, you'll first need to tell it two things: where to put/look for downloaded data, and where to store _cutouts_ - subsets of downloaded data needed to generate output variables.  To do so, open `geodata/atlite/config.py`.
+Before building the package, you'll first need to tell it two things: where to put/look for downloaded data, and where to store _cutouts_ - subsets of downloaded data needed to generate output variables.  To do so, open `geodata/config.py`.
 
 * To configure where to store cutouts, change the value of `cutout_dir` so that it points to a folder in your working directory like so:
 ```
@@ -42,6 +42,6 @@ To use **geodata**, you'll need to build the package.  To do so, open a terminal
 python3 setup.py install
 ```
 
-This will build the package and allow you to use it in Python scripts by calling `import atlite`.
+This will build the package and allow you to use it in Python scripts by calling `import geodata`.
 
 **Note**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
