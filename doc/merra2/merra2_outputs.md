@@ -12,7 +12,7 @@
 Convert wind speeds for turbine to wind energy generation.
 
 ```
-atlite.convert.wind(
+geodata.convert.wind(
     cutout, 
     turbine, 
     smooth=False, 
@@ -21,17 +21,17 @@ atlite.convert.wind(
 
 ### Parameters
 
-* `cutout` - **string** -  A cutout created by `atlite.Cutout()`
+* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [LINK]
-* `smooth` - **bool or dict** - If True smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
+* `smooth` - **bool or dict** - If `True`, smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
 
 *Note* - 
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). See [LINK]
 
-### Example Code and Result
+### Example Code
 
 ```
-ds_wind = atlite.convert.wind(
+ds_wind = geodata.convert.wind(
                 cutout, 
                 turbine='Suzlon_S82_1.5_MW', 
                 smooth=True, 
@@ -41,9 +41,7 @@ ds_wind = atlite.convert.wind(
 ds_wind.to_dataframe(name = 'wind')
 ```
 
-Dataframe result:
 
-[image link]
 
 
 ## Wind Speed Time-series
@@ -52,24 +50,24 @@ Extract wind speeds at given height (ms-1)
 
 
 ```
-atlite.convert.windspd(
+geodata.convert.windspd(
     cutout, 
     **params)
 ```
 
 ### Parameters
 
-* `cutout` - **string** -  A cutout created by `atlite.Cutout()`
+* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [LINK]
     - `hub-height` - **num** - Extrapolation height (m)
 *Note* - 
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). See [LINK]
 
-### Example Code and Result
+### Example Code
 
 ```
-ds_windspd = atlite.convert.windspd(
+ds_windspd = geodata.convert.windspd(
                 cutout, 
                 turbine='Vestas_V66_1750kW', 
                 var_height='lml'
@@ -78,9 +76,6 @@ ds_windspd = atlite.convert.windspd(
 ds_windspd.to_dataframe(name = 'windspd')
 ```
 
-Dataframe result:
-
-[image link - windspd2]
 
 
 
@@ -90,24 +85,24 @@ Extract wind power density at given height, according to:
 **WPD = 0.5 * Density * Windspd^3**
 
 ```
-atlite.convert.windwpd(
+geodata.convert.windwpd(
     cutout, 
     **params)
 ```
 
 ### Parameters
 
-* `cutout` - **string** -  A cutout created by `atlite.Cutout()`
+* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [LINK]
     - `hub-height` - **num** Extrapolation height (m)
 *Note* - 
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). See [LINK]
 
-### Example Code and Result
+### Example Code
 
 ```
-ds_windwpd = atlite.convert.windwpd(
+ds_windwpd = geodata.convert.windwpd(
                 cutout, 
                 turbine='Suzlon_S82_1.5_MW', 
                 var_height='lml'
@@ -115,9 +110,3 @@ ds_windwpd = atlite.convert.windwpd(
 
 ds_windwpd.to_dataframe(name = 'windwpd')
 ```
-
-Dataframe result:
-
-[image link - windwpd]
-
-
