@@ -187,18 +187,30 @@ weather_data_config = {
 #	Single file contains all wind variables (≠ ncep)
 #	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year) before downloading
 # 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
-	'surface_flux': dict(tasks_func=tasks_monthly_merra2,
-						prepare_func=prepare_month_surface_flux,
-						template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'),
-						url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
-						fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
-						variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
+	'surface_flux': dict( # call hourly - clear periods - notation
+		time_period="daily",
+		tasks_func=tasks_monthly_merra2,
+		prepare_func=prepare_month_surface_flux,
+		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'),
+		url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
+		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
+		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
 #	TODO: solar radiation data
-						)
+						),
+	'surface_flux_monthly': dict(
+		time_period="monthly",
+		tasks_func=tasks_monthly_merra2,
+		prepare_func=prepare_month_surface_flux,
+		template=os.path.join(merra2_dir, '{year}/MERRA2_*.tavgM_2d_flx_Nx.*.nc4'),
+	    url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4',
+		fn = os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4'),
+		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
+		)
 }
 
 # list of routines in weather_data_config to download wind data
 wind_files = ['surface_flux']
+
 # TODO: same for solar
 solar_files = []
 
@@ -206,7 +218,7 @@ meta_data_config = dict(prepare_func=prepare_meta_merra2,
 						template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'))
 
 # Separate files for each day (coded in weather_data_config list)
-daily_files = True
+#daily_files = True # needs to be specified somewhere else
 
 # Latitude stored south to north (ie forward, = True) or north to south
 lat_direction = True

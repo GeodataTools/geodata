@@ -28,9 +28,14 @@ class Dataset(object):
 	def __init__(self, **datasetparams):
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
+		if 'weather_data_config' not in datasetparams:
+			raise ValueError("`config` needs to be specified")
 		self.module = datasetparams.pop('module')
+		self.config = datasetparams.pop('weather_data_config')
 		# load module from geodata library
 		self.dataset_module = sys.modules['geodata.datasets.' + self.module]
+		
+		self.weatherconfig = self.weather_data_config[self.config]
 
 		if 'datadir' in datasetparams:
 			logger.info("Manual data directory entry not supported. Change in config.py file.")
@@ -52,6 +57,7 @@ class Dataset(object):
 		self.toDownload = []
 		self.savedFiles = []
 		self.downloadedFiles = []
+		self.totalFiles = []
 		incomplete_count = 0
 
 		if 'bounds' in datasetparams:
@@ -73,7 +79,7 @@ class Dataset(object):
 		step = months.step if months.step else 1
 		mos = range(months.start, months.stop+step, step)
 
-		if self.dataset_module.daily_files:
+		if self.weatherconfig['time_period'] == 'daily':
 			# Separate files for each day (eg MERRA)
 			# Check for complete set of files of year, month, day
 			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
@@ -82,42 +88,34 @@ class Dataset(object):
 				# format: (yr, mo, number_days_in_month)
 				yr, mo, nodays = mo_tuple
 				for day in range(1, nodays+1, 1):
-					for name, series in iteritems(self.weather_data_config):
-						# loop over files, encoded in dataset/* files
-						filename = self.datasetfn(series['fn'], yr, mo, day)
-						if not os.path.isfile( filename ):
-							self.prepared = False
-							if check_complete:
-								# logger.info("File `%s` not found!", filename)
-								incomplete_count += 1
-							self.toDownload.append((name, filename, self.datasetfn(series['url'], yr, mo, day)))
-						else:
-							self.downloadedFiles.append((name, filename))
-		else:
-			# Monthly files (eg ERA5)
+					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
+					self.totalFiles.append((self.config, filename))
+					if not os.path.isfile( filename ):
+						self.prepared = False
+						if check_complete:
+							logger.info("File `%s` not found!", filename)
+							incomplete_count += 1
+						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
+					else:
+						self.downloadedFiles.append((self.config, filename))
 
+		elif self.weatherconfig['time_period'] == 'monthly':
+			# Monthly files (eg ERA5)
 			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
 			for mo_tuple in mo_tuples:
 				yr, mo = mo_tuple
-				for name, series in iteritems(self.weather_data_config):
-					if 'fn' in series:
-						# loop over file templates, encoded in dataset/* file
-						filename = self.datasetfn(series['fn'], yr, mo)
-						if not os.path.isfile( filename ):
-							self.prepared = False
-							if check_complete:
-								# logger.info("File `%s` not found!", filename)
-								incomplete_count += 1
-							self.toDownload.append((name, filename, self.datasetfn(series['url'], yr, mo)))
-						else:
-							self.downloadedFiles.append((name, filename))
+				filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
+				self.totalFiles.append((self.config, filename))
+				if not os.path.isfile( filename ):
+					self.prepared = False
+					if check_complete:
+						logger.info("File `%s` not found!", filename)
+						incomplete_count += 1
+					self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo)))
+				else:
+					self.downloadedFiles.append((self.config, filename))
 
-					else:
-						# just check for the existence of one file according to template
-						if not glob.glob(self.datasetfn(series['template'], yr, mo)):
-							self.prepared = False
-							if check_complete:
-								logger.info("No file matching `%s` was found!", self.datasetfn(series['template'], yr, mo))
+		 # removed unneeded check for one file section
 
 		if not self.prepared:
 
@@ -157,47 +155,79 @@ class Dataset(object):
 		#	---------
 		#	trim: boolean
 		#		Run trim_variables function following each download
-		#	testing: boolean
-		#		(for testing purposes) Only download one file in the month
 		"""
+		# Changes 5/5/2020
+		# Testing parameter removed in favor of future functionality around daily downloads.
+		# Get data now happens on a per config basis, as dataset is also defined on a per-config basis.
+		# Dataset now updates to "prepared" status following completion of download, without having to
+		# redfine object.
 
 		self.savedFiles = []
 
-		weather_data = []
-		if wind:
-			weather_data.extend(self.dataset_module.wind_files)
-		if solar:
-			weather_data.extend(self.dataset_module.solar_files)
-		weather_data = list(set(weather_data))
-
-		# Loop through files identified as missing in constructor
 		count = 0
 		for f in self.toDownload:
-			if testing and (count == 1):
-				# (for testing purposes) download only the first file
-				continue
-			if f[0] in weather_data:
-				# File is in list of datasets we want to download
-				print(f)
+			print(f)
 
-				# Make the directory if not exists:
-				os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-
-				result = requests.get(f[2])
-				try:
+			# Make the directory if not exists:
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			result = requests.get(f[2])
+			try:
 					result.raise_for_status()
 					fout = open(f[1],'wb')
 					fout.write(result.content)
 					fout.close()
-					self.savedFiles.append((f[0], f[1]))
+					self.savedFiles.append((f[0], f[1])) # What is saved files being used for?
 					if trim:
 						self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar=solar )
-				except HTTPError as http_err:
+			except HTTPError as http_err:
 					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-				except Exception as err:
+			except Exception as err:
 					logger.warn(f'Other error occurred: {err}')  # Python 3.6
 					# logger.warn('requests.get() returned an error code '+str(result.status_code))
 			count += 1
+
+		if self.savedFiles == self.totalFiles: 
+			self.prepared = True	
+		# Added functionality to auto update dataset object
+		# to prepared = True upon completion of download.
+
+
+
+#		weather_data = []
+#		if wind:
+#			weather_data.extend(self.dataset_module.wind_files)
+#		if solar:
+#			weather_data.extend(self.dataset_module.solar_files)
+#		weather_data = list(set(weather_data))
+#
+#		# Loop through files identified as missing in constructor
+#		count = 0
+#		for f in self.toDownload:
+#			if testing and (count == 1):
+#				# (for testing purposes) download only the first file
+#				continue
+#			if f[0] in weather_data:
+#				# File is in list of datasets we want to download
+#				print(f)
+#
+#				# Make the directory if not exists:
+#				os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+
+#				result = requests.get(f[2])
+#				try:
+#					result.raise_for_status()
+#					fout = open(f[1],'wb')
+#					fout.write(result.content)
+#					fout.close()
+#					self.savedFiles.append((f[0], f[1]))
+#					if trim:
+#						self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar=solar )
+#				except HTTPError as http_err:
+#					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+#				except Exception as err:
+#					logger.warn(f'Other error occurred: {err}')  # Python 3.6
+					# logger.warn('requests.get() returned an error code '+str(result.status_code))
+#			count += 1 */
 
 	def trim_variables(self, fn = None, downloadedfiles = False, wind=True, solar=True):
 		""" Reduce size of file by trimming variables in file
@@ -251,6 +281,8 @@ class Dataset(object):
 
 			# Move temp file
 			shutil.move(target,f)
+
+
 
 	def set_saved_files(self):
 		self.savedFiles = [('surface_flux', '/Users/michd/Documents/GEODATA/data/merra2/2011/01/MERRA2_400.tavg1_2d_flx_Nx.20110101.nc4')]
