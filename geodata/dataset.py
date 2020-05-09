@@ -52,10 +52,16 @@ class Dataset(object):
 			self.months = months = slice(1,12)
 		else:
 			self.months = months = datasetparams['months']
+		
+		#TODO Better date handling that should require just input date string and output date string.
+		#if self.weatherconfig['time_period'] != 'daily' and "days" in datasetparams:
+		#	raise ValueError("Indicated data source is not daily.")
+		#else:
+		#	self.days = days = datasetparams['days'] ## need to indicate a better check here
 
 		self.prepared = False
 		self.toDownload = []
-		self.savedFiles = []
+		# self.savedFiles = []
 		self.downloadedFiles = []
 		self.totalFiles = []
 		incomplete_count = 0
@@ -162,7 +168,7 @@ class Dataset(object):
 		# Dataset now updates to "prepared" status following completion of download, without having to
 		# redfine object.
 
-		self.savedFiles = []
+		#self.savedFiles = []
 
 		count = 0
 		for f in self.toDownload:
@@ -176,7 +182,7 @@ class Dataset(object):
 					fout = open(f[1],'wb')
 					fout.write(result.content)
 					fout.close()
-					self.savedFiles.append((f[0], f[1])) # What is saved files being used for?
+					self.downloadedFiles.append((f[0], f[1])) # What is saved files being used for?
 					if trim:
 						self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar=solar )
 			except HTTPError as http_err:
@@ -186,7 +192,7 @@ class Dataset(object):
 					# logger.warn('requests.get() returned an error code '+str(result.status_code))
 			count += 1
 
-		if self.savedFiles == self.totalFiles: 
+		if self.downloadedFiles == self.totalFiles: 
 			self.prepared = True	
 		# Added functionality to auto update dataset object
 		# to prepared = True upon completion of download.
@@ -229,7 +235,7 @@ class Dataset(object):
 					# logger.warn('requests.get() returned an error code '+str(result.status_code))
 #			count += 1 */
 
-	def trim_variables(self, fn = None, downloadedfiles = False, wind=True, solar=True):
+	def trim_variables(self, fn = None, wind=True, solar=True):
 		""" Reduce size of file by trimming variables in file
 		# 	By default, keep variables related to wind (True) and solar (True)
 		#
@@ -243,35 +249,49 @@ class Dataset(object):
 		#
 		# TODO: create options for non NetCDF4 files (eg pynio)
 		"""
-
-		if downloadedfiles:
-			filelist = self.downloadedFiles
-		elif not fn is None:
-			filelist = fn
-		else:
-			filelist = self.savedFiles
-
-		for d, f in filelist:
-			# d = filetype (in weather_data_config), f = filename
-
-			# Construct list of variables to keep
-			vars = []
-			if wind and d in self.dataset_module.wind_files:
-				vars.extend(self.weather_data_config[d]['variables'])
-			if solar and d in self.dataset_module.solar_files:
-				vars.extend(self.weather_data_config[d]['variables'])
-			vars = list(set(vars))
-
+		
+		for d, f in self.downloadedFiles:
+			vars = self.weatherconfig['variables']
+			
 			with xr.open_dataset(f) as ds:
-				# vars to lower case
 				var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
 				ds = ds.rename(var_rename)
 				ds = ds[vars]
 
-				# Save to temp file
 				fd, target = mkstemp(suffix='.nc4')
 				os.close(fd)
 				ds.to_netcdf(target)
+
+			shutil.move(target,f)
+
+#		if downloadedfiles:
+#			filelist = self.downloadedFiles
+#		elif not fn is None:
+#			filelist = fn
+#		else:
+#			filelist = self.savedFiles
+
+		#for d, f in filelist:
+		#	# d = filetype (in weather_data_config), f = filename
+#
+#			# Construct list of variables to keep
+#			vars = []
+#			if wind and d in self.dataset_module.wind_files:
+#				vars.extend(self.weather_data_config[d]['variables'])
+#			if solar and d in self.dataset_module.solar_files:
+#				vars.extend(self.weather_data_config[d]['variables'])
+#			vars = list(set(vars))
+
+#			with xr.open_dataset(f) as ds:
+#				# vars to lower case
+#				var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
+#				ds = ds.rename(var_rename)
+#				ds = ds[vars]
+
+#				# Save to temp file
+#				fd, target = mkstemp(suffix='.nc4')
+#				os.close(fd)
+#				ds.to_netcdf(target)
 
 			#
 			# newf = os.path.join(os.path.dirname(f),'trim/',os.path.split(f)[1])
@@ -280,12 +300,12 @@ class Dataset(object):
 			# ds.to_netcdf(newf)
 
 			# Move temp file
-			shutil.move(target,f)
+#			shutil.move(target,f)
 
 
 
-	def set_saved_files(self):
-		self.savedFiles = [('surface_flux', '/Users/michd/Documents/GEODATA/data/merra2/2011/01/MERRA2_400.tavg1_2d_flx_Nx.20110101.nc4')]
+	#def set_saved_files(self):
+	#	self.savedFiles = [('surface_flux', '/Users/michd/Documents/GEODATA/data/merra2/2011/01/MERRA2_400.tavg1_2d_flx_Nx.20110101.nc4')]
 
 
 	@property
