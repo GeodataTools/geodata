@@ -9,11 +9,16 @@
 - When intializing list of data source filenames, Dataset now looks for `time_period` property in specified `weather_data_config`, rather than static value `dataset_module.daily_files`.
 - Cleaned up for loops for defining filenames to downlad (lines 85-118).  Both loops now work on a per-`config` basis rather than trying to account for multiple datasource in a single object.  Both loops now also only iterate through year-month tuples (monthly config) or year-month-day tuples (for daily) instead of nested loops through extra `config` setings.
 - Cleaned up log output in loops (lines 96, 112) to print only name of each missing file (previously was printing file name once per number of properties in `weather_data_confg`).
+- Removed references to `savedFiles` in favor of `downloadedFiles`.
 
 * [`get_data()`]
 - Testing parameter removed in favor of future functionality around daily downloads (ie, no need for an explicit option to download only one file).
 - Download for loop now only uses filename list (`self.toDownload`) as defined on initialization of Dataset object - ie now only downloads files from a single data source as defined by the config defined in `self.weatherconfig`. Method previously tried to account for files across multiple sources (ie, a wind source and a solar source).
 - `self.prepared` now auto-updates to `true` when `get_data()` successfully downloads all files.
+
+* [`trim_variables()`]
+- Now only refers to `downloadedFiles`.
+- Now only refers to variables defined in Dataset's `weatherconfig`.
 
 ### merra2.py
 * [`weather_data_config`]
