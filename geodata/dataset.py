@@ -29,7 +29,7 @@ class Dataset(object):
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
 		if 'weather_data_config' not in datasetparams:
-			raise ValueError("`config` needs to be specified")
+			raise ValueError("`weather_data_config` needs to be specified")
 		self.module = datasetparams.pop('module')
 		self.config = datasetparams.pop('weather_data_config')
 		# load module from geodata library
