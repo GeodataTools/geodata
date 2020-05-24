@@ -34,9 +34,12 @@ class Dataset(object):
 		self.config = datasetparams.pop('weather_data_config')
 		# load module from geodata library
 		self.dataset_module = sys.modules['geodata.datasets.' + self.module]
-		
 		self.weatherconfig = self.weather_data_config[self.config]
-
+		#self.meta_data_config = dict(
+		#	prepare_func=self.weatherconfig['prepare_func'],
+		#	template=self.weatherconfig['template']
+		#	)
+		
 		if 'datadir' in datasetparams:
 			logger.info("Manual data directory entry not supported. Change in config.py file.")
 		# 	self.datadir = datasetparams.pop('datadir')
@@ -310,7 +313,11 @@ class Dataset(object):
 
 	@property
 	def meta_data_config(self):
-		return self.dataset_module.meta_data_config
+		return dict(
+			prepare_func=self.weatherconfig['meta_prepare_func'],
+			template=self.weatherconfig['template'],
+			time_period=self.weatherconfig['time_period']
+			)
 
 	@property
 	def weather_data_config(self):

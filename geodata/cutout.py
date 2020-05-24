@@ -46,6 +46,8 @@ class Cutout(object):
 		self.cutout_dir = os.path.join(cutout_dir, name)
 		self.prepared = False
 		self.meta_append = 0
+		self.config = cutoutparams.pop('weather_data_config')
+		
 
 		if 'bounds' in cutoutparams:
 			# if passed bounds array instead of xs, ys slices
@@ -66,15 +68,10 @@ class Cutout(object):
 			logger.info("No months specified, defaulting to 1-12")
 			cutoutparams.update(months=slice(1, 12))
 
-		if 'bounds' in cutoutparams:
-			# if passed bounds array instead of xs, ys slices
-			x1, y1, x2, y2 = cutoutparams.pop('bounds')
-			cutoutparams.update(xs=slice(x1, x2),
-								ys=slice(y1, y2))
-
 		# Check if cutout dir and files already exists:
+		# here = 
 		if os.path.isdir(self.cutout_dir):
-			if os.path.isfile(self.datasetfn()):
+			if os.path.isfile(self.datasetfn()):  ## creates meta file
 				self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
 			else:
 				self.meta = meta = None
@@ -82,6 +79,7 @@ class Cutout(object):
 			# if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
 			# 	# Meta file exists and all files indicated by it exists
 			# 	self.meta_append = 1
+			xr.open_dataset("soething").stack
 
 			if not meta is None and 'years' in cutoutparams and\
 									'months' in cutoutparams and\
@@ -91,6 +89,7 @@ class Cutout(object):
 				if 'module' not in meta.attrs:
 					raise TypeError('No module given in meta file of cutout.')
 				# load dataset module based on file metadata
+
 				self.dataset_module = sys.modules['geodata.datasets.' + meta.attrs['module']]
 				cutoutparams['module'] = meta.attrs['module']
 
@@ -138,6 +137,7 @@ class Cutout(object):
 
 	def datasetfn(self, *args):
 		#    Link to dataset (default to meta.nc)
+		# 
 		dataset = None
 
 		if len(args) == 2:
@@ -152,7 +152,17 @@ class Cutout(object):
 
 	@property
 	def meta_data_config(self):
-		return self.dataset_module.meta_data_config
+		return dict(
+			prepare_func=self.dataset_module.weather_data_config[self.config]['meta_prepare_func'],
+			template=self.dataset_module.weather_data_config[self.config]['template'],
+			time_period=self.dataset_module.weather_data_config[self.config]['time_period']
+		)
+		#return self.dataset_module.meta_data_config
+		## Step 2 - Change this to pull from
+		## dict(
+		##	prepare_func=self.weatherconfig['prepare_func'],
+		##	template=self.weatherconfig['template']
+		
 
 	@property
 	def weather_data_config(self):
