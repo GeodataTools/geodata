@@ -2,6 +2,12 @@
 
 ## Merra2 Monthly Update
 
+### cutout.py
+* [`cutoutparams`]
+- Added `weather_data_config` to `cutoutparams` in order to allow per-config specification of cutout file granularity and prepare function. `weather_data_config` for a given cutout should be the same as the dataset used to download the source data files.  A future improvement could make this config parameter auto-populate from the source datafiles.
+- Updated `meta_data_config` property so that it is built directly from the module's `weather_data_config`.
+- Added `file_granularity` to `meta_data_config` property so that proper file granularity can be accounted for when defining tasks for cutout preparation.
+
 ### dataset.py
 * [`Dataset`]
 - Added param `weather_data_config` to object initialization.  Dataset objects now to be associated with a given `config` as defined in the `weather_data_confg` of the relevant data source module. Config name accessed at `self.config`, config details accessed at `self.weatherconfig`.
@@ -24,7 +30,8 @@
 * [`weather_data_config`]
 - Added entry `surface_flux_monthly` for Monthly Merra2 data (ADD LINK HERE)
 - To all entry added `file_granularity` property to indicated time granularity for file download.
-
+* Preparation functions
+- Separated cutout task preparation function into `tasks_monthly_merra2` and `tasks_daily_merra2` to account for differences in file structure between daily and hourly file granularities.
 
 
 ## Documentation - 04/10/20
