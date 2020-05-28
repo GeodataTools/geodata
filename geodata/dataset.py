@@ -165,13 +165,6 @@ class Dataset(object):
 		#	trim: boolean
 		#		Run trim_variables function following each download
 		"""
-		# Changes 5/5/2020
-		# Testing parameter removed in favor of future functionality around daily downloads.
-		# Get data now happens on a per config basis, as dataset is also defined on a per-config basis.
-		# Dataset now updates to "prepared" status following completion of download, without having to
-		# redfine object.
-
-		#self.savedFiles = []
 
 		count = 0
 		for f in self.toDownload:
@@ -197,46 +190,6 @@ class Dataset(object):
 
 		if self.downloadedFiles == self.totalFiles: 
 			self.prepared = True	
-		# Added functionality to auto update dataset object
-		# to prepared = True upon completion of download.
-
-
-
-#		weather_data = []
-#		if wind:
-#			weather_data.extend(self.dataset_module.wind_files)
-#		if solar:
-#			weather_data.extend(self.dataset_module.solar_files)
-#		weather_data = list(set(weather_data))
-#
-#		# Loop through files identified as missing in constructor
-#		count = 0
-#		for f in self.toDownload:
-#			if testing and (count == 1):
-#				# (for testing purposes) download only the first file
-#				continue
-#			if f[0] in weather_data:
-#				# File is in list of datasets we want to download
-#				print(f)
-#
-#				# Make the directory if not exists:
-#				os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-
-#				result = requests.get(f[2])
-#				try:
-#					result.raise_for_status()
-#					fout = open(f[1],'wb')
-#					fout.write(result.content)
-#					fout.close()
-#					self.savedFiles.append((f[0], f[1]))
-#					if trim:
-#						self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar=solar )
-#				except HTTPError as http_err:
-#					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-#				except Exception as err:
-#					logger.warn(f'Other error occurred: {err}')  # Python 3.6
-					# logger.warn('requests.get() returned an error code '+str(result.status_code))
-#			count += 1 */
 
 	def trim_variables(self, fn = None, wind=True, solar=True):
 		""" Reduce size of file by trimming variables in file
@@ -266,50 +219,6 @@ class Dataset(object):
 				ds.to_netcdf(target)
 
 			shutil.move(target,f)
-
-#		if downloadedfiles:
-#			filelist = self.downloadedFiles
-#		elif not fn is None:
-#			filelist = fn
-#		else:
-#			filelist = self.savedFiles
-
-		#for d, f in filelist:
-		#	# d = filetype (in weather_data_config), f = filename
-#
-#			# Construct list of variables to keep
-#			vars = []
-#			if wind and d in self.dataset_module.wind_files:
-#				vars.extend(self.weather_data_config[d]['variables'])
-#			if solar and d in self.dataset_module.solar_files:
-#				vars.extend(self.weather_data_config[d]['variables'])
-#			vars = list(set(vars))
-
-#			with xr.open_dataset(f) as ds:
-#				# vars to lower case
-#				var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
-#				ds = ds.rename(var_rename)
-#				ds = ds[vars]
-
-#				# Save to temp file
-#				fd, target = mkstemp(suffix='.nc4')
-#				os.close(fd)
-#				ds.to_netcdf(target)
-
-			#
-			# newf = os.path.join(os.path.dirname(f),'trim/',os.path.split(f)[1])
-			# # Make the directory if not exists:
-			# os.makedirs(os.path.dirname(newf), exist_ok=True)
-			# ds.to_netcdf(newf)
-
-			# Move temp file
-#			shutil.move(target,f)
-
-
-
-	#def set_saved_files(self):
-	#	self.savedFiles = [('surface_flux', '/Users/michd/Documents/GEODATA/data/merra2/2011/01/MERRA2_400.tavg1_2d_flx_Nx.20110101.nc4')]
-
 
 	@property
 	def meta_data_config(self):
