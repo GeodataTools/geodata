@@ -2,6 +2,9 @@
 
 ## Merra2 Monthly Update
 
+### tests
+* Added `merra2_hourly_test.ipynb` and `merra2_monthly_test.ipynb` for simple functionality testing.
+
 ### cutout.py
 * [`cutoutparams`]
 - Added `weather_data_config` to `cutoutparams` in order to allow per-config specification of cutout file granularity and prepare function. `weather_data_config` for a given cutout should be the same as the dataset used to download the source data files.  A future improvement could make this config parameter auto-populate from the source datafiles.
