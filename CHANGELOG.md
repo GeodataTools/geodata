@@ -33,6 +33,10 @@
 * Preparation functions
 - Separated cutout task preparation function into `tasks_monthly_merra2` and `tasks_daily_merra2` to account for differences in file structure between daily and hourly file granularities.
 
+### preparation.py
+* [123-131] - List of tasks for cutout preparation now accounts for differences between file granularites as specifiec in source `weather_data_confg`.
+* [218-233] - Timestamp construction now depending on source config `file_granularity`.
+
 
 ## Documentation - 04/10/20
 
