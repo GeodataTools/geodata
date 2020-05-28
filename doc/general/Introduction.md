@@ -13,12 +13,12 @@ The **geodata** package is a fork of [atlite](https://github.com/PyPSA/atlite), 
 ## Inputs
 **Geodata** is currently optimized to work with the following datasets:
 * [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
+* [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
 * [ERA5 hourly data on single levels](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
 * Functionality and documentation for additional datasets is planned.
 
 ## Outputs
 The following outputs are currrently supported:
 * Wind power generation
-* [to fill out as outputs are better understood]
 
 
