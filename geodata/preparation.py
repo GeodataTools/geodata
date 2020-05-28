@@ -211,12 +211,12 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 
 	# with metadata, load various parameters
-	meta_time_period = meta_kwds.pop('time_period');
+	meta_file_granularity = meta_kwds.pop('file_granularity');
 	month_start = pd.Timestamp("{}-{}".format(years.stop, months.stop))
 	ds.coords["year"] = range(years.start, years.stop+1)
 	ds.coords["month"] = range(months.start, months.stop+1)
 
-	if meta_time_period == 'daily':
+	if meta_file_granularity == 'daily':
 		start, second, end = map(pd.Timestamp, ds.coords['time'].values[[0, 1, -1]])
 		offset_start = (start - month_start)
 		offset_end = (end - (month_start + pd.offsets.MonthBegin()))
@@ -225,7 +225,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 			start=pd.Timestamp("{}-{}".format(years.start, months.start)) + offset_start,
 			end=(month_start + pd.offsets.MonthBegin() + offset_end),
 			freq='h' if step == 1 else ('%dh' % step))
-	elif meta_time_period == 'monthly':
+	elif meta_file_granularity == 'monthly':
 		ds.coords["time"] = pd.date_range(
 			start=pd.Timestamp("{}-{}".format(years.start, months.start)),
 			end=pd.Timestamp("{}-{}".format(years.stop, months.stop)),

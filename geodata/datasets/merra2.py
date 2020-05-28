@@ -205,8 +205,8 @@ weather_data_config = {
 #	Single file contains all wind variables (≠ ncep)
 #	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year) before downloading
 # 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
-	'surface_flux': dict( # call hourly - clear periods - notation
-		time_period="daily",
+	'surface_flux_hourly': dict(
+		file_granularity="daily",
 		tasks_func=tasks_daily_merra2,
 		meta_prepare_func=prepare_meta_merra2,
 		prepare_func=prepare_month_surface_flux,
@@ -217,7 +217,7 @@ weather_data_config = {
 #	TODO: solar radiation data
 						),
 	'surface_flux_monthly': dict(
-		time_period="monthly",
+		file_granularity="monthly",
 		tasks_func=tasks_monthly_merra2,
 		meta_prepare_func=prepare_meta_merra2,
 		prepare_func=prepare_month_surface_flux,

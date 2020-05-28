@@ -6,7 +6,7 @@
 * [`Dataset`]
 - Added param `weather_data_config` to object initialization.  Dataset objects now to be associated with a given `config` as defined in the `weather_data_confg` of the relevant data source module. Config name accessed at `self.config`, config details accessed at `self.weatherconfig`.
 - Added param `totalFiles` to keep list of all data source files associated with Dataset object, regardless of `self.prepared` value.
-- When intializing list of data source filenames, Dataset now looks for `time_period` property in specified `weather_data_config`, rather than static value `dataset_module.daily_files`.
+- When intializing list of data source filenames, Dataset now looks for `file_granularity` property in specified `weather_data_config`, rather than static value `dataset_module.daily_files`.
 - Cleaned up for loops for defining filenames to downlad (lines 85-118).  Both loops now work on a per-`config` basis rather than trying to account for multiple datasource in a single object.  Both loops now also only iterate through year-month tuples (monthly config) or year-month-day tuples (for daily) instead of nested loops through extra `config` setings.
 - Cleaned up log output in loops (lines 96, 112) to print only name of each missing file (previously was printing file name once per number of properties in `weather_data_confg`).
 - Removed references to `savedFiles` in favor of `downloadedFiles`.
@@ -23,7 +23,7 @@
 ### merra2.py
 * [`weather_data_config`]
 - Added entry `surface_flux_monthly` for Monthly Merra2 data (ADD LINK HERE)
-- To all entry added `time_period` property to indicated time granularity for file download.
+- To all entry added `file_granularity` property to indicated time granularity for file download.
 
 
 

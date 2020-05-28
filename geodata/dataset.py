@@ -57,7 +57,7 @@ class Dataset(object):
 			self.months = months = datasetparams['months']
 		
 		#TODO Better date handling that should require just input date string and output date string.
-		#if self.weatherconfig['time_period'] != 'daily' and "days" in datasetparams:
+		#if self.weatherconfig['file_granularity'] != 'daily' and "days" in datasetparams:
 		#	raise ValueError("Indicated data source is not daily.")
 		#else:
 		#	self.days = days = datasetparams['days'] ## need to indicate a better check here
@@ -88,7 +88,7 @@ class Dataset(object):
 		step = months.step if months.step else 1
 		mos = range(months.start, months.stop+step, step)
 
-		if self.weatherconfig['time_period'] == 'daily':
+		if self.weatherconfig['file_granularity'] == 'daily':
 			# Separate files for each day (eg MERRA)
 			# Check for complete set of files of year, month, day
 			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
@@ -108,7 +108,7 @@ class Dataset(object):
 					else:
 						self.downloadedFiles.append((self.config, filename))
 
-		elif self.weatherconfig['time_period'] == 'monthly':
+		elif self.weatherconfig['file_granularity'] == 'monthly':
 			# Monthly files (eg ERA5)
 			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
 			for mo_tuple in mo_tuples:
@@ -316,7 +316,7 @@ class Dataset(object):
 		return dict(
 			prepare_func=self.weatherconfig['meta_prepare_func'],
 			template=self.weatherconfig['template'],
-			time_period=self.weatherconfig['time_period']
+			file_granularity=self.weatherconfig['file_granularity']
 			)
 
 	@property
@@ -339,8 +339,7 @@ class Dataset(object):
 	def extent(self):
 		return (list(self.coords["x"].values[[0, -1]]) +
 				list(self.coords["y"].values[[-1, 0]]))
-
-
+				
 	def grid_coordinates(self):
 		xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
 		return np.asarray((np.ravel(xs), np.ravel(ys))).T

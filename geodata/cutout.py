@@ -27,7 +27,6 @@ import numpy as np
 import os, sys
 from six import string_types, itervalues, iteritems
 
-
 import logging
 logger = logging.getLogger(__name__)
 
@@ -155,7 +154,7 @@ class Cutout(object):
 		return dict(
 			prepare_func=self.dataset_module.weather_data_config[self.config]['meta_prepare_func'],
 			template=self.dataset_module.weather_data_config[self.config]['template'],
-			time_period=self.dataset_module.weather_data_config[self.config]['time_period']
+			file_granularity=self.dataset_module.weather_data_config[self.config]['file_granularity']
 		)
 		#return self.dataset_module.meta_data_config
 		## Step 2 - Change this to pull from
