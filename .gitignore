@@ -18,3 +18,5 @@ geodata/merra_starter.ipynb
 era5_starter.ipynb
 trim/
 
+geodata/config.py
+
