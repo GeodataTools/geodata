@@ -78,7 +78,6 @@ class Cutout(object):
 			# if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
 			# 	# Meta file exists and all files indicated by it exists
 			# 	self.meta_append = 1
-			xr.open_dataset("soething").stack
 
 			if not meta is None and 'years' in cutoutparams and\
 									'months' in cutoutparams and\
@@ -152,6 +151,7 @@ class Cutout(object):
 	@property
 	def meta_data_config(self):
 		return dict(
+			tasks_func=self.dataset_module.weather_data_config[self.config]['tasks_func'],
 			prepare_func=self.dataset_module.weather_data_config[self.config]['meta_prepare_func'],
 			template=self.dataset_module.weather_data_config[self.config]['template'],
 			file_granularity=self.dataset_module.weather_data_config[self.config]['file_granularity']

@@ -122,7 +122,7 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		# .. or multiple tasks and prepares (eg prepare_influx_ncep)
 	series = cutout.weather_data_config[cutout.config]
 	series['meta_attrs'] = cutout.meta.attrs
-	tasks_func = series.pop('tasks_func')
+	tasks_func = series['tasks_func']
 
 	# form call to task_func (eg tasks_monthly_ncep)
 	# .. **series contains prepare_func
@@ -183,7 +183,7 @@ def cutout_produce_specific_dataseries(cutout, yearmonth, series_name):
 	ys = cutout.coords['y']
 	series = cutout.weather_data_config[series_name].copy()
 	series['meta_attrs'] = cutout.meta.attrs
-	tasks_func = series.pop('tasks_func')
+	tasks_func = series['tasks_func']
 	tasks = tasks_func(xs=xs, ys=ys, yearmonths=[yearmonth], **series)
 
 	assert len(tasks) == 1
@@ -203,6 +203,9 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 	meta_kwds = cutout.meta_data_config.copy()
 	meta_kwds.update(dataset_params)
+
+	# Assign task function here?
+	tasks_func = meta_kwds['tasks_func']
 
 	# Get metadata (eg prepare_meta_merra2)
 	prepare_func = meta_kwds.pop('prepare_func')
