@@ -2,11 +2,19 @@
 
 A list of currently possible **geodata** configs and outputs for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
+## Dataset Configurations
+
+**geodata** is currently optimized to work with the following MERRA2 datasets:
+
+* `surface_flux_hourly`: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
+* `surface_flux_monthly`: [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
+
+
 ## Variable Configurations
 
 MERRA2 surface flux data currently supports the following variable configs:
 
-**Wind** (`surface_flux`):
+**Wind** (`surface_flux_hourly`, `surface_flux_monthly`):
 * ustar: surface_velocity_scale (m s-1)
 * z0m: surface_roughness (m)
 * disph: zero_plane_displacement_height (m)
@@ -20,7 +28,7 @@ MERRA2 surface flux data currently supports the following variable configs:
 * hflux: sensible_heat_flux_from_turbulence (W m-2)
 * eflux: total_latent_energy_flux (W m-2)
 
-**Solar** (`TBD`)
+**Solar** (`surface_flux_hourly`, `surface_flux_monthly`)
 
 ## Outputs
 

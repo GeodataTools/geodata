@@ -28,10 +28,18 @@ class Dataset(object):
 	def __init__(self, **datasetparams):
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
+		if 'weather_data_config' not in datasetparams:
+			raise ValueError("`weather_data_config` needs to be specified")
 		self.module = datasetparams.pop('module')
+		self.config = datasetparams.pop('weather_data_config')
 		# load module from geodata library
 		self.dataset_module = sys.modules['geodata.datasets.' + self.module]
-
+		self.weatherconfig = self.weather_data_config[self.config]
+		#self.meta_data_config = dict(
+		#	prepare_func=self.weatherconfig['prepare_func'],
+		#	template=self.weatherconfig['template']
+		#	)
+		
 		if 'datadir' in datasetparams:
 			logger.info("Manual data directory entry not supported. Change in config.py file.")
 		# 	self.datadir = datasetparams.pop('datadir')
@@ -47,11 +55,18 @@ class Dataset(object):
 			self.months = months = slice(1,12)
 		else:
 			self.months = months = datasetparams['months']
+		
+		#TODO Better date handling that should require just input date string and output date string.
+		#if self.weatherconfig['file_granularity'] != 'daily' and "days" in datasetparams:
+		#	raise ValueError("Indicated data source is not daily.")
+		#else:
+		#	self.days = days = datasetparams['days'] ## need to indicate a better check here
 
 		self.prepared = False
 		self.toDownload = []
-		self.savedFiles = []
+		# self.savedFiles = []
 		self.downloadedFiles = []
+		self.totalFiles = []
 		incomplete_count = 0
 
 		if 'bounds' in datasetparams:
@@ -73,7 +88,7 @@ class Dataset(object):
 		step = months.step if months.step else 1
 		mos = range(months.start, months.stop+step, step)
 
-		if self.dataset_module.daily_files:
+		if self.weatherconfig['file_granularity'] == 'daily':
 			# Separate files for each day (eg MERRA)
 			# Check for complete set of files of year, month, day
 			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
@@ -82,42 +97,34 @@ class Dataset(object):
 				# format: (yr, mo, number_days_in_month)
 				yr, mo, nodays = mo_tuple
 				for day in range(1, nodays+1, 1):
-					for name, series in iteritems(self.weather_data_config):
-						# loop over files, encoded in dataset/* files
-						filename = self.datasetfn(series['fn'], yr, mo, day)
-						if not os.path.isfile( filename ):
-							self.prepared = False
-							if check_complete:
-								# logger.info("File `%s` not found!", filename)
-								incomplete_count += 1
-							self.toDownload.append((name, filename, self.datasetfn(series['url'], yr, mo, day)))
-						else:
-							self.downloadedFiles.append((name, filename))
-		else:
-			# Monthly files (eg ERA5)
+					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
+					self.totalFiles.append((self.config, filename))
+					if not os.path.isfile( filename ):
+						self.prepared = False
+						if check_complete:
+							logger.info("File `%s` not found!", filename)
+							incomplete_count += 1
+						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
+					else:
+						self.downloadedFiles.append((self.config, filename))
 
+		elif self.weatherconfig['file_granularity'] == 'monthly':
+			# Monthly files (eg ERA5)
 			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
 			for mo_tuple in mo_tuples:
 				yr, mo = mo_tuple
-				for name, series in iteritems(self.weather_data_config):
-					if 'fn' in series:
-						# loop over file templates, encoded in dataset/* file
-						filename = self.datasetfn(series['fn'], yr, mo)
-						if not os.path.isfile( filename ):
-							self.prepared = False
-							if check_complete:
-								# logger.info("File `%s` not found!", filename)
-								incomplete_count += 1
-							self.toDownload.append((name, filename, self.datasetfn(series['url'], yr, mo)))
-						else:
-							self.downloadedFiles.append((name, filename))
+				filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
+				self.totalFiles.append((self.config, filename))
+				if not os.path.isfile( filename ):
+					self.prepared = False
+					if check_complete:
+						logger.info("File `%s` not found!", filename)
+						incomplete_count += 1
+					self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo)))
+				else:
+					self.downloadedFiles.append((self.config, filename))
 
-					else:
-						# just check for the existence of one file according to template
-						if not glob.glob(self.datasetfn(series['template'], yr, mo)):
-							self.prepared = False
-							if check_complete:
-								logger.info("No file matching `%s` was found!", self.datasetfn(series['template'], yr, mo))
+		 # removed unneeded check for one file section
 
 		if not self.prepared:
 
@@ -157,49 +164,34 @@ class Dataset(object):
 		#	---------
 		#	trim: boolean
 		#		Run trim_variables function following each download
-		#	testing: boolean
-		#		(for testing purposes) Only download one file in the month
 		"""
 
-		self.savedFiles = []
-
-		weather_data = []
-		if wind:
-			weather_data.extend(self.dataset_module.wind_files)
-		if solar:
-			weather_data.extend(self.dataset_module.solar_files)
-		weather_data = list(set(weather_data))
-
-		# Loop through files identified as missing in constructor
 		count = 0
 		for f in self.toDownload:
-			if testing and (count == 1):
-				# (for testing purposes) download only the first file
-				continue
-			if f[0] in weather_data:
-				# File is in list of datasets we want to download
-				print(f)
+			print(f)
 
-				# Make the directory if not exists:
-				os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-
-				result = requests.get(f[2])
-				try:
+			# Make the directory if not exists:
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			result = requests.get(f[2])
+			try:
 					result.raise_for_status()
 					fout = open(f[1],'wb')
 					fout.write(result.content)
 					fout.close()
-					self.savedFiles.append((f[0], f[1]))
+					self.downloadedFiles.append((f[0], f[1])) # What is saved files being used for?
 					if trim:
 						self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar=solar )
-				except HTTPError as http_err:
+			except HTTPError as http_err:
 					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-				except Exception as err:
+			except Exception as err:
 					logger.warn(f'Other error occurred: {err}')  # Python 3.6
 					# logger.warn('requests.get() returned an error code '+str(result.status_code))
 			count += 1
 
-	def trim_variables(self, fn = None, downloadedfiles = False, wind=True, solar=True):
+		if self.downloadedFiles == self.totalFiles: 
+			self.prepared = True	
+
+	def trim_variables(self, fn = None, wind=True, solar=True):
 		""" Reduce size of file by trimming variables in file
 		# 	By default, keep variables related to wind (True) and solar (True)
 		#
@@ -213,52 +205,29 @@ class Dataset(object):
 		#
 		# TODO: create options for non NetCDF4 files (eg pynio)
 		"""
-
-		if downloadedfiles:
-			filelist = self.downloadedFiles
-		elif not fn is None:
-			filelist = fn
-		else:
-			filelist = self.savedFiles
-
-		for d, f in filelist:
-			# d = filetype (in weather_data_config), f = filename
-
-			# Construct list of variables to keep
-			vars = []
-			if wind and d in self.dataset_module.wind_files:
-				vars.extend(self.weather_data_config[d]['variables'])
-			if solar and d in self.dataset_module.solar_files:
-				vars.extend(self.weather_data_config[d]['variables'])
-			vars = list(set(vars))
-
+		
+		for d, f in self.downloadedFiles:
+			vars = self.weatherconfig['variables']
+			
 			with xr.open_dataset(f) as ds:
-				# vars to lower case
 				var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
 				ds = ds.rename(var_rename)
 				ds = ds[vars]
 
-				# Save to temp file
 				fd, target = mkstemp(suffix='.nc4')
 				os.close(fd)
 				ds.to_netcdf(target)
 
-			#
-			# newf = os.path.join(os.path.dirname(f),'trim/',os.path.split(f)[1])
-			# # Make the directory if not exists:
-			# os.makedirs(os.path.dirname(newf), exist_ok=True)
-			# ds.to_netcdf(newf)
-
-			# Move temp file
 			shutil.move(target,f)
-
-	def set_saved_files(self):
-		self.savedFiles = [('surface_flux', '/Users/michd/Documents/GEODATA/data/merra2/2011/01/MERRA2_400.tavg1_2d_flx_Nx.20110101.nc4')]
-
 
 	@property
 	def meta_data_config(self):
-		return self.dataset_module.meta_data_config
+		return dict(
+			tasks_func=self.weatherconfig['tasks_func'],
+			prepare_func=self.weatherconfig['meta_prepare_func'],
+			template=self.weatherconfig['template'],
+			file_granularity=self.weatherconfig['file_granularity']
+			)
 
 	@property
 	def weather_data_config(self):
@@ -280,8 +249,7 @@ class Dataset(object):
 	def extent(self):
 		return (list(self.coords["x"].values[[0, -1]]) +
 				list(self.coords["y"].values[[-1, 0]]))
-
-
+				
 	def grid_coordinates(self):
 		xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
 		return np.asarray((np.ravel(xs), np.ravel(ys))).T

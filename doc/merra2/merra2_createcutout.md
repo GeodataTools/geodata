@@ -19,15 +19,16 @@ import atlite
 A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the directory `cutout_dir` configured in `config.py` (to set up `config.py`, see here LINK HERE)
 
 ```
-cutout = atlite.Cutout(name="merra2-europe-sub24-2011-01",
+cutout = geodata.Cutout(name="merra2-europe-sub24-2011-01",
                        module="merra2",
+                       weather_data_config="surface_flux_hourly",
                        xs=slice(30, 41.56244222),
                        ys=slice(33.56459975, 35),
                        years=slice(2011, 2011),
                        months=slice(1,1))
 ```
 
-To prepare a cutout, the following must be specified for `atlite.Cutout()`:
+To prepare a cutout, the following must be specified for `geodata.Cutout()`:
 
 * The cutout name
 * The source dataset
@@ -51,7 +52,7 @@ To create a cutout, run:
 ```
 cutout.prepare();
 ```
-The **geodata** package will create a folder in the cutout directory (`cutout_dir`) you specified in `config.py` with the name specified in `atlite.Cutout()` (in the above example, `merra2-europe-sub24-2011-01`).  The folder, depending on the date range, will then contain one or more netcdf files containing data from the original MERRA2 files falling within the temporal and geographical ranges indicated when the cutout was created.
+The **geodata** package will create a folder in the cutout directory (`cutout_dir`) you specified in `config.py` with the name specified in `geodata.Cutout()` (in the above example, `merra2-europe-sub24-2011-01`).  The folder, depending on the date range, will then contain one or more netcdf files containing data from the original MERRA2 files falling within the temporal and geographical ranges indicated when the cutout was created.
 
 Before running `cutout.prepare()`, **geodata** will check for the presence of the cutout and abort if the cutout already exists.  If you want to force the regeneration of a cutout, run the command with the parameter `overwrite=True`.
 
@@ -144,10 +145,10 @@ To understand the variables that were downloaded, you can run:
 cutout.dataset_module.weather_data_config
 ```
 
-Which will return the selected download settings for the MERRA2 data.  Currently, **geodata** only supports downloads for the `surface_flux` configuration.
+Which will return the selected download settings for the MERRA2 data.
 
 ```
-{'surface_flux': {'tasks_func': <function atlite.datasets.merra2.tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs)>,
+{'surface_flux_hourly': {'tasks_func': <function atlite.datasets.merra2.tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs)>,
   'prepare_func': <function atlite.datasets.merra2.prepare_month_surface_flux(fn, year, month, xs, ys)>,
   'template': '/Users/johndoe/data_for_geodata/merra2/{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4',
   'url': 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
@@ -166,10 +167,10 @@ Which will return the selected download settings for the MERRA2 data.  Currently
    'eflux']}}
 ```
 
-To get just the variables that were downloaded for the `surface_flux` configuration, you can run:
+To get just the variables that were downloaded for the `surface_flux_hourly` configuration, you can run:
 
 ```
-cutout.dataset_module.weather_data_config['surface_flux']['variables']
+cutout.dataset_module.weather_data_config['surface_flux_hourly']['variables']
 ```
 
 Which will return a list of the variables included in the cutout when downloaded:

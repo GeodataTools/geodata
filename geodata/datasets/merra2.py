@@ -167,7 +167,7 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
 		# 	ds[a].attrs['units'] = 'W m**-2'
 
 
-def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
+def tasks_daily_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	if not isinstance(xs, slice):
 		xs = slice(*xs.values[[0, -1]])
 	if not isinstance(ys, slice):
@@ -183,30 +183,68 @@ def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 				 fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year)) )
 				 for year, month in yearmonths for day in range(1, monthrange(year,month)[1]+1, 1)]
 
+def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
+	if not isinstance(xs, slice):
+		xs = slice(*xs.values[[0, -1]])
+	if not isinstance(ys, slice):
+		ys = slice(*ys.values[[0, -1]])
+	fn = meta_attrs['fn']
+
+	logger.info(yearmonths)
+	logger.info([(year, month) for year, month in yearmonths])
+
+	return [dict(prepare_func=prepare_func,
+				 xs=xs, ys=ys,
+				 year=year, month=month,
+				 fn=fn.format(year=year, month=month, spinup=spinup_year(year)) )
+				 for year, month in yearmonths]
+
+
+
 weather_data_config = {
 #	Single file contains all wind variables (≠ ncep)
 #	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year) before downloading
 # 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
-	'surface_flux': dict(tasks_func=tasks_monthly_merra2,
-						prepare_func=prepare_month_surface_flux,
-						template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'),
-						url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
-						fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
-						variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
+	'surface_flux_hourly': dict(
+		file_granularity="daily",
+		tasks_func=tasks_daily_merra2,
+		meta_prepare_func=prepare_meta_merra2,
+		prepare_func=prepare_month_surface_flux,
+		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'),
+		url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
+		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
+		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
+
+		# variables = dict(
+		#	solar: 
+		#   wind:
+		#)
 #	TODO: solar radiation data
-						)
+						),
+	'surface_flux_monthly': dict(
+		file_granularity="monthly",
+		tasks_func=tasks_monthly_merra2,
+		meta_prepare_func=prepare_meta_merra2,
+		prepare_func=prepare_month_surface_flux,
+		template=os.path.join(merra2_dir, '{year}/MERRA2_*.tavgM_2d_flx_Nx.*.nc4'),
+	    url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4',
+		fn = os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4'),
+		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
+		)
 }
 
 # list of routines in weather_data_config to download wind data
 wind_files = ['surface_flux']
+
 # TODO: same for solar
 solar_files = []
 
-meta_data_config = dict(prepare_func=prepare_meta_merra2,
-						template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'))
+## Whatever is calling this needs to be directed to the correct weather config instead
+#meta_data_config = dict(prepare_func=prepare_meta_merra2,
+#						 template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'))
 
 # Separate files for each day (coded in weather_data_config list)
-daily_files = True
+#daily_files = True # needs to be specified somewhere else
 
 # Latitude stored south to north (ie forward, = True) or north to south
 lat_direction = True

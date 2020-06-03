@@ -115,19 +115,20 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 
 	# Compute data and fill files
 	tasks = []
-	for series in itervalues(cutout.weather_data_config):
+
+	#for series in itervalues(cutout.weather_data_config[cutout.config]):
 		# dict of tasks w/structure (tasks_func, prepare_func)
 		# .. could be one task and prepare (eg prepare_month_era5)
 		# .. or multiple tasks and prepares (eg prepare_influx_ncep)
-		series = series.copy()
-		series['meta_attrs'] = cutout.meta.attrs
-		tasks_func = series.pop('tasks_func')
+	series = cutout.weather_data_config[cutout.config]
+	series['meta_attrs'] = cutout.meta.attrs
+	tasks_func = series['tasks_func']
 
-		# form call to task_func (eg tasks_monthly_ncep)
-		# .. **series contains prepare_func
-		# returns: dict(prepare_func=prepare_func, xs=xs, ys=ys, year=year, month=month)
-		# .. or: dict(prepare_func=prepare_func, xs=xs, ys=ys, fn=next(glob...), engine=engine, yearmonth=ym)
-		tasks += tasks_func(xs=xs, ys=ys, yearmonths=yearmonths, **series)
+	# form call to task_func (eg tasks_monthly_ncep)
+	# .. **series contains prepare_func
+	# returns: dict(prepare_func=prepare_func, xs=xs, ys=ys, year=year, month=month)
+	# .. or: dict(prepare_func=prepare_func, xs=xs, ys=ys, fn=next(glob...), engine=engine, yearmonth=ym)
+	tasks += tasks_func(xs=xs, ys=ys, yearmonths=yearmonths, **series)
 	for i, t in enumerate(tasks):
 		def datasetfn_with_id(ym):
 			# returns a filename with incrementing id at end eg `201101-01.nc`
@@ -182,7 +183,7 @@ def cutout_produce_specific_dataseries(cutout, yearmonth, series_name):
 	ys = cutout.coords['y']
 	series = cutout.weather_data_config[series_name].copy()
 	series['meta_attrs'] = cutout.meta.attrs
-	tasks_func = series.pop('tasks_func')
+	tasks_func = series['tasks_func']
 	tasks = tasks_func(xs=xs, ys=ys, yearmonths=[yearmonth], **series)
 
 	assert len(tasks) == 1
@@ -203,6 +204,9 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	meta_kwds = cutout.meta_data_config.copy()
 	meta_kwds.update(dataset_params)
 
+	# Assign task function here?
+	tasks_func = meta_kwds['tasks_func']
+
 	# Get metadata (eg prepare_meta_merra2)
 	prepare_func = meta_kwds.pop('prepare_func')
 	ds = prepare_func(xs=xs, ys=ys, year=years.stop, month=months.stop, **meta_kwds)
@@ -210,20 +214,26 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 
 	# with metadata, load various parameters
-	start, second, end = map(pd.Timestamp, ds.coords['time'].values[[0, 1, -1]])
+	meta_file_granularity = meta_kwds.pop('file_granularity');
 	month_start = pd.Timestamp("{}-{}".format(years.stop, months.stop))
-
-	offset_start = (start - month_start)
-	offset_end = (end - (month_start + pd.offsets.MonthBegin()))
-	step = (second - start).components.hours
-
-	ds.coords["time"] = pd.date_range(
-		start=pd.Timestamp("{}-{}".format(years.start, months.start)) + offset_start,
-		end=(month_start + pd.offsets.MonthBegin() + offset_end),
-		freq='h' if step == 1 else ('%dh' % step))
-
 	ds.coords["year"] = range(years.start, years.stop+1)
 	ds.coords["month"] = range(months.start, months.stop+1)
+
+	if meta_file_granularity == 'daily':
+		start, second, end = map(pd.Timestamp, ds.coords['time'].values[[0, 1, -1]])
+		offset_start = (start - month_start)
+		offset_end = (end - (month_start + pd.offsets.MonthBegin()))
+		step = (second - start).components.hours
+		ds.coords["time"] = pd.date_range(
+			start=pd.Timestamp("{}-{}".format(years.start, months.start)) + offset_start,
+			end=(month_start + pd.offsets.MonthBegin() + offset_end),
+			freq='h' if step == 1 else ('%dh' % step))
+	elif meta_file_granularity == 'monthly':
+		ds.coords["time"] = pd.date_range(
+			start=pd.Timestamp("{}-{}".format(years.start, months.start)),
+			end=pd.Timestamp("{}-{}".format(years.stop, months.stop)),
+			freq='MS')
+
 	ds = ds.stack(**{'year-month': ('year', 'month')})
 
 	# if cutout.meta_append == 1:

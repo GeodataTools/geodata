@@ -2,7 +2,7 @@
 
 A short guide to generating output with [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
-For a full list of supported MERRA2 outputs, see:
+For a full list of supported MERRA2 outputs, see: LINK
 
 ## Setup
 
@@ -11,6 +11,7 @@ Let's assume we've downloaded MERRA2 data and have created a cutout along the fo
 ```
 cutout = atlite.Cutout(name="merra2-europe-sub24-2012-02",
                        module="merra2",
+                       weather_data_config="surface_flux_hourly",
                        xs=slice(30, 41.56244222),
                        ys=slice(33.56459975, 35),
                        years=slice(2012, 2012),
