@@ -88,7 +88,7 @@ class Dataset(object):
 		step = months.step if months.step else 1
 		mos = range(months.start, months.stop+step, step)
 
-		if self.weatherconfig['file_granularity'] == 'daily':
+		if self.weatherconfig['file_granularity'] == 'daily' or self.weatherconfig['file_granularity'] == 'dailymeans':
 			# Separate files for each day (eg MERRA)
 			# Check for complete set of files of year, month, day
 			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]

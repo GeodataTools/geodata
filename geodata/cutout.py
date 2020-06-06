@@ -78,7 +78,7 @@ class Cutout(object):
 			# if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
 			# 	# Meta file exists and all files indicated by it exists
 			# 	self.meta_append = 1
-			xr.open_dataset("soething").stack
+			# xr.open_dataset("soething").stack
 
 			if not meta is None and 'years' in cutoutparams and\
 									'months' in cutoutparams and\

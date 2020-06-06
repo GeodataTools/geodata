@@ -1,5 +1,18 @@
 ## Unreleased
 
+## Merra2 Daily Update
+
+### tests
+
+### preparation.py
+* [`cutout_get_meta`] Added in timestamp creation case for `daily means` MERRA2 data.
+
+### merra2.py
+* [`weather_data_config`]
+- Added entry `surface_flux_dailymeans` for Daily Means Merra2 data (ADD LINK HERE)
+
+
+
 ## Merra2 Monthly Update
 
 ### tests
