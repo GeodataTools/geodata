@@ -223,6 +223,7 @@ class Dataset(object):
 	@property
 	def meta_data_config(self):
 		return dict(
+			tasks_func=self.weatherconfig['tasks_func'],
 			prepare_func=self.weatherconfig['meta_prepare_func'],
 			template=self.weatherconfig['template'],
 			file_granularity=self.weatherconfig['file_granularity']
