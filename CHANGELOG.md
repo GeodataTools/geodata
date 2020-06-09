@@ -3,6 +3,9 @@
 ## Merra2 Daily Update
 
 ### tests
+* Renamed existing MERRA2 tests to `merra2_surface_flux_hourly_test.ipynb` and `merra2_surface_flux_monthly_test.ipynb`.
+* Added `merra2_surface_flux_dailymeans_test.ipynb` to test daily means config for MERRA2.
+* Added `merra2_slv_radiation_hourly_test.ipynb` and `merra2_slv_radiation_monthly_test.ipynb` to 
 
 ### preparation.py
 * [`cutout_get_meta`] Added in timestamp creation case for `daily means` MERRA2 data.
