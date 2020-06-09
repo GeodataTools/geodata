@@ -7,6 +7,7 @@ setup.py
 geodata/__init__.py
 geodata/_version.py
 geodata/aggregate.py
+geodata/config-default.py
 geodata/config.py
 geodata/convert.py
 geodata/cutout.py
