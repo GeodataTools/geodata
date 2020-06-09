@@ -184,7 +184,7 @@ def cutout_produce_specific_dataseries(cutout, yearmonth, series_name):
 	ys = cutout.coords['y']
 	series = cutout.weather_data_config[series_name].copy()
 	series['meta_attrs'] = cutout.meta.attrs
-	tasks_func = series.pop('tasks_func')
+	tasks_func = series['tasks_func']
 	tasks = tasks_func(xs=xs, ys=ys, yearmonths=[yearmonth], **series)
 
 	assert len(tasks) == 1
@@ -204,6 +204,9 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 	meta_kwds = cutout.meta_data_config.copy()
 	meta_kwds.update(dataset_params)
+
+	# Assign task function here?
+	tasks_func = meta_kwds['tasks_func']
 
 	# Get metadata (eg prepare_meta_merra2)
 	prepare_func = meta_kwds.pop('prepare_func')

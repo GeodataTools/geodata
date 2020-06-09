@@ -152,6 +152,7 @@ class Cutout(object):
 	@property
 	def meta_data_config(self):
 		return dict(
+			tasks_func=self.dataset_module.weather_data_config[self.config]['tasks_func'],
 			prepare_func=self.dataset_module.weather_data_config[self.config]['meta_prepare_func'],
 			template=self.dataset_module.weather_data_config[self.config]['template'],
 			file_granularity=self.dataset_module.weather_data_config[self.config]['file_granularity']

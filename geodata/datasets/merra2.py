@@ -277,7 +277,17 @@ weather_data_config = {
 		url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
 		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
 		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
+<<<<<<< HEAD
 	),
+=======
+
+		# variables = dict(
+		#	solar: 
+		#   wind:
+		#)
+#	TODO: solar radiation data
+						),
+>>>>>>> master
 	'surface_flux_monthly': dict(
 		file_granularity="monthly",
 		tasks_func=tasks_monthly_merra2,
