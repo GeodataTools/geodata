@@ -123,7 +123,7 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		# .. or multiple tasks and prepares (eg prepare_influx_ncep)
 	series = cutout.weather_data_config[cutout.config]
 	series['meta_attrs'] = cutout.meta.attrs
-	tasks_func = series.pop('tasks_func')
+	tasks_func = series['tasks_func']
 
 	# form call to task_func (eg tasks_monthly_ncep)
 	# .. **series contains prepare_func

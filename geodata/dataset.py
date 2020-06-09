@@ -102,9 +102,34 @@ class Dataset(object):
 					if not os.path.isfile( filename ):
 						self.prepared = False
 						if check_complete:
-							logger.info("File `%s` not found!", filename)
+							logger.info("File `%s` not found pi!", filename)
 							incomplete_count += 1
 						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
+					else:
+						self.downloadedFiles.append((self.config, filename))
+
+		elif self.weatherconfig['file_granularity'] == 'daily_multiple':
+			# Separate files for each day (eg MERRA)
+			# Check for complete set of files of year, month, day
+			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
+
+			for mo_tuple in mo_tuples:
+				# format: (yr, mo, number_days_in_month)
+				yr, mo, nodays = mo_tuple
+				for day in range(1, nodays+1, 1):
+					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
+					self.totalFiles.append((self.config, filename))
+					if not os.path.isfile( filename ):
+						self.prepared = False
+						if check_complete:
+							logger.info("File `%s` not found pi!", filename)
+							incomplete_count += 1
+						self.toDownload.append((
+							self.config, 
+							filename, 
+							self.datasetfn(self.weatherconfig['url'][0], yr, mo, day),
+							self.datasetfn(self.weatherconfig['url'][1], yr, mo, day)
+							))
 					else:
 						self.downloadedFiles.append((self.config, filename))
 
@@ -121,6 +146,26 @@ class Dataset(object):
 						logger.info("File `%s` not found!", filename)
 						incomplete_count += 1
 					self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo)))
+				else:
+					self.downloadedFiles.append((self.config, filename))
+		
+		elif self.weatherconfig['file_granularity'] == 'monthly_multiple':
+			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
+			for mo_tuple in mo_tuples:
+				yr, mo = mo_tuple
+				filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
+				self.totalFiles.append((self.config, filename))
+				if not os.path.isfile( filename ):
+					self.prepared = False
+					if check_complete:
+						logger.info("File `%s` not found!", filename)
+						incomplete_count += 1
+					self.toDownload.append((
+						self.config, 
+						filename, 
+						self.datasetfn(self.weatherconfig['url'][0], yr, mo),
+						self.datasetfn(self.weatherconfig['url'][1], yr, mo)
+						))
 				else:
 					self.downloadedFiles.append((self.config, filename))
 
@@ -169,24 +214,61 @@ class Dataset(object):
 		count = 0
 		for f in self.toDownload:
 			print(f)
-
 			# Make the directory if not exists:
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-			result = requests.get(f[2])
-			try:
+			if self.weatherconfig['file_granularity'] == 'daily_multiple' or self.weatherconfig['file_granularity'] == 'monthly_multiple':
+				result = requests.get(f[2])
+				fd, target = mkstemp(suffix='.nc4')
+				fd2, target2 = mkstemp(suffix='.nc4')
+				try:
 					result.raise_for_status()
-					fout = open(f[1],'wb')
+					fout = open(target,'wb')
+					fout.write(result.content)
+					fout.close()
+				except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				except Exception as err:
+						logger.warn(f'Other error occurred: {err}')  # Python 3.6
+						# logger.warn('requests.get() returned an error code '+str(result.status_code))
+
+				result = requests.get(f[3])
+				try:
+					result.raise_for_status()
+					fout = open(target2,'wb')
 					fout.write(result.content)
 					fout.close()
 					self.downloadedFiles.append((f[0], f[1])) # What is saved files being used for?
-					if trim:
-						self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar=solar )
-			except HTTPError as http_err:
-					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-			except Exception as err:
-					logger.warn(f'Other error occurred: {err}')  # Python 3.6
-					# logger.warn('requests.get() returned an error code '+str(result.status_code))
+				except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				except Exception as err:
+						logger.warn(f'Other error occurred: {err}')  # Python 3.6
+						# logger.warn('requests.get() returned an error code '+str(result.status_code))
+				ds_main = xr.open_dataset(target)
+				ds_toadd = xr.open_dataset(target2)
+				merged_version =  xr.merge([ds_main, ds_toadd])
+				merged_version.to_netcdf(f[1])
+				os.close(fd)
+				os.close(fd2)
+				os.unlink(target)
+				os.unlink(target2)
+
+			else:
+				result = requests.get(f[2])
+				try:
+						result.raise_for_status()
+						fout = open(f[1],'wb')
+						fout.write(result.content)
+						fout.close()
+						self.downloadedFiles.append((f[0], f[1])) # What is saved files being used for?
+						if trim:
+							self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar = solar )
+				except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				except Exception as err:
+						logger.warn(f'Other error occurred: {err}')  # Python 3.6
+						# logger.warn('requests.get() returned an error code '+str(result.status_code))
 			count += 1
+			print("file completed")
 
 		if self.downloadedFiles == self.totalFiles: 
 			self.prepared = True	
