@@ -1,11 +1,23 @@
-## dataset.py
-#	dataset class added to Atlite (https://github.com/PyPSA/atlite/) by Michael Davidson (UCSD)
-#	 - downloading and verifying local datasets downloaded (in config.py)
+## Copyright 2020 Michael Davidson (UCSD), William Honaker. 
+
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License as
+## published by the Free Software Foundation; either version 3 of the
+## License, or (at your option) any later version.
+
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 
 """
-Renewable Energy Atlas Lite (Atlite)
+GEODATA
 
-Light-weight version of Aarhus RE Atlas for converting weather data to power systems data
+Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 from __future__ import absolute_import
@@ -39,7 +51,7 @@ class Dataset(object):
 		#	prepare_func=self.weatherconfig['prepare_func'],
 		#	template=self.weatherconfig['template']
 		#	)
-		
+
 		if 'datadir' in datasetparams:
 			logger.info("Manual data directory entry not supported. Change in config.py file.")
 		# 	self.datadir = datasetparams.pop('datadir')
@@ -55,7 +67,7 @@ class Dataset(object):
 			self.months = months = slice(1,12)
 		else:
 			self.months = months = datasetparams['months']
-		
+
 		#TODO Better date handling that should require just input date string and output date string.
 		#if self.weatherconfig['file_granularity'] != 'daily' and "days" in datasetparams:
 		#	raise ValueError("Indicated data source is not daily.")
@@ -153,7 +165,7 @@ class Dataset(object):
 		if self.dataset_module.spinup_var:
 			spinup = self.dataset_module.spinup_year(dataset['year'])
 			dataset.update({'spinup': spinup})
-			
+
 		return fn.format_map(dataset)
 
 	def get_data(self, trim=False, testing=False, wind=True, solar=True):
@@ -188,8 +200,8 @@ class Dataset(object):
 					# logger.warn('requests.get() returned an error code '+str(result.status_code))
 			count += 1
 
-		if self.downloadedFiles == self.totalFiles: 
-			self.prepared = True	
+		if self.downloadedFiles == self.totalFiles:
+			self.prepared = True
 
 	def trim_variables(self, fn = None, wind=True, solar=True):
 		""" Reduce size of file by trimming variables in file
@@ -205,10 +217,10 @@ class Dataset(object):
 		#
 		# TODO: create options for non NetCDF4 files (eg pynio)
 		"""
-		
+
 		for d, f in self.downloadedFiles:
 			vars = self.weatherconfig['variables']
-			
+
 			with xr.open_dataset(f) as ds:
 				var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
 				ds = ds.rename(var_rename)
@@ -249,7 +261,7 @@ class Dataset(object):
 	def extent(self):
 		return (list(self.coords["x"].values[[0, -1]]) +
 				list(self.coords["y"].values[[-1, 0]]))
-				
+
 	def grid_coordinates(self):
 		xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
 		return np.asarray((np.ravel(xs), np.ravel(ys))).T
