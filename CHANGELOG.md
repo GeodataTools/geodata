@@ -6,6 +6,7 @@
 * Renamed existing MERRA2 tests to `merra2_surface_flux_hourly_test.ipynb` and `merra2_surface_flux_monthly_test.ipynb`.
 * Added `merra2_surface_flux_dailymeans_test.ipynb` to test daily means config for MERRA2.
 * Added `merra2_slv_radiation_hourly_test.ipynb` and `merra2_slv_radiation_monthly_test.ipynb` to test new slv and radiatian MERRA2 config.
+* Added `era5_test.ipynb`.
 
 ### dataset.py
 * [`Dataset`]
