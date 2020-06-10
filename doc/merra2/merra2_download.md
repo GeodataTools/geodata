@@ -5,6 +5,12 @@ A short guide to downloading data for MERRA2 data for use with **geodata**.
 **Geodata** is currently optimized to work with the following MERRA2 datasets:
 * [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
 * [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
+* [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
+* [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary) 
+* [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
+* [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
+* [MERRA2 monthly mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary)
+* [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
 
 ## Download using the geodata package itself
 
@@ -13,7 +19,7 @@ Download methods for MERRA2 hourly data are built into the **geodata** package. 
 ```
 import logging
 logging.basicConfig(level=logging.INFO)
-import atlite
+import geodata
 
 DS = geodata.Dataset(module="merra2",
 					weather_data_config="surface_flux_hourly",
@@ -31,21 +37,21 @@ Let's breakdown the code above:
 ```
 import logging
 logging.basicConfig(level=logging.INFO)
-import atlite
+import geodata
 ```
 Importing the logging package allows **geodata** to generate console input for download status, errors, etc.
-Importing atlite is necessary to run **geodata**.
+Importing geodata is necessary to run **geodata**.
 
 ```
 DS = geodata.Dataset(module="merra2",
-					weather_data_config="surface_flux_hourly",
+					weather_data_config="surface_flux_monthly",
 					years=slice(2012, 2012),
-					months=slice(2,2))
+					months=slice(1,3))
 ```
 
 `geodata.Dataset()` creates a dataset object via which you can download data files.  To create objects for MERRA2 hourly, single-level surface flux diagnostics, specify `module="merra2"`.  You must also have configured `merra2_dir` in `config.py` to point to a directory on your local machine (see (insert link here) for details).
 
-The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for February 2012.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
+The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for January to March 2012.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 
 
 Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the local directory specified in `config.py`:
@@ -61,7 +67,7 @@ and returns a `dataset` object indicating whether the data is "prepared."
 <Dataset merra2 years=2012-2012 months=2-2 datadir=/Users/williamhonaker/desktop/davidson/data_for_geodata/merra2 Prepared>
 ```
 
-A "prepared" dataset indicates that the directories for storing the data - which take the form `/merra2/{years}/{months}` for every unique year-month combination in the data - have been created and are populated with downloaded data (Monthly-level data will download into just `/merra2/{years}`).  
+A "prepared" dataset indicates that the directories for storing the data - which take the form `/merra2/{years}` (or `/merra2/{years}/{months}` for hourly data) for every unique time period in the data - have been created and are populated with downloaded data.  
 
 ```
 if DS.prepared == False:
@@ -102,4 +108,4 @@ For MERRA2 data, running `trim_variables()` as specified iterates over each down
 * eflux: total_latent_energy_flux (W m-2)
 
 
-To use downloaded data to create a cutout, see: [Creating Cutouts with MERRA2 Data (WIP)](https://github.com/east-winds/geodata/blob/master/doc/merra2_createcutout.md)
+To use downloaded data to create a cutout, see: [Creating Cutouts with MERRA2 Data](https://github.com/east-winds/geodata/blob/master/doc/merra2_createcutout.md)

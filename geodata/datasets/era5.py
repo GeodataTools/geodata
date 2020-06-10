@@ -156,7 +156,7 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
-def prepare_meta_era5(xs, ys, year, month, module):
+def prepare_meta_era5(xs, ys, year, month, module, **kwargs):
 	# Load/download ERA5 height data as metadata
 
 	# Reference of the quantities
@@ -286,12 +286,15 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 			for year, month in yearmonths]
 
 weather_data_config = {
-	'_': dict(tasks_func=tasks_monthly_era5,
-			  prepare_func=prepare_month_era5,
-			  template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),)
+	'era5_monthly': dict(
+		file_granularity="monthly",
+		tasks_func=tasks_monthly_era5,
+		meta_prepare_func=prepare_meta_era5,
+		prepare_func=prepare_month_era5,
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),)
 }
 
-meta_data_config = dict(prepare_func=prepare_meta_era5)
+#meta_data_config = dict(prepare_func=prepare_meta_era5)
 
 # No separate files for each day (would be coded in weather_data_config list, see merra2.py)
 daily_files = False

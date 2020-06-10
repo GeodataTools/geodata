@@ -31,6 +31,7 @@ import logging
 import tempfile
 import shutil
 import subprocess
+import calendar
 from glob import glob
 from six import itervalues
 from six.moves import map
@@ -215,7 +216,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 
 	# with metadata, load various parameters
-	meta_file_granularity = meta_kwds.pop('file_granularity');
+	meta_file_granularity = meta_kwds['file_granularity'];
 	month_start = pd.Timestamp("{}-{}".format(years.stop, months.stop))
 	ds.coords["year"] = range(years.start, years.stop+1)
 	ds.coords["month"] = range(months.start, months.stop+1)
@@ -229,6 +230,11 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 			start=pd.Timestamp("{}-{}".format(years.start, months.start)) + offset_start,
 			end=(month_start + pd.offsets.MonthBegin() + offset_end),
 			freq='h' if step == 1 else ('%dh' % step))
+	elif meta_file_granularity == 'dailymeans':
+		ds.coords["time"] = pd.date_range(
+			start=pd.Timestamp("{}-{}-{}".format(years.start, months.start, 1)),
+			end=pd.Timestamp("{}-{}-{}".format(years.stop, months.stop, calendar.monthrange(years.stop, months.stop)[1])),
+			freq='d')
 	elif meta_file_granularity == 'monthly':
 		ds.coords["time"] = pd.date_range(
 			start=pd.Timestamp("{}-{}".format(years.start, months.start)),
