@@ -24,6 +24,7 @@ A cutout is the basis for any data or analysis output by the **geodata** package
 ```
 cutout = geodata.Cutout(name="era5-europe-test-2011-01",
                        module="era5",
+                       weather_data_config="era5_monthly",
                        xs=slice(30, 41.56244222),
                        ys=slice(33.56459975, 35),
                        years=slice(2011, 2011),

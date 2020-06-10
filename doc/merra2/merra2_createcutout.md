@@ -9,14 +9,14 @@ To start, import the required dependencies:
 ```
 import logging
 logging.basicConfig(level=logging.INFO)
-import atlite
+import geodata
 ```
 
-`import atlite` is required to use **geodata**, while launching a logger allows for detailed debugging via the console.
+`import geodata` is required to use **geodata**, while launching a logger allows for detailed debugging via the console.
 
 ## Preparing the cutout
 
-A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the directory `cutout_dir` configured in `config.py` (to set up `config.py`, see here LINK HERE)
+A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the directory `cutout_dir` configured in `config.py` (to set up `config.py`, [see here](INSERT LINK HERE))
 
 ```
 cutout = geodata.Cutout(name="merra2-europe-sub24-2011-01",

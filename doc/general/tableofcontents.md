@@ -7,7 +7,7 @@ Find documentation about how to use the **geodata** package here.
 -   Using MERRA2 Data
     -   [MERRA2 Setup](https://github.com/east-winds/geodata/blob/master/doc/merra2_setup.md)
     -   [Downloading MERRA2 Data](https://github.com/east-winds/geodata/blob/master/doc/merra2_download.md))
-    -   [Creating Cutouts with MERRA2 Data (WIP)](https://github.com/east-winds/geodata/blob/master/doc/merra2_createcutout.md)
-    -   Outputting Data with MERRA2 - WIP
-- Using ERA5 Data
+    -   [Creating Cutouts with MERRA2 Data](https://github.com/east-winds/geodata/blob/master/doc/merra2_createcutout.md)
+    -   [Outputting Data with MERRA2](LINK HERE)
+-   Using ERA5 Data
     -   [ERA5 Setup](https://github.com/east-winds/geodata/blob/master/doc/era5_setup.md)

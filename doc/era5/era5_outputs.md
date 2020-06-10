@@ -97,7 +97,7 @@ geodata.convert.pv(
 ### Example Code and Result
 
 ```
-ds_pv = atlite.convert.pv(
+ds_pv = geodata.convert.pv(
     cutout, 
     panel="KANENA", 
     orientation = "latitude_optimal"
