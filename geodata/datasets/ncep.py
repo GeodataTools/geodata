@@ -15,9 +15,9 @@
 
 
 """
-Renewable Energy Atlas Lite (Atlite)
+GEODATA
 
-Light-weight version of Aarhus RE Atlas for converting weather data to power systems data
+Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 from __future__ import absolute_import
@@ -187,7 +187,7 @@ def prepare_roughness_ncep(fn, yearmonth, xs, ys, engine=engine):
 
 def prepare_meta_ncep(xs, ys, year, month, template, height_config, module, engine=engine):
 	#	Load local dataset (temp at 2m) as metadata
-	
+
     fn = next(glob.iglob(template.format(year=year, month=month)))
     with xr.open_dataset(fn, engine=engine) as ds:
         ds = ds.coords.to_dataset()

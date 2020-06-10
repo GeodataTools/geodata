@@ -1,4 +1,4 @@
-## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+## Copyright 2020 Michael Davidson (UCSD), William Honaker.
 
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
@@ -15,11 +15,10 @@
 
 
 """
-Renewable Energy Atlas Lite (Atlite)
+GEODATA
 
-Light-weight version of Aarhus RE Atlas for converting weather data to power systems data
+Geospatial Data Collection and "Pre-Analysis" Tools
 """
-
 
 from __future__ import absolute_import
 
@@ -29,5 +28,5 @@ from .gis import compute_indicatormatrix, regrid
 
 from ._version import __version__
 
-__author__ = "Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS), David Schlachtberger (FIAS)"
-__copyright__ = "Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS), David Schlachtberger (FIAS), GNU GPL 3"
+__author__ = "Michael Davidson (UCSD), William Honaker"
+__copyright__ = "GNU GPL 3 license"

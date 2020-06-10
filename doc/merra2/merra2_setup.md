@@ -9,7 +9,7 @@ To download MERRA2 data, you'll need to create an [Earthdata Login](https://urs.
 After creating an account, you'll need to connect your account to GES DISC to access data.
 
 The following procedure is sourced from: https://disc.gsfc.nasa.gov/earthdata-login
-1. Login to https://urs.earthdata.nasa.gov/. 
+1. Login to https://urs.earthdata.nasa.gov/.
 
 2. Click on the 'Applications' tab in the top menu bar, and in the pop up menu, select the 'Authorized Apps' tab.
 
@@ -24,17 +24,17 @@ The following procedure is sourced from: https://disc.gsfc.nasa.gov/earthdata-lo
 To download MERRA2 data via **geodata** you'll need to install the API credentials locally.  
 
  * For MacOS, create a file in your root directory (`cd ~`) called `.netrc` by opening a terminal window and running `touch ~/.netrc` to create the file and then:
- 
+
 ```
 echo "machine urs.earthdata.nasa.gov [login] [password] " >> .netrc
 ```
 
- where `[login]` is your Earthdata user name and `[password]` is your Earthdata Login password. 
- 
+ where `[login]` is your Earthdata user name and `[password]` is your Earthdata Login password.
+
  Alternatively, if you are using VSCode, you can simply open your root folder in a new window, save a new file as `.netrc`, and copy paste in the following:
 
 ```
-machine urs.earthdata.nasa.gov [login] [password] " 
+machine urs.earthdata.nasa.gov [login] [password] "
 ```
 
 * (Windows instructions coming soon.)
@@ -48,4 +48,4 @@ machine urs.earthdata.nasa.gov [login] [password] "
 in your root directory.
 
 
-To confirm you have set up MERRA2 data access correctly, see: (link to setting up MERRA2 downloads here.)
+To confirm you have set up MERRA2 data access correctly, see: [MERRA2 Download doc](merra2_download.md).
