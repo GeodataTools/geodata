@@ -147,7 +147,70 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
 		ds['wndlml'] = (np.sqrt(ds['ulml']**2 + ds['vlml']**2)
 						.assign_attrs(units=ds['ulml'].attrs['units'],
 									long_name="LML wind speed"))
+		if ds['tlml']:
+			ds['temperature'] = ds['tlml']
 
+		yield (year, month), ds
+
+def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
+	if not os.path.isfile(fn):
+		return None
+	with xr.open_dataset(fn) as ds:
+		logger.info(f'Opening `{fn}`')
+		# logger.info("Cutout dims: %s", ds.dims)
+		# logger.info("Cutout coords: %s", ds.coords)
+
+		ds = _rename_and_clean_coords(ds)
+
+		# logger.info("Cutout dims: %s", ds.dims)
+		# logger.info("Cutout coords: %s", ds.coords)
+
+		ds = subset_x_y_merra2(ds, xs, ys)
+
+		# logger.info("Cutout dims: %s", ds.dims)
+		# logger.info("Cutout coords: %s", ds.coords)
+
+				# some variable renaming
+		try:
+		#	z0m=roughness
+		#	wind variables not in wndXXm format
+			ds = ds.rename({
+				't2mmean': 'temperature',
+				'tprecmax': 'precipitation'
+				})
+		except Exception as e:
+			logger.warn(f'Unable to rename variables in `{fn}`. Exception: {e}')
+
+		#['HOURNORAIN', 'T2MMAX', 'T2MMEAN', 'T2MMIN', 'TPRECMAX']
+
+		yield (year, month), ds
+
+def prepare_slv_radiation(fn, year, month, xs, ys):
+	if not os.path.isfile(fn):
+		return None
+	with xr.open_dataset(fn) as ds:
+		logger.info(f'Opening `{fn}`')
+		# logger.info("Cutout dims: %s", ds.dims)
+		# logger.info("Cutout coords: %s", ds.coords)
+
+		ds = _rename_and_clean_coords(ds)
+
+		# logger.info("Cutout dims: %s", ds.dims)
+		# logger.info("Cutout coords: %s", ds.coords)
+
+		ds = subset_x_y_merra2(ds, xs, ys)
+
+		# logger.info("Cutout dims: %s", ds.dims)
+		# logger.info("Cutout coords: %s", ds.coords)
+		try:
+			ds = ds.rename({
+				'albedo': 'albedo',
+				'swgdn': 'influx',
+				'swtdn': 'influx_toa',
+				't2m': 'temperature'
+				})
+		except Exception as e:
+			logger.warn(f'Unable to rename variables in `{fn}`. Exception: {e}')
 		yield (year, month), ds
 
 
@@ -214,13 +277,7 @@ weather_data_config = {
 		url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
 		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
 		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
-
-		# variables = dict(
-		#	solar: 
-		#   wind:
-		#)
-#	TODO: solar radiation data
-						),
+	),
 	'surface_flux_monthly': dict(
 		file_granularity="monthly",
 		tasks_func=tasks_monthly_merra2,
@@ -230,8 +287,47 @@ weather_data_config = {
 	    url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4',
 		fn = os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4'),
 		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
-		)
+	),
+	'surface_flux_dailymeans': dict(
+		file_granularity="dailymeans",
+		tasks_func=tasks_daily_merra2,
+		meta_prepare_func=prepare_meta_merra2,
+		prepare_func=prepare_dailymeans_surface_flux,
+		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.statD_2d_slv_Nx.*.nc4'),
+	    url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2SDNXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.statD_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4',
+		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.statD_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4'),
+		variables = ['hournorain', 'tprecmax', 't2mmax', 't2mmean', 't2mmin']
+	),
+	'slv_radiation_hourly': dict(
+		file_granularity="daily_multiple",
+		tasks_func=tasks_daily_merra2,
+		meta_prepare_func=prepare_meta_merra2,
+		prepare_func=prepare_slv_radiation,
+		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_rad_Nx.*.nc4'),
+	    url = [
+			'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4',
+			'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXRAD.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_rad_Nx.{year}{month:0>2}{day:0>2}.nc4'
+		],
+		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_rad_Nx.{year}{month:0>2}{day:0>2}.nc4'),
+		variables = ['albedo', 'swgdn', 'swtdn', 't2m']
+	),
+		'slv_radiation_monthly': dict(
+		file_granularity="monthly_multiple",
+		tasks_func=tasks_monthly_merra2,
+		meta_prepare_func=prepare_meta_merra2,
+		prepare_func=prepare_slv_radiation,
+		template=os.path.join(merra2_dir, '{year}/MERRA2_*.tavgM_2d_slv_rad_Nx.*.nc4'),
+	    url = [
+			'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXSLV.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_slv_Nx.{year}{month:0>2}.nc4',
+			'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXRAD.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_rad_Nx.{year}{month:0>2}.nc4'
+		],
+		fn = os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_slv_rad_Nx.{year}{month:0>2}.nc4'),
+		variables = ['albedo', 'swgdn', 'swtdn', 't2m']
+	),
+
 }
+
+# os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4'),
 
 # list of routines in weather_data_config to download wind data
 wind_files = ['surface_flux']

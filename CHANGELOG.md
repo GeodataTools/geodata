@@ -1,5 +1,34 @@
 ## Unreleased
 
+## Merra2 Daily Update
+
+### tests
+* Renamed existing MERRA2 tests to `merra2_surface_flux_hourly_test.ipynb` and `merra2_surface_flux_monthly_test.ipynb`.
+* Added `merra2_surface_flux_dailymeans_test.ipynb` to test daily means config for MERRA2.
+* Added `merra2_slv_radiation_hourly_test.ipynb` and `merra2_slv_radiation_monthly_test.ipynb` to test new slv and radiatian MERRA2 config.
+* Added `era5_test.ipynb`.
+
+### dataset.py
+* [`Dataset`]
+- Added case for `file_granularity=='dailymeans'` to initialization.
+- Added cases `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'` to allow download from both MERRA2 SLV and radiation datasets and combination into a single combined dataset.
+
+* [`get_data`]
+- Added case for `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'` 
+
+### preparation.py
+* [`cutout_get_meta`] Added in timestamp creation case for `daily means` MERRA2 data.
+
+### merra2.py
+* [`weather_data_config`]
+- Added entry `surface_flux_dailymeans` for Daily Means Merra2 data (ADD LINK HERE).
+- Added entries `slv_radiation_hourly`, `slv_radiation_monthly` for downloading and combining separate MERRA2 SLV and radition datasets into a single combined dataset for cutout create and solar output generation (ADD LINKS HERE).
+
+* Other functions
+- Added prepare function `prepare_dailymeans_surface_flux`.
+- Added prepare function `prepare_slv_radiation`.
+
+
 ## Merra2 Monthly Update
 
 ### tests

@@ -2,14 +2,14 @@
 
 A short guide to generating output with [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
-For a full list of supported MERRA2 outputs, see: LINK
+For a full list of supported MERRA2 outputs, see: INSERT LINK HERE
 
 ## Setup
 
 Let's assume we've downloaded MERRA2 data and have created a cutout along the following lines:
 
 ```
-cutout = atlite.Cutout(name="merra2-europe-sub24-2012-02",
+cutout = geodata.Cutout(name="merra2-europe-sub24-2012-02",
                        module="merra2",
                        weather_data_config="surface_flux_hourly",
                        xs=slice(30, 41.56244222),
@@ -27,11 +27,11 @@ To create a wind speed time-series, we can use the following code with our MERRA
 
 
 ```
-ds = atlite.convert.windspd(cutout, turbine='Suzlon_S82_1.5_MW', var_height='lml')
+ds = geodata.convert.windspd(cutout, turbine='Suzlon_S82_1.5_MW', var_height='lml')
 ```
 
 Some information about the parameters:
-* `turbine` - string - Specify a turbine type on which to base the calculation.  **geodata** contains an internal turbine dictionary with  eys 'hub_height' for the hub height and 'V' and 'POW' defining the power curve.  For a complete list of included turbine types, see [the list of Turbines here.](LINK)
+* `turbine` - string - Specify a turbine type on which to base the calculation.  **geodata** contains an internal turbine dictionary with  eys 'hub_height' for the hub height and 'V' and 'POW' defining the power curve.  For a complete list of included turbine types, see [the list of Turbines here.](INSERT LINK HERE)
 * `var_height` - string - suffix for variables containing wind speed and variable height
 
 
