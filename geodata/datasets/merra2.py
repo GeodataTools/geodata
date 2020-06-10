@@ -175,8 +175,8 @@ def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
 		#	z0m=roughness
 		#	wind variables not in wndXXm format
 			ds = ds.rename({
-				'T2MMEAN': 'temperature',
-				'TPRECMAX': 'precipitation'
+				't2mmean': 'temperature',
+				'tprecmax': 'precipitation'
 				})
 		except Exception as e:
 			logger.warn(f'Unable to rename variables in `{fn}`. Exception: {e}')
