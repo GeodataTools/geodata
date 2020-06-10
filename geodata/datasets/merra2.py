@@ -296,7 +296,7 @@ weather_data_config = {
 		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.statD_2d_slv_Nx.*.nc4'),
 	    url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2SDNXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.statD_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4',
 		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.statD_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4'),
-		variables = ['hournorain', 'tprecmax', 't2max', 't2mmean', 't2mmin']
+		variables = ['hournorain', 'tprecmax', 't2mmax', 't2mmean', 't2mmin']
 	),
 	'slv_radiation_hourly': dict(
 		file_granularity="daily_multiple",
