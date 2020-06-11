@@ -16,7 +16,7 @@ import geodata
 
 ## Preparing the cutout
 
-A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the directory `cutout_dir` configured in `config.py` (to set up `config.py`, [see here](INSERT LINK HERE))
+A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the directory `cutout_dir` configured in `config.py` (to set up `config.py`, [see here](https://github.com/east-winds/geodata/blob/master/doc/general/packagesetup.md)).
 
 ```
 cutout = geodata.Cutout(name="merra2-europe-sub24-2011-01",

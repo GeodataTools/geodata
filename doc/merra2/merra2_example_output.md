@@ -2,7 +2,7 @@
 
 A short guide to generating output with [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
-For a full list of supported MERRA2 outputs, see: INSERT LINK HERE
+For a full list of supported MERRA2 outputs, see: [MERRA2 Output Details](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md)
 
 ## Setup
 
@@ -31,7 +31,7 @@ ds = geodata.convert.windspd(cutout, turbine='Suzlon_S82_1.5_MW', var_height='lm
 ```
 
 Some information about the parameters:
-* `turbine` - string - Specify a turbine type on which to base the calculation.  **geodata** contains an internal turbine dictionary with  eys 'hub_height' for the hub height and 'V' and 'POW' defining the power curve.  For a complete list of included turbine types, see [the list of Turbines here.](INSERT LINK HERE)
+* `turbine` - string - Specify a turbine type on which to base the calculation.  **geodata** contains an internal turbine dictionary with  eys 'hub_height' for the hub height and 'V' and 'POW' defining the power curve.  For a complete list of included turbine types, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
 * `var_height` - string - suffix for variables containing wind speed and variable height
 
 
@@ -63,9 +63,7 @@ To convert this array to a more conventional dataframe, we can run:
 df = ds.to_dataframe(name='wind')
 ```
 
-which converts the xarray dataset into a pandas dataframe.  Let's examine the output:
-
-[image link]
+which converts the xarray dataset into a pandas dataframe. 
 
 
 The result is a dataset with an observation for each time period (in the MERRA2 case, hourly) and geographic point with the `extrapolated 79.0 m wind speed (units: m s-1)` for each observation (output as indicated by the output xarray dataset metadata).
