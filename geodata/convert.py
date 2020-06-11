@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 ## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -17,9 +15,9 @@
 
 
 """
-Renewable Energy Atlas Lite (Atlite)
+GEODATA
 
-Light-weight version of Aarhus RE Atlas for converting weather data to power systems data
+Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 from __future__ import absolute_import

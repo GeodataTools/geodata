@@ -1,4 +1,4 @@
-## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+## Copyright 2020 Michael Davidson (UCSD), William Honaker. Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
@@ -46,7 +46,7 @@ class Cutout(object):
 		self.prepared = False
 		self.meta_append = 0
 		self.config = cutoutparams.pop('weather_data_config')
-		
+
 
 		if 'bounds' in cutoutparams:
 			# if passed bounds array instead of xs, ys slices
@@ -68,7 +68,7 @@ class Cutout(object):
 			cutoutparams.update(months=slice(1, 12))
 
 		# Check if cutout dir and files already exists:
-		# here = 
+		# here =
 		if os.path.isdir(self.cutout_dir):
 			if os.path.isfile(self.datasetfn()):  ## creates meta file
 				self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
@@ -136,7 +136,7 @@ class Cutout(object):
 
 	def datasetfn(self, *args):
 		#    Link to dataset (default to meta.nc)
-		# 
+		#
 		dataset = None
 
 		if len(args) == 2:
@@ -162,7 +162,7 @@ class Cutout(object):
 		## dict(
 		##	prepare_func=self.weatherconfig['prepare_func'],
 		##	template=self.weatherconfig['template']
-		
+
 
 	@property
 	def weather_data_config(self):

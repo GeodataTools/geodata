@@ -16,9 +16,9 @@
 
 
 """
-Renewable Energy Atlas Lite (Atlite)
+GEODATA
 
-Light-weight version of Aarhus RE Atlas for converting weather data to power systems data
+Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 import os

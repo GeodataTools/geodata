@@ -1,3 +1,0 @@
-include geodata/resources/*/*.yaml
-include README-geodata.rst LICENSE.txt
-#include requirements.yml

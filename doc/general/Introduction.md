@@ -1,12 +1,14 @@
 # Introduction to Geodata
 
-The **geodata** package is a fork of [atlite](https://github.com/PyPSA/atlite), an xarray-based Python library for converting weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). To learn more about **atlite** and its usage, see [the atlite readme](https://github.com/PyPSA/atlite/blob/master/README.rst) or its [Read the Docs page](https://atlite.readthedocs.io/en/latest/introduction.html).
+**Geodata** is an `xarray`-enabled Python library of geospatial data collection and "pre-analysis" tools. Through the creation of shared scripts and documentation for analysis-ready physical variables, **geodata** streamlines the collection and use of geospatial datasets for natural science, engineering, and social science applications.
+
+**Geodata** builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). To learn more about atlite and its usage, see the [atlite readme](https://github.com/PyPSA/atlite/blob/master/README.rst) or its [documentation](https://atlite.readthedocs.io/en/latest/introduction.html).
 
 # What is Geodata?
 
-**Geodata** extracts global climate data from a given source and, for a user-specified time period and geographic range (subsets referred to as "cutouts"), converts it into a dataset of energy-related variables, such as wind generation or heat demand, for use in statistic analysis or other forms of academic research.
+**Geodata** downloads global earth systems data from given sources and, for a user-specified time period and geographic range (subsets referred to as "cutouts"), converts it into a dataset of variables, such as wind generation or temperature.
 
-**Geodata** therefore provides an all-in-one Python interface for downloading, subsetting, and transforming climate data from large and cumbersome datasets into manageable data tables for use in regression, plotting, or other analyses.
+**Geodata** therefore provides an all-in-one Python interface for downloading, subsetting, and transforming climate data from large and cumbersome datasets into manageable data tables for use in regression, plotting, or other analyses. Additionally, with a minimal amount of data consistency checks and metadata information, when one researcher goes through this exercise, everyone benefits.
 
 # What inputs/outputs are currently possible with Geodata?
 

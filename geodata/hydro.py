@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 ## Copyright 2016-2017 Jonas Hoersch (RLI)
 
 ## This program is free software; you can redistribute it and/or
@@ -17,10 +15,12 @@
 
 
 """
-Renewable Energy Atlas Lite (Atlite)
+GEODATA
 
-Light-weight version of Aarhus RE Atlas for converting weather data to power systems data
+Geospatial Data Collection and "Pre-Analysis" Tools
 """
+
+
 import xarray as xr
 import geopandas as gpd
 import pandas as pd

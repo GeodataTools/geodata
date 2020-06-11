@@ -96,7 +96,7 @@
 * [`merra2.ipynb`] Add jupyter notebook to walk through entire MERRA2 download, cutout, and output process.
 
 
-## Documentation - 03/28/10
+## Documentation - 03/28/20
 * [`Introduction.md`] Add introduction to the package.
 * [`tableofcontents.md`] Add list of links to relevant documentation.
 * [`packagesetup.md`] Add guide for installing package.
@@ -104,3 +104,9 @@
 * [`merra2_download.md`] Add guide for downloading merra2 data.
 * [`merra2_createcutout.md`] Add guide for creating cutouts for merra2 data.
 * [`era5_setup.md`] Add guide for setting up access to ERA5 data from CDS.
+
+## Wind parameterizations - 11/29/19
+* [`wind.py`] Add wind parameterizations (given by `extrap_fn`) for different stability correction functions
+* [`doc/parameterizations/wind_parameterizations.tex.md`] Add citations and formulae for wind parameterizations (LaTeX)
+* [`doc/parameterizations/wind_parameterizations.md`] Citations and formulae for wind parameterizations (created automatically from `wind_parameterizations.tex.md`)
+
