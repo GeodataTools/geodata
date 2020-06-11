@@ -21,8 +21,14 @@
 
 ### merra2.py
 * [`weather_data_config`]
-- Added entry `surface_flux_dailymeans` for Daily Means Merra2 data (ADD LINK HERE).
-- Added entries `slv_radiation_hourly`, `slv_radiation_monthly` for downloading and combining separate MERRA2 SLV and radition datasets into a single combined dataset for cutout create and solar output generation (ADD LINKS HERE).
+- Added entry `surface_flux_dailymeans` for Daily Means Merra2 data - [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary).
+- Added entries `slv_radiation_hourly`, `slv_radiation_monthly` for downloading and combining separate MERRA2 SLV and radition datasets into a single combined dataset for cutout create and solar output generation:
+    * `slv_radiation_hourly`: 
+        - [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
+        - [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
+    * `slv_radiation_monthly`:
+        - [MERRA2 monthly mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary)
+        - [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
 
 * Other functions
 - Added prepare function `prepare_dailymeans_surface_flux`.
@@ -60,7 +66,7 @@
 
 ### merra2.py
 * [`weather_data_config`]
-- Added entry `surface_flux_monthly` for Monthly Merra2 data (ADD LINK HERE)
+- Added entry `surface_flux_monthly` for Monthly Merra2 data - [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
 - To all entry added `file_granularity` property to indicated time granularity for file download.
 * Preparation functions
 - Separated cutout task preparation function into `tasks_monthly_merra2` and `tasks_daily_merra2` to account for differences in file structure between daily and hourly file granularities.
