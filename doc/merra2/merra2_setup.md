@@ -48,8 +48,4 @@ machine urs.earthdata.nasa.gov [login] [password] "
 in your root directory.
 
 
-<<<<<<< HEAD
 To confirm you have set up MERRA2 data access correctly, see: [MERRA2 Setup](https://github.com/east-winds/geodata/blob/master/doc/merra2_setup.md)
-=======
-To confirm you have set up MERRA2 data access correctly, see: [MERRA2 Download doc](merra2_download.md).
->>>>>>> d211996a3b437e94f95a083d3bb20d649b403fb9
