@@ -163,6 +163,15 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
 
 		yield (year, month), ds
 
+def prepare_month_aerosol(fn, year, month, xs, ys):
+	if not os.path.isfile(fn):
+		return None
+	with xr.open_dataset(fn) as ds:
+		logger.info(f'Opening `{fn}`')
+		ds = _rename_and_clean_coords(ds)
+		ds = subset_x_y_merra2(ds, xs, ys)
+		yield (year, month), ds
+
 def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
 	if not os.path.isfile(fn):
 		return None
@@ -335,7 +344,16 @@ weather_data_config = {
 		fn = os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_slv_rad_Nx.{year}{month:0>2}.nc4'),
 		variables = ['albedo', 'swgdn', 'swtdn', 't2m']
 	),
-
+	'surface_aerosol_hourly': dict(
+		file_granularity="daily",
+		tasks_func=tasks_daily_merra2,
+		meta_prepare_func=prepare_meta_merra2,
+		prepare_func=prepare_month_aerosol,
+		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_aer_Nx.*.nc4'),
+	    url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXAER.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_aer_Nx.{year}{month:0>2}{day:0>2}.nc4',
+		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_aer_Nx.{year}{month:0>2}{day:0>2}.nc4'),
+		variables = ['bcsmass', 'dusmass25', 'ocsmass', 'so4smass', 'sssmass25']
+	)
 }
 
 # os.path.join(merra2_dir, '{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4'),
