@@ -158,7 +158,7 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
 		ds['wndlml'] = (np.sqrt(ds['ulml']**2 + ds['vlml']**2)
 						.assign_attrs(units=ds['ulml'].attrs['units'],
 									long_name="LML wind speed"))
-		if ds['tlml']:
+		if 'tlml' in list(ds.data_vars):
 			ds['temperature'] = ds['tlml']
 
 		yield (year, month), ds
