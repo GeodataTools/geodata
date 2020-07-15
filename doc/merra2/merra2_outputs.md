@@ -145,3 +145,28 @@ ds_pv = geodata.convert.pv(
 
 ds_pv.to_dataframe(name = 'pv')
 ```
+
+# Generating Aerosol Outputs with MERRA2 Data
+**geodata** currently supports the following aerosol output using the following config:
+* `surface_aerosol_hourly`: [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
+
+* PM2.5 time series (`pm25`)
+
+## PM2.5 time series
+
+Generate PM2.5 time series according to [1]:
+		PM2.5 = [Dust2.5] + [SS2.5] + [BC] + 1.4*[OC] + 1.375*[SO4]
+
+### Parameters
+
+* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
+
+### Example Code and Result
+
+```
+ds_pm25 = geodata.convert.pv(
+    cutout
+    )
+
+ds_pm25.to_dataframe(name = 'pm25')
+```
