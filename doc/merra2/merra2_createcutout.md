@@ -148,8 +148,8 @@ cutout.dataset_module.weather_data_config
 Which will return the selected download settings for the MERRA2 data.
 
 ```
-{'surface_flux_hourly': {'tasks_func': <function atlite.datasets.merra2.tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs)>,
-  'prepare_func': <function atlite.datasets.merra2.prepare_month_surface_flux(fn, year, month, xs, ys)>,
+{'surface_flux_hourly': {'tasks_func': <function geodata.datasets.merra2.tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs)>,
+  'prepare_func': <function geodata.datasets.merra2.prepare_month_surface_flux(fn, year, month, xs, ys)>,
   'template': '/Users/johndoe/data_for_geodata/merra2/{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4',
   'url': 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
   'fn': '/Users/johndoe/data_for_geodata/data_for_geodata/merra2/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
