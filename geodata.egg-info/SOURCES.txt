@@ -1,13 +1,10 @@
 LICENSE.txt
-MANIFEST.in
-README-geodata.rst
 README.md
 setup.cfg
 setup.py
 geodata/__init__.py
 geodata/_version.py
 geodata/aggregate.py
-geodata/config-default.py
 geodata/config.py
 geodata/convert.py
 geodata/cutout.py
