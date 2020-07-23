@@ -291,7 +291,21 @@ weather_data_config = {
 		tasks_func=tasks_monthly_era5,
 		meta_prepare_func=prepare_meta_era5,
 		prepare_func=prepare_month_era5,
-		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),)
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),
+		product='reanalysis-era5-single-levels',
+		variables=[
+					   '100m_u_component_of_wind',
+					   '100m_v_component_of_wind',
+					   '2m_temperature',
+					   'runoff',
+					   'soil_temperature_level_4',
+					   'surface_net_solar_radiation',
+					   'surface_pressure',
+					   'surface_solar_radiation_downwards',
+					   'toa_incident_solar_radiation',
+					   'total_sky_direct_solar_radiation_at_surface'
+				   ]
+		)
 }
 
 #meta_data_config = dict(prepare_func=prepare_meta_era5)
