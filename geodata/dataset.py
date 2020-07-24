@@ -83,9 +83,16 @@ class Dataset(object):
 		incomplete_count = 0
 
 		if 'bounds' in datasetparams:
-			x1, y1, x2, y2 = datasetparams.pop('bounds')
-			datasetparams.update(xs=slice(x1, x2),
-								ys=slice(y2, y1))
+			self.bounds = datasetparams['bounds']
+			if type(self.bounds) is list and len(self.bounds) == 4:
+				x1, y1, x2, y2 = datasetparams['bounds']
+				datasetparams.update(xs=slice(x1, x2),
+									ys=slice(y2, y1))
+			else: 
+				raise ValueError("Specified bounds parameter should be list with North, West, South, East coordinates.")
+				## additional checks here later
+		else: 				
+			logger.warn("Bounds not used in preparing dataset. Defaulting to global.")
 
 		if os.path.isdir(self.datadir):
 			# Directory for dataset exists
@@ -245,15 +252,6 @@ class Dataset(object):
 		#		Run trim_variables function following each download
 		"""
 
-		## Account for ERA5 here - end goal should probably just be one file
-		## how to download meta - prep it
-		## then download regular
-		## then combine both into single file
-
-		## 1. orography file with height
-		## 2. main file with data
-		## 3. combine both into file with 
-
 		if self.module == 'era5':
 			if not has_cdsapi:
 				raise RuntimeError(
@@ -290,13 +288,19 @@ class Dataset(object):
 						'12:00','13:00','14:00','15:00','16:00','17:00',
 						'18:00','19:00','20:00','21:00','22:00','23:00'
 					],
+					'area': self.bounds,
 					'variable':['forecast_surface_roughness', 'orography']
 				}
+				if hasattr(self, 'bounds'):
+					meta_request.update({'area':self.bounds})
 				assert {'year', 'month', 'variable'}.issubset(meta_request), "Need to specify at least 'variable', 'year' and 'month'"
 				meta_result = cdsapi.Client().retrieve(
 					self.weatherconfig['product'],
 					meta_request
 				)
+				logger.info("Downloading metadata request for {} variables to {}".format(len(meta_request['variable']), f))
+				meta_result.download(target)
+
 				#2. Full data file
 				full_request = {
 					'product_type':'reanalysis',
@@ -316,15 +320,14 @@ class Dataset(object):
 					],
 					'variable':self.weatherconfig['variables']
 				}
+				if hasattr(self, 'bounds'):
+					full_request.update({'area':self.bounds})
 				assert {'year', 'month', 'variable'}.issubset(meta_request), "Need to specify at least 'variable', 'year' and 'month'"
 				full_result = cdsapi.Client().retrieve(
 					self.weatherconfig['product'],
 					full_request
 				)
 				
-				## need to test merging 
-				logger.info("Downloading metadata request for {} variables to {}".format(len(meta_request['variable']), f))
-				meta_result.download(target)
 				logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
 				full_result.download(target2)
 
@@ -383,10 +386,7 @@ class Dataset(object):
 				os.unlink(target)
 				os.unlink(target2)
 
-				## need to download this to tempfile
-				print(f) + 'success'
-
-			
+				logger.info("Successfully downloaded to {}".format(f[1]))
 
 
 		else:
