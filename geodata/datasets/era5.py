@@ -151,12 +151,73 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 	Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
 	"""
 
-	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
+	ds = ds.rename({'lon': 'x', 'lat': 'y'})
 	if add_lon_lat:
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
-def prepare_meta_era5(xs, ys, year, month, module, **kwargs):
+def convert_and_subset_lons_lats_era5(ds, xs, ys):
+	# Rename geographic dimensions to x,y
+	# Subset x,y according to xs, ys
+
+	if not isinstance(xs, slice):
+		first, second, last = np.asarray(xs)[[0,1,-1]]
+		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+	if not isinstance(ys, slice):
+		first, second, last = np.asarray(ys)[[0,1,-1]]
+		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+
+	ds = ds.sel(lat=ys)
+
+	# Lons should go from -180. to +180.
+	if len(ds.coords['lon'].sel(lon=slice(xs.start + 360., xs.stop + 360.))):
+		ds = xr.concat([ds.sel(lon=slice(xs.start + 360., xs.stop + 360.)),
+						ds.sel(lon=xs)],
+					   dim="lon")
+		ds = ds.assign_coords(lon=np.where(ds.coords['lon'].values <= 180,
+											 ds.coords['lon'].values,
+											 ds.coords['lon'].values - 360.))
+	else:
+		ds = ds.sel(lon=xs)
+
+	ds = ds.rename({'lon': 'x', 'lat': 'y'})
+	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
+	return ds
+
+
+def subset_x_y_era5(ds, xs, ys):
+	# Subset x,y according to xs, ys
+
+	if not isinstance(xs, slice):
+		first, second, last = np.asarray(xs)[[0,1,-1]]
+		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+	if not isinstance(ys, slice):
+		first, second, last = np.asarray(ys)[[0,1,-1]]
+		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+
+	ds = ds.sel(y=ys)
+	ds = ds.sel(x=xs)
+
+	return ds
+
+def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
+
+	fns = glob.iglob(template.format(year=year, month=month))
+	with xr.open_mfdataset(fns, combine='by_coords') as ds:
+		ds = ds.coords.to_dataset()
+		ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
+		meta = ds.load()
+
+	return meta
+
+
+	#if not os.path.isfile(fn):
+	#		return None
+	#with xr.open_dataset(fn) as ds:
+	#	logger.info(f'Opening for meta `{fn}`')
+	#	meta = ds['z']
+	#	return meta
+
 	# Load/download ERA5 height data as metadata
 
 	# Reference of the quantities
@@ -166,17 +227,17 @@ def prepare_meta_era5(xs, ys, year, month, module, **kwargs):
 	#
 	# (shortName) | (name)                        | (paramId)
 	# z           | Geopotential (CDS: Orography) | 129
-	with _get_data(variable='orography',
-				   year=year, month=month, day=1,
-				   area=_area(xs, ys)) as ds:
-		ds = _rename_and_clean_coords(ds)
-		ds = _add_height(ds)
-
-		t = pd.Timestamp(year=year, month=month, day=1)
-		ds['time'] = pd.date_range(t, t + pd.DateOffset(months=1),
-								   freq='1h', closed='left')
-
-		return ds.load()
+	#with _get_data(variable='orography',
+	#			   year=year, month=month, day=1,
+	#			   area=_area(xs, ys)) as ds:
+	#	ds = _rename_and_clean_coords(ds)
+	#	ds = _add_height(ds)
+#
+#		t = pd.Timestamp(year=year, month=month, day=1)
+#		ds['time'] = pd.date_range(t, t + pd.DateOffset(months=1),
+#								   freq='1h', closed='left')
+#
+#		return ds.load()
 
 def prepare_for_sarah(year, month, xs, ys, dx, dy, chunks=None):
 	area = _area(xs, ys)
@@ -207,8 +268,8 @@ def prepare_for_sarah(year, month, xs, ys, dx, dy, chunks=None):
 		yield ds.chunk(chunks)
 		logger.debug("Cleaning up ERA5")
 
-def prepare_month_era5(year, month, xs, ys):
-	area = _area(xs, ys)
+def prepare_month_era5(fn, year, month, xs, ys):
+	# area = _area(xs, ys)
 
 	# Reference of the quantities
 	# https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
@@ -223,67 +284,89 @@ def prepare_month_era5(year, month, xs, ys):
 	# stl4        | Soil temperature level 4                    | 236
 	# fsr         | Forecast surface roughnes                   | 244
 
-	with _get_data(area=area, year=year, month=month,
-				   variable=[
-					   '100m_u_component_of_wind',
-					   '100m_v_component_of_wind',
-					   '2m_temperature',
-					   'runoff',
-					   'soil_temperature_level_4',
-					   'surface_net_solar_radiation',
-					   'surface_pressure',
-					   'surface_solar_radiation_downwards',
-					   'toa_incident_solar_radiation',
-					   'total_sky_direct_solar_radiation_at_surface'
-				   ]) as ds, \
-		 _get_data(area=area, year=year, month=month, day=1,
-				   variable=['forecast_surface_roughness', 'orography']) as ds_m:
-
-		ds_m = ds_m.isel(time=0, drop=True)
-		ds = xr.merge([ds, ds_m], join='left')
-
+	if not os.path.isfile(fn):
+		return None
+	with xr.open_dataset(fn) as ds:
+		logger.info(f'Opening `{fn}`')
 		ds = _rename_and_clean_coords(ds)
-		ds = _add_height(ds)
-
-
-		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
-		with np.errstate(divide='ignore', invalid='ignore'):
-			ds['albedo'] = (((ds['ssrd'] - ds['ssr'])/ds['ssrd']).fillna(0.)
-							.assign_attrs(units='(0 - 1)', long_name='Albedo'))
-		ds['influx_diffuse'] = ((ds['ssrd'] - ds['influx_direct'])
-								.assign_attrs(units='J m**-2',
-											long_name='Surface diffuse solar radiation downwards'))
-		ds = ds.drop(['ssrd', 'ssr'])
-
-		# Convert from energy to power J m**-2 -> W m**-2 and clip negative fluxes
-		for a in ('influx_direct', 'influx_diffuse', 'influx_toa'):
-			ds[a] = ds[a].clip(min=0.) / (60.*60.)
-			ds[a].attrs['units'] = 'W m**-2'
-
-		ds['wnd100m'] = (np.sqrt(ds['u100']**2 + ds['v100']**2)
-						.assign_attrs(units=ds['u100'].attrs['units'],
-									long_name="100 metre wind speed"))
-		ds = ds.drop(['u100', 'v100'])
-
-		ds = ds.rename({'ro': 'runoff',
-						't2m': 'temperature',
-						'sp': 'pressure',
-						'stl4': 'soil temperature',
-						'fsr': 'roughness'
-						})
-
-		ds['runoff'] = ds['runoff'].clip(min=0.)
-
+		ds = subset_x_y_era5(ds, xs, ys)
 		yield (year, month), ds
+
+
+	#with _get_data(area=area, year=year, month=month,
+	#			   variable=[
+	#				   '100m_u_component_of_wind',
+	#				   '100m_v_component_of_wind',
+	#				   '2m_temperature',
+	#				   'runoff',
+	#				   'soil_temperature_level_4',
+	#				   'surface_net_solar_radiation',
+	#				   'surface_pressure',
+	#				   'surface_solar_radiation_downwards',
+	#				   'toa_incident_solar_radiation',
+	#				   'total_sky_direct_solar_radiation_at_surface'
+	#			   ]) as ds, \
+	#	 _get_data(area=area, year=year, month=month, day=1,
+	#			   variable=['forecast_surface_roughness', 'orography']) as ds_m:
+#
+#		ds_m = ds_m.isel(time=0, drop=True)
+#		ds = xr.merge([ds, ds_m], join='left')
+#
+#		ds = _rename_and_clean_coords(ds)
+#		ds = _add_height(ds)
+#
+#
+#		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
+#		with np.errstate(divide='ignore', invalid='ignore'):
+#			ds['albedo'] = (((ds['ssrd'] - ds['ssr'])/ds['ssrd']).fillna(0.)
+#							.assign_attrs(units='(0 - 1)', long_name='Albedo'))
+#		ds['influx_diffuse'] = ((ds['ssrd'] - ds['influx_direct'])
+#								.assign_attrs(units='J m**-2',
+#											long_name='Surface diffuse solar radiation downwards'))
+#		ds = ds.drop(['ssrd', 'ssr'])
+#
+#		# Convert from energy to power J m**-2 -> W m**-2 and clip negative fluxes
+#		for a in ('influx_direct', 'influx_diffuse', 'influx_toa'):
+#			ds[a] = ds[a].clip(min=0.) / (60.*60.)
+#			ds[a].attrs['units'] = 'W m**-2'
+#
+#		ds['wnd100m'] = (np.sqrt(ds['u100']**2 + ds['v100']**2)
+#						.assign_attrs(units=ds['u100'].attrs['units'],
+#									long_name="100 metre wind speed"))
+#		ds = ds.drop(['u100', 'v100'])
+#
+#		ds = ds.rename({'ro': 'runoff',
+#						't2m': 'temperature',
+#						'sp': 'pressure',
+#						'stl4': 'soil temperature',
+#						'fsr': 'roughness'
+#						})
+#
+#		ds['runoff'] = ds['runoff'].clip(min=0.)
+#
+#		yield (year, month), ds
 
 def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	if not isinstance(xs, slice):
 		xs = slice(*xs.values[[0, -1]])
 	if not isinstance(ys, slice):
 		ys = slice(*ys.values[[0, -1]])
+	fn = meta_attrs['fn']
 
-	return [dict(prepare_func=prepare_func, xs=xs, ys=ys, year=year, month=month)
-			for year, month in yearmonths]
+	logger.info(yearmonths)
+	logger.info([(year, month) for year, month in yearmonths])
+
+	return [
+		dict(
+			prepare_func=prepare_func, 
+			xs=xs, 
+			ys=ys, 
+			year=year, 
+			month=month,
+			fn=fn.format(year=year, month=month)
+		)
+		for year, month in yearmonths
+	]
 
 weather_data_config = {
 	'era5_monthly': dict(
@@ -292,6 +375,7 @@ weather_data_config = {
 		meta_prepare_func=prepare_meta_era5,
 		prepare_func=prepare_month_era5,
 		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),
+		fn = os.path.join(era5_dir, '{year}/{month:0>2}/112rsssstt.nc'),
 		product='reanalysis-era5-single-levels',
 		variables=[
 					   '100m_u_component_of_wind',

@@ -340,8 +340,8 @@ class Dataset(object):
 				ds = xr.merge([ds, ds_m], join='left')
 
 				## rename and clean coords
-				ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
-				ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
+				ds = ds.rename({'longitude': 'lon', 'latitude': 'lat'})
+				ds = ds.assign_coords(lon=ds.coords['lon'], lat=ds.coords['lat'])
 
 				## add height
 				g0 = 9.80665
