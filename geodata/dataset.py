@@ -143,7 +143,7 @@ class Dataset(object):
 						if not os.path.isfile( filename ):
 							self.prepared = False
 							if check_complete:
-								logger.info("File `%s` not found pi!", filename)
+								logger.info("File `%s` not found!", filename)
 								incomplete_count += 1
 							self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
 						else:
@@ -210,23 +210,21 @@ class Dataset(object):
 					else:
 						self.downloadedFiles.append((self.config, filename))
 
-			# removed unneeded check for one file section
+		if not self.prepared:
 
-			if not self.prepared:
+			if {"xs", "ys"}.difference(datasetparams):
+				logger.warn("Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global.")
 
-				if {"xs", "ys"}.difference(datasetparams):
-					logger.warn("Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global.")
-
-				logger.info(f'{incomplete_count} files not completed.')
-				## Main preparation call for metadata
-				#	preparation.cutout_get_meta
-				#	cutout.meta_data_config
-				#	dataset_module.meta_data_config (e.g. prepare_meta_era5)
-				# self.meta = self.get_meta(**datasetparams)
-				return None
-			else:
-				logger.info("Directory complete.")
-				return None
+			logger.info(f'{incomplete_count} files not completed.')
+			## Main preparation call for metadata
+			#	preparation.cutout_get_meta
+			#	cutout.meta_data_config
+			#	dataset_module.meta_data_config (e.g. prepare_meta_era5)
+			# self.meta = self.get_meta(**datasetparams)
+			return None
+		else:
+			logger.info("Directory complete.")
+			return None
 
 	def datasetfn(self, fn, *args):
 		# construct file name from fn template (cf weather_data_config) and args (yr, mo, day)
@@ -449,8 +447,8 @@ class Dataset(object):
 				count += 1
 				print("file completed")
 
-			if self.downloadedFiles == self.totalFiles:
-				self.prepared = True
+		if self.downloadedFiles == self.totalFiles:
+			self.prepared = True
 
 	def trim_variables(self, fn = None, wind=True, solar=True):
 		""" Reduce size of file by trimming variables in file
