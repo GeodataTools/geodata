@@ -1,5 +1,21 @@
 ## Unreleased
 
+## ERA5 Dataset Update
+
+### tests
+* Update `era5_test.py` to reflect new Dataset + get_data() workflow for era5 data.
+
+### dataset.py
+* [`Dataset`]
+- Add case for `era5` dataset declarations and toDownload file list construction.
+- Update `get_data()` function to trigger calls to CDS API for era5 case.  For each monthly file, fires one call to download orography (height data), and one call to download climate data, then combines both files into a single file for later cutout creation.
+
+### era5.py
+* Update `prepare_meta_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
+* Update `prepare_monthly_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
+* Add parameters for CDS API product, variable specification, and Dataset class filenames to `era5_monthly` weather data config entry.
+
+
 ## Merra2 Daily Update
 
 ### tests
