@@ -1,6 +1,4 @@
 LICENSE.txt
-MANIFEST.in
-README-geodata.rst
 README.md
 setup.cfg
 setup.py

@@ -114,7 +114,7 @@ class Dataset(object):
 					if not os.path.isfile( filename ):
 						self.prepared = False
 						if check_complete:
-							logger.info("File `%s` not found pi!", filename)
+							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
 						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
 					else:
@@ -134,7 +134,7 @@ class Dataset(object):
 					if not os.path.isfile( filename ):
 						self.prepared = False
 						if check_complete:
-							logger.info("File `%s` not found pi!", filename)
+							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
 						self.toDownload.append((
 							self.config, 
