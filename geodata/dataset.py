@@ -108,93 +108,36 @@ class Dataset(object):
 		step = months.step if months.step else 1
 		mos = range(months.start, months.stop+step, step)
 
-		if self.module == 'era5':
-		
-			if self.weatherconfig['file_granularity'] == 'monthly':
+		if self.weatherconfig['file_granularity'] == 'daily' or self.weatherconfig['file_granularity'] == 'dailymeans':
+			# Separate files for each day (eg MERRA)
+			# Check for complete set of files of year, month, day
+			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
 
-				fv = "".join([v[0] for v in self.weatherconfig['variables']])
-				mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
-				for mo_tuple in mo_tuples:
-					yr, mo = mo_tuple
-					filename = os.path.join(self.datadir, '{year}/{month:0>2}/{f}.nc'.format(year=yr, month=mo,f=fv))
+			for mo_tuple in mo_tuples:
+				# format: (yr, mo, number_days_in_month)
+				yr, mo, nodays = mo_tuple
+				for day in range(1, nodays+1, 1):
+					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
 					self.totalFiles.append((self.config, filename))
 					if not os.path.isfile( filename ):
 						self.prepared = False
 						if check_complete:
 							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
-						self.toDownload.append((self.config, filename, yr, mo))
+						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
 					else:
 						self.downloadedFiles.append((self.config, filename))
 
-		else:
+		elif self.weatherconfig['file_granularity'] == 'daily_multiple':
+			# Separate files for each day (eg MERRA)
+			# Check for complete set of files of year, month, day
+			mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
 
-			if self.weatherconfig['file_granularity'] == 'daily' or self.weatherconfig['file_granularity'] == 'dailymeans':
-				# Separate files for each day (eg MERRA)
-				# Check for complete set of files of year, month, day
-				mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
-
-				for mo_tuple in mo_tuples:
-					# format: (yr, mo, number_days_in_month)
-					yr, mo, nodays = mo_tuple
-					for day in range(1, nodays+1, 1):
-						filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
-						self.totalFiles.append((self.config, filename))
-						if not os.path.isfile( filename ):
-							self.prepared = False
-							if check_complete:
-								logger.info("File `%s` not found!", filename)
-								incomplete_count += 1
-							self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
-						else:
-							self.downloadedFiles.append((self.config, filename))
-
-			elif self.weatherconfig['file_granularity'] == 'daily_multiple':
-				# Separate files for each day (eg MERRA)
-				# Check for complete set of files of year, month, day
-				mo_tuples = [(yr,mo,monthrange(yr,mo)[1]) for yr in yrs for mo in mos]
-
-				for mo_tuple in mo_tuples:
-					# format: (yr, mo, number_days_in_month)
-					yr, mo, nodays = mo_tuple
-					for day in range(1, nodays+1, 1):
-						filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
-						self.totalFiles.append((self.config, filename))
-						if not os.path.isfile( filename ):
-							self.prepared = False
-							if check_complete:
-								logger.info("File `%s` not found!", filename)
-								incomplete_count += 1
-							self.toDownload.append((
-								self.config, 
-								filename, 
-								self.datasetfn(self.weatherconfig['url'][0], yr, mo, day),
-								self.datasetfn(self.weatherconfig['url'][1], yr, mo, day)
-								))
-						else:
-							self.downloadedFiles.append((self.config, filename))
-
-			elif self.weatherconfig['file_granularity'] == 'monthly':
-				# Monthly files (eg ERA5)
-				mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
-				for mo_tuple in mo_tuples:
-					yr, mo = mo_tuple
-					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
-					self.totalFiles.append((self.config, filename))
-					if not os.path.isfile( filename ):
-						self.prepared = False
-						if check_complete:
-							logger.info("File `%s` not found!", filename)
-							incomplete_count += 1
-						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo)))
-					else:
-						self.downloadedFiles.append((self.config, filename))
-			
-			elif self.weatherconfig['file_granularity'] == 'monthly_multiple':
-				mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
-				for mo_tuple in mo_tuples:
-					yr, mo = mo_tuple
-					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
+			for mo_tuple in mo_tuples:
+				# format: (yr, mo, number_days_in_month)
+				yr, mo, nodays = mo_tuple
+				for day in range(1, nodays+1, 1):
+					filename = self.datasetfn(self.weatherconfig['fn'], yr, mo, day)
 					self.totalFiles.append((self.config, filename))
 					if not os.path.isfile( filename ):
 						self.prepared = False
@@ -204,11 +147,50 @@ class Dataset(object):
 						self.toDownload.append((
 							self.config, 
 							filename, 
-							self.datasetfn(self.weatherconfig['url'][0], yr, mo),
-							self.datasetfn(self.weatherconfig['url'][1], yr, mo)
+							self.datasetfn(self.weatherconfig['url'][0], yr, mo, day),
+							self.datasetfn(self.weatherconfig['url'][1], yr, mo, day)
 							))
 					else:
 						self.downloadedFiles.append((self.config, filename))
+
+		elif self.weatherconfig['file_granularity'] == 'monthly':
+			# Monthly files (eg ERA5)
+			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
+			for mo_tuple in mo_tuples:
+				yr, mo = mo_tuple
+				filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
+				self.totalFiles.append((self.config, filename))
+				if not os.path.isfile( filename ):
+					self.prepared = False
+					if check_complete:
+						logger.info("File `%s` not found!", filename)
+						incomplete_count += 1
+					if self.module == 'era5':
+						self.toDownload.append((self.config, filename, yr, mo))
+					else:
+						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo)))
+				else:
+					self.downloadedFiles.append((self.config, filename))
+		
+		elif self.weatherconfig['file_granularity'] == 'monthly_multiple':
+			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
+			for mo_tuple in mo_tuples:
+				yr, mo = mo_tuple
+				filename = self.datasetfn(self.weatherconfig['fn'], yr, mo)
+				self.totalFiles.append((self.config, filename))
+				if not os.path.isfile( filename ):
+					self.prepared = False
+					if check_complete:
+						logger.info("File `%s` not found!", filename)
+						incomplete_count += 1
+					self.toDownload.append((
+						self.config, 
+						filename, 
+						self.datasetfn(self.weatherconfig['url'][0], yr, mo),
+						self.datasetfn(self.weatherconfig['url'][1], yr, mo)
+						))
+				else:
+					self.downloadedFiles.append((self.config, filename))
 
 		if not self.prepared:
 

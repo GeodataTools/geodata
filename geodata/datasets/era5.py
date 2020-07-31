@@ -289,13 +289,13 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	]
 
 weather_data_config = {
-	'era5_monthly': dict(
+	'wind_solar_hourly': dict(
 		file_granularity="monthly",
 		tasks_func=tasks_monthly_era5,
 		meta_prepare_func=prepare_meta_era5,
 		prepare_func=prepare_month_era5,
 		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),
-		fn = os.path.join(era5_dir, '{year}/{month:0>2}/112rsssstt.nc'),
+		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		product='reanalysis-era5-single-levels',
 		variables=[
 					   '100m_u_component_of_wind',
