@@ -1,6 +1,5 @@
 ## Unreleased
 
-<<<<<<< HEAD
 ## ERA5 Dataset Update
 
 ### tests
@@ -16,7 +15,6 @@
 * Update `prepare_monthly_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
 * Add parameters for CDS API product, variable specification, and Dataset class filenames to `era5_monthly` weather data config entry.
 
-=======
 ## Merra2 PM25 Update
 PR: https://github.com/east-winds/geodata/pull/14
 
@@ -36,7 +34,6 @@ PR: https://github.com/east-winds/geodata/pull/14
 
 ### geodata.egg-info/PKG-INFO
 * Updated package info.
->>>>>>> 354673cc34128effd05b646301b132f567a1f431
 
 ## Merra2 Daily Update
 
