@@ -15,6 +15,8 @@ A list of currently possible **geodata** configs and outputs for MERRA2 data fro
 * `slv_radiation_monthly`:
     - [MERRA2 monthly mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary)
     - [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
+* `surface_aerosol_hourly`: [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
+
 
 
 ## Variable Configurations
@@ -48,6 +50,13 @@ MERRA2 surface flux data currently supports the following variable configs:
 * t2mmean: mean 2-meter air temperature (K)
 * t2mmin: min 2-meter air temperature (K)
 
+**Aerosols** (`surface_aerosol_hourly`)
+* bcsmass: black carbon surface mass concentration (kg m-3)
+* dusmass25: dust surface mass concentration - pm 2.5 (kg m-3)
+* ocsmass: organic carbon surface mass concentration (kg m-3)
+* so4smass: SO4 Surface Mass Concentration (kg m-3)
+* sssmass25: Sea Salt Surface Mass Concentration - pm 2.5 (kg m-3)
+
 ## Outputs
 
 MERRA2 surface flux data currently supports the following outputs:
@@ -58,7 +67,10 @@ MERRA2 surface flux data currently supports the following outputs:
 * [Wind power density time-series]
 
 **Solar** (`slv_radiation_hourly`, `slv_radiation_monthly`)
-* [pv generation time-series]
+* [PV generation time-series]
 
 **Temperature** (`surface_flux_dailymeans`)
 * [Celsius Temperature]
+
+**Aerosols** (`surface_aerosol_hourly`)
+* [PM2.5 time series]

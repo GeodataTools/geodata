@@ -1,5 +1,6 @@
 ## Unreleased
 
+<<<<<<< HEAD
 ## ERA5 Dataset Update
 
 ### tests
@@ -15,6 +16,27 @@
 * Update `prepare_monthly_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
 * Add parameters for CDS API product, variable specification, and Dataset class filenames to `era5_monthly` weather data config entry.
 
+=======
+## Merra2 PM25 Update
+PR: https://github.com/east-winds/geodata/pull/14
+
+### tests
+* Added `merra_aerosol_hourly_test.ipynb` to test aerosol hourly config for MERRA2.
+* Removed locally-generated output text from jupyter notebook files in `tests` folder.
+
+### merra2.py
+* [`weather_data_config`]
+- Added entry `surface_aerosol_hourly` for [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
+
+### dataset.py
+* Removed extra text 'pi' from "files not found" message (lines 117, 137)
+
+### convert.py
+* Added `pm25` and `convert_pm25` for generating pm25 time series output.
+
+### geodata.egg-info/PKG-INFO
+* Updated package info.
+>>>>>>> 354673cc34128effd05b646301b132f567a1f431
 
 ## Merra2 Daily Update
 

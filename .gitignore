@@ -7,8 +7,21 @@ cutout_test2.ipynb
 .DS_Store
 __pycache__
 doc/_build/
+# Distribution / packaging
+bin/
 build/
+develop-eggs/
 dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
 
 output/
 outputs

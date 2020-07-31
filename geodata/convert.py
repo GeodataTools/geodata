@@ -712,7 +712,48 @@ def hydro(cutout, plants, hydrobasins, flowspeed=1, weight_with_height=False, sh
 
 	return hydrom.shift_and_aggregate_runoff_for_plants(basins, runoff, flowspeed, show_progress)
 
-## other functions
+
+## Air pollution
+
+def convert_pm25(ds, **params):
+	"""
+	Generate PM2.5 time series according to [1]:
+
+		PM2.5 = [Dust2.5] + [SS2.5] + [BC] + 1.4*[OC] + 1.375*[SO4]
+
+	Parameters
+	----------
+	**params : None needed currently.
+
+	References
+	-------
+	[1] Buchard, V., da Silva, A. M., Randles, C. A., Colarco, P., Ferrare, R., Hair, J., … Winker, D. (2016). Evaluation of the surface PM2.5 in Version 1 of the NASA MERRA Aerosol Reanalysis over the United States. Atmospheric Environment, 125, 100–111. https://doi.org/10.1016/j.atmosenv.2015.11.004
+	"""
+
+	ds['pm25'] = ds['dusmass25'] + ds['sssmass25'] + ds['bcsmass'] + 1.4*ds['ocsmass'] + 1.375*ds['so4smass']
+
+	return 1e9*ds['pm25']  # kg / m3 to ug / m3
+
+
+def pm25(cutout, **params):
+	"""
+	Generate PM2.5 time series 	[ug / m3]
+	(see convert_pm25 for details)
+
+	Parameters
+	----------
+	**params : None needed currently.
+
+	Returns
+	-------
+	pm25 : xr.DataArray
+
+	"""
+
+	return cutout.convert_and_aggregate(convert_func=convert_pm25, **params)
+
+
+## Manipulate arbitrary variables
 
 def _get_var(ds, var, **params):
 	"""
