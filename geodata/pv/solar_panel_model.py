@@ -89,8 +89,8 @@ def SolarPanelModel(ds, irradiance, pc):
     model = pc.get('model', 'huld')
 
     if model == 'huld':
-        return _power_huld(irradiance, ds['temperature'], pc)
+        return _power_huld(ds['temperature'], irradiance, pc)
     elif model == 'bofinger':
-        return _power_bofinger(irradiance, ds['temperature'], pc)
+        return _power_bofinger(ds['temperature'], irradiance, pc)
     else:
         AssertionError("Unknown panel model: {}".format(model))
