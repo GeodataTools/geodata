@@ -149,10 +149,70 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 	Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
 	"""
 
-	ds = ds.rename({'lon': 'x', 'lat': 'y'})
+	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
 	if add_lon_lat:
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
+
+def api_hourly_era5(
+	toDownload, 
+	bounds,
+	download_vars, 
+	product
+	):
+	if not has_cdsapi:
+		raise RuntimeError(
+					"Need installed cdsapi python package available from "
+					"https://cds.climate.copernicus.eu/api-how-to"
+				)
+	
+	if len(toDownload == 0):
+		logger.info("All ERA5 files for this dataset have been downloaded.")
+	else:
+		logger.info("Preparing to download " + str(len(toDownload) + "files."))
+
+		for f in toDownload:
+					print(f)
+					os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+
+					fd, target = mkstemp(suffix='.nc4')
+					fd2, target2 = mkstemp(suffix='.nc4')
+
+					## for each file in self.todownload - need to then reextract year month in order to make query
+					query_year = str(f[2])
+					query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+
+					#2. Full data file
+					full_request = {
+						'product_type':'reanalysis',
+						'format':'netcdf',
+						'year':query_year,
+						'month':query_month,
+						'day':[
+							'01','02','03','04','05','06','07','08','09','10','11','12',
+							'13','14','15','16','17','18','19','20','21','22','23','24',
+							'25','26','27','28','29','30','31'
+						],
+						'time':[
+							'00:00','01:00','02:00','03:00','04:00','05:00',
+							'06:00','07:00','08:00','09:00','10:00','11:00',
+							'12:00','13:00','14:00','15:00','16:00','17:00',
+							'18:00','19:00','20:00','21:00','22:00','23:00'
+						],
+						'area': bounds,
+						'variable': download_vars
+					}
+
+					full_result = cdsapi.Client().retrieve(
+						product,
+						full_request
+					)
+					
+					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+					full_result.download(f[1])
+					logger.info("Successfully downloaded to {}".format(f[1]))
+
+
 
 def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Rename geographic dimensions to x,y
@@ -165,20 +225,20 @@ def convert_and_subset_lons_lats_era5(ds, xs, ys):
 		first, second, last = np.asarray(ys)[[0,1,-1]]
 		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
 
-	ds = ds.sel(lat=ys)
+	ds = ds.sel(latitude=ys)
 
-	# Lons should go from -180. to +180.
-	if len(ds.coords['lon'].sel(lon=slice(xs.start + 360., xs.stop + 360.))):
-		ds = xr.concat([ds.sel(lon=slice(xs.start + 360., xs.stop + 360.)),
-						ds.sel(lon=xs)],
-					   dim="lon")
-		ds = ds.assign_coords(lon=np.where(ds.coords['lon'].values <= 180,
-											 ds.coords['lon'].values,
-											 ds.coords['lon'].values - 360.))
+	# longitudes should go from -180. to +180.
+	if len(ds.coords['longitude'].sel(longitude=slice(xs.start + 360., xs.stop + 360.))):
+		ds = xr.concat([ds.sel(longitude=slice(xs.start + 360., xs.stop + 360.)),
+						ds.sel(longitude=xs)],
+					   dim="longitude")
+		ds = ds.assign_coords(longitude=np.where(ds.coords['longitude'].values <= 180,
+											 ds.coords['longitude'].values,
+											 ds.coords['longitude'].values - 360.))
 	else:
-		ds = ds.sel(lon=xs)
+		ds = ds.sel(longitude=xs)
 
-	ds = ds.rename({'lon': 'x', 'lat': 'y'})
+	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
 	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
@@ -262,7 +322,37 @@ def prepare_month_era5(fn, year, month, xs, ys):
 	with xr.open_dataset(fn) as ds:
 		logger.info(f'Opening `{fn}`')
 		ds = _rename_and_clean_coords(ds)
+		ds = _add_height(ds)
 		ds = subset_x_y_era5(ds, xs, ys)
+
+		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
+		with np.errstate(divide='ignore', invalid='ignore'):
+			ds['albedo'] = (((ds['ssrd'] - ds['ssr'])/ds['ssrd']).fillna(0.)
+							.assign_attrs(units='(0 - 1)', long_name='Albedo'))
+		ds['influx_diffuse'] = ((ds['ssrd'] - ds['influx_direct'])
+								.assign_attrs(units='J m**-2',
+											long_name='Surface diffuse solar radiation downwards'))
+		ds = ds.drop(['ssrd', 'ssr'])
+
+		# Convert from energy to power J m**-2 -> W m**-2 and clip negative fluxes
+		for a in ('influx_direct', 'influx_diffuse', 'influx_toa'):
+			ds[a] = ds[a].clip(min=0.) / (60.*60.)
+			ds[a].attrs['units'] = 'W m**-2'
+
+		ds['wnd100m'] = (np.sqrt(ds['u100']**2 + ds['v100']**2)
+						.assign_attrs(units=ds['u100'].attrs['units'],
+									long_name="100 metre wind speed"))
+		ds = ds.drop(['u100', 'v100'])
+
+		ds = ds.rename({'ro': 'runoff',
+						't2m': 'temperature',
+						'sp': 'pressure',
+						'stl4': 'soil temperature',
+						'fsr': 'roughness'
+						})
+
+		ds['runoff'] = ds['runoff'].clip(min=0.)
+
 		yield (year, month), ds
 
 
@@ -290,6 +380,7 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 
 weather_data_config = {
 	'wind_solar_hourly': dict(
+		api_func=api_hourly_era5,
 		file_granularity="monthly",
 		tasks_func=tasks_monthly_era5,
 		meta_prepare_func=prepare_meta_era5,
@@ -307,7 +398,9 @@ weather_data_config = {
 					   'surface_pressure',
 					   'surface_solar_radiation_downwards',
 					   'toa_incident_solar_radiation',
-					   'total_sky_direct_solar_radiation_at_surface'
+					   'total_sky_direct_solar_radiation_at_surface',
+					   'forecast_surface_roughness', 
+					   'orography'
 				   ]
 		)
 }

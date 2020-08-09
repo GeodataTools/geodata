@@ -233,141 +233,17 @@ class Dataset(object):
 		"""
 
 		if self.module == 'era5':
-			if not has_cdsapi:
-				raise RuntimeError(
-					"Need installed cdsapi python package available from "
-					"https://cds.climate.copernicus.eu/api-how-to"
+
+			api_func = self.weatherconfig['api_func']
+
+			api_func(
+				self.toDownload,
+				self.bounds,
+				self.weatherconfig['variables'],
+				self.weatherconfig['product'],
 				)
 
-			print('era5')
-			for f in self.toDownload:
-				print(f)
-				os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-
-				fd, target = mkstemp(suffix='.nc4')
-				fd2, target2 = mkstemp(suffix='.nc4')
-
-
-				## for each file in self.todownload - need to then reextract year month in order to make query
-				query_year = str(f[2])
-				query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
-				#1.  orography file
-				meta_request = {
-					'product_type':'reanalysis',
-					'format':'netcdf',
-					'year':query_year,
-					'month':query_month,
-					'day':[
-						'01','02','03','04','05','06','07','08','09','10','11','12',
-						'13','14','15','16','17','18','19','20','21','22','23','24',
-						'25','26','27','28','29','30','31'
-					],
-					'time':[
-						'00:00','01:00','02:00','03:00','04:00','05:00',
-						'06:00','07:00','08:00','09:00','10:00','11:00',
-						'12:00','13:00','14:00','15:00','16:00','17:00',
-						'18:00','19:00','20:00','21:00','22:00','23:00'
-					],
-					'area': self.bounds,
-					'variable':['forecast_surface_roughness', 'orography']
-				}
-				if hasattr(self, 'bounds'):
-					meta_request.update({'area':self.bounds})
-				assert {'year', 'month', 'variable'}.issubset(meta_request), "Need to specify at least 'variable', 'year' and 'month'"
-				meta_result = cdsapi.Client().retrieve(
-					self.weatherconfig['product'],
-					meta_request
-				)
-				logger.info("Downloading metadata request for {} variables to {}".format(len(meta_request['variable']), f))
-				meta_result.download(target)
-
-				#2. Full data file
-				full_request = {
-					'product_type':'reanalysis',
-					'format':'netcdf',
-					'year':query_year,
-					'month':query_month,
-					'day':[
-						'01','02','03','04','05','06','07','08','09','10','11','12',
-						'13','14','15','16','17','18','19','20','21','22','23','24',
-						'25','26','27','28','29','30','31'
-					],
-					'time':[
-						'00:00','01:00','02:00','03:00','04:00','05:00',
-						'06:00','07:00','08:00','09:00','10:00','11:00',
-						'12:00','13:00','14:00','15:00','16:00','17:00',
-						'18:00','19:00','20:00','21:00','22:00','23:00'
-					],
-					'variable':self.weatherconfig['variables']
-				}
-				if hasattr(self, 'bounds'):
-					full_request.update({'area':self.bounds})
-				assert {'year', 'month', 'variable'}.issubset(meta_request), "Need to specify at least 'variable', 'year' and 'month'"
-				full_result = cdsapi.Client().retrieve(
-					self.weatherconfig['product'],
-					full_request
-				)
-				
-				logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
-				full_result.download(target2)
-
-				## load in to merge
-				ds_m = xr.open_dataset(target)
-				ds = xr.open_dataset(target2)
-
-				## manipulations
-				ds_m = ds_m.isel(time=0, drop=True)
-				ds = xr.merge([ds, ds_m], join='left')
-
-				## rename and clean coords
-				ds = ds.rename({'longitude': 'lon', 'latitude': 'lat'})
-				ds = ds.assign_coords(lon=ds.coords['lon'], lat=ds.coords['lat'])
-
-				## add height
-				g0 = 9.80665
-				z = ds['z']
-				if 'time' in z.coords:
-					z = z.isel(time=0, drop=True)
-				ds['height'] = z/g0
-				ds = ds.drop('z')
-
-				## other manipulations
-				ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
-				with np.errstate(divide='ignore', invalid='ignore'):
-					ds['albedo'] = (((ds['ssrd'] - ds['ssr'])/ds['ssrd']).fillna(0.)
-									.assign_attrs(units='(0 - 1)', long_name='Albedo'))
-				ds['influx_diffuse'] = ((ds['ssrd'] - ds['influx_direct'])
-										.assign_attrs(units='J m**-2',
-													long_name='Surface diffuse solar radiation downwards'))
-				ds = ds.drop(['ssrd', 'ssr'])
-
-				# Convert from energy to power J m**-2 -> W m**-2 and clip negative fluxes
-				for a in ('influx_direct', 'influx_diffuse', 'influx_toa'):
-					ds[a] = ds[a].clip(min=0.) / (60.*60.)
-					ds[a].attrs['units'] = 'W m**-2'
-
-				ds['wnd100m'] = (np.sqrt(ds['u100']**2 + ds['v100']**2)
-								.assign_attrs(units=ds['u100'].attrs['units'],
-											long_name="100 metre wind speed"))
-				ds = ds.drop(['u100', 'v100'])
-
-				ds = ds.rename({'ro': 'runoff',
-								't2m': 'temperature',
-								'sp': 'pressure',
-								'stl4': 'soil temperature',
-								'fsr': 'roughness'
-								})
-
-				ds['runoff'] = ds['runoff'].clip(min=0.)
-
-				ds.to_netcdf(f[1])
-				os.close(fd)
-				os.close(fd2)
-				os.unlink(target)
-				os.unlink(target2)
-
-				logger.info("Successfully downloaded to {}".format(f[1]))
-
+				##TODO: Add api download functions for Merra2 in separate PR
 
 		else:
 			count = 0
