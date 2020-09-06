@@ -261,6 +261,7 @@ def cutout_get_meta_view(cutout, xs=None, ys=None, years=slice(None), months=sli
 	#	Returns None if any of the dimensions of the subset are empty
 
 	meta = cutout.meta
+	meta.attrs['view'] = {}
 
 	if xs is not None:
 		meta.attrs.setdefault('view', {})['x'] = xs
