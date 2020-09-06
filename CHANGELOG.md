@@ -1,5 +1,8 @@
 ## Unreleased
 
+## preparation.py
+* Fixed issue where `meta.attrs.setdefault()` could attempt to assign value to subset of string in case of meta file being read in from `xarray.opendataset()`.  Safer to redeclare `view` key as property and then use `meta.attrs.setdefault()`.
+
 ## Merra2 PM25 Update
 PR: https://github.com/east-winds/geodata/pull/14
 
