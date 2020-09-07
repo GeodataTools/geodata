@@ -165,11 +165,11 @@ def api_hourly_era5(
 					"Need installed cdsapi python package available from "
 					"https://cds.climate.copernicus.eu/api-how-to"
 				)
-	
-	if len(toDownload == 0):
+
+	if len(toDownload) == 0:
 		logger.info("All ERA5 files for this dataset have been downloaded.")
 	else:
-		logger.info("Preparing to download " + str(len(toDownload) + "files."))
+		logger.info("Preparing to download " + str(len(toDownload)) + "files.")
 
 		for f in toDownload:
 					print(f)
