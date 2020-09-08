@@ -15,6 +15,10 @@
 * Update `prepare_monthly_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
 * Add parameters for CDS API product, variable specification, and Dataset class filenames to `era5_monthly` weather data config entry.
 
+## preparation.py
+* Fixed issue where `meta.attrs.setdefault()` could attempt to assign value to subset of string in case of meta file being read in from `xarray.opendataset()`.  Safer to redeclare `view` key as property and then use `meta.attrs.setdefault()`.
+https://github.com/east-winds/geodata/pull/18
+
 ## Merra2 PM25 Update
 PR: https://github.com/east-winds/geodata/pull/14
 
