@@ -209,6 +209,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	# Assign task function here?
 	tasks_func = meta_kwds['tasks_func']
 
+
 	# Get metadata (eg prepare_meta_merra2)
 	prepare_func = meta_kwds.pop('prepare_func')
 	ds = prepare_func(xs=xs, ys=ys, year=years.stop, month=months.stop, **meta_kwds)

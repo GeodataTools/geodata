@@ -97,9 +97,7 @@ def _get_data(target=None, product='reanalysis-era5-single-levels', chunks=None,
 				'06:00','07:00','08:00','09:00','10:00','11:00',
 				'12:00','13:00','14:00','15:00','16:00','17:00',
 				'18:00','19:00','20:00','21:00','22:00','23:00'
-			],
-			# 'area': [50, -1, 49, 1], # North, West, South, East. Default: global
-			# 'grid': [0.25, 0.25], # Latitude/longitude grid: east-west (longitude) and north-south resolution (latitude). Default: 0.25 x 0.25
+			]
 		}
 		request.update(updates)
 
@@ -156,27 +154,124 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
-def prepare_meta_era5(xs, ys, year, month, module, **kwargs):
-	# Load/download ERA5 height data as metadata
+def api_hourly_era5(
+	toDownload, 
+	bounds,
+	download_vars, 
+	product
+	):
+	if not has_cdsapi:
+		raise RuntimeError(
+					"Need installed cdsapi python package available from "
+					"https://cds.climate.copernicus.eu/api-how-to"
+				)
 
+	if len(toDownload) == 0:
+		logger.info("All ERA5 files for this dataset have been downloaded.")
+	else:
+		logger.info("Preparing to download " + str(len(toDownload)) + "files.")
+
+		for f in toDownload:
+					print(f)
+					os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+
+					fd, target = mkstemp(suffix='.nc4')
+					fd2, target2 = mkstemp(suffix='.nc4')
+
+					## for each file in self.todownload - need to then reextract year month in order to make query
+					query_year = str(f[2])
+					query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+
+					#2. Full data file
+					full_request = {
+						'product_type':'reanalysis',
+						'format':'netcdf',
+						'year':query_year,
+						'month':query_month,
+						'day':[
+							'01','02','03','04','05','06','07','08','09','10','11','12',
+							'13','14','15','16','17','18','19','20','21','22','23','24',
+							'25','26','27','28','29','30','31'
+						],
+						'time':[
+							'00:00','01:00','02:00','03:00','04:00','05:00',
+							'06:00','07:00','08:00','09:00','10:00','11:00',
+							'12:00','13:00','14:00','15:00','16:00','17:00',
+							'18:00','19:00','20:00','21:00','22:00','23:00'
+						],
+						'area': bounds,
+						'variable': download_vars
+					}
+
+					full_result = cdsapi.Client().retrieve(
+						product,
+						full_request
+					)
+					
+					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+					full_result.download(f[1])
+					logger.info("Successfully downloaded to {}".format(f[1]))
+
+
+
+def convert_and_subset_lons_lats_era5(ds, xs, ys):
+	# Rename geographic dimensions to x,y
+	# Subset x,y according to xs, ys
+
+	if not isinstance(xs, slice):
+		first, second, last = np.asarray(xs)[[0,1,-1]]
+		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+	if not isinstance(ys, slice):
+		first, second, last = np.asarray(ys)[[0,1,-1]]
+		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+
+	ds = ds.sel(latitude=ys)
+
+	# longitudes should go from -180. to +180.
+	if len(ds.coords['longitude'].sel(longitude=slice(xs.start + 360., xs.stop + 360.))):
+		ds = xr.concat([ds.sel(longitude=slice(xs.start + 360., xs.stop + 360.)),
+						ds.sel(longitude=xs)],
+					   dim="longitude")
+		ds = ds.assign_coords(longitude=np.where(ds.coords['longitude'].values <= 180,
+											 ds.coords['longitude'].values,
+											 ds.coords['longitude'].values - 360.))
+	else:
+		ds = ds.sel(longitude=xs)
+
+	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
+	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
+	return ds
+
+
+def subset_x_y_era5(ds, xs, ys):
+	# Subset x,y according to xs, ys
+
+	if not isinstance(xs, slice):
+		first, second, last = np.asarray(xs)[[0,1,-1]]
+		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+	if not isinstance(ys, slice):
+		first, second, last = np.asarray(ys)[[0,1,-1]]
+		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+
+	ds = ds.sel(y=ys)
+	ds = ds.sel(x=xs)
+
+	return ds
+
+def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 	# Reference of the quantities
 	# https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
 	# Geopotential is aka Orography in the CDS:
 	# https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
-	#
-	# (shortName) | (name)                        | (paramId)
-	# z           | Geopotential (CDS: Orography) | 129
-	with _get_data(variable='orography',
-				   year=year, month=month, day=1,
-				   area=_area(xs, ys)) as ds:
-		ds = _rename_and_clean_coords(ds)
-		ds = _add_height(ds)
 
-		t = pd.Timestamp(year=year, month=month, day=1)
-		ds['time'] = pd.date_range(t, t + pd.DateOffset(months=1),
-								   freq='1h', closed='left')
+	fns = glob.iglob(template.format(year=year, month=month))
+	with xr.open_mfdataset(fns, combine='by_coords') as ds:
+		ds = ds.coords.to_dataset()
+		ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
+		meta = ds.load()
 
-		return ds.load()
+	return meta
+
 
 def prepare_for_sarah(year, month, xs, ys, dx, dy, chunks=None):
 	area = _area(xs, ys)
@@ -207,8 +302,7 @@ def prepare_for_sarah(year, month, xs, ys, dx, dy, chunks=None):
 		yield ds.chunk(chunks)
 		logger.debug("Cleaning up ERA5")
 
-def prepare_month_era5(year, month, xs, ys):
-	area = _area(xs, ys)
+def prepare_month_era5(fn, year, month, xs, ys):
 
 	# Reference of the quantities
 	# https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
@@ -223,28 +317,13 @@ def prepare_month_era5(year, month, xs, ys):
 	# stl4        | Soil temperature level 4                    | 236
 	# fsr         | Forecast surface roughnes                   | 244
 
-	with _get_data(area=area, year=year, month=month,
-				   variable=[
-					   '100m_u_component_of_wind',
-					   '100m_v_component_of_wind',
-					   '2m_temperature',
-					   'runoff',
-					   'soil_temperature_level_4',
-					   'surface_net_solar_radiation',
-					   'surface_pressure',
-					   'surface_solar_radiation_downwards',
-					   'toa_incident_solar_radiation',
-					   'total_sky_direct_solar_radiation_at_surface'
-				   ]) as ds, \
-		 _get_data(area=area, year=year, month=month, day=1,
-				   variable=['forecast_surface_roughness', 'orography']) as ds_m:
-
-		ds_m = ds_m.isel(time=0, drop=True)
-		ds = xr.merge([ds, ds_m], join='left')
-
+	if not os.path.isfile(fn):
+		return None
+	with xr.open_dataset(fn) as ds:
+		logger.info(f'Opening `{fn}`')
 		ds = _rename_and_clean_coords(ds)
 		ds = _add_height(ds)
-
+		ds = subset_x_y_era5(ds, xs, ys)
 
 		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
 		with np.errstate(divide='ignore', invalid='ignore'):
@@ -276,22 +355,54 @@ def prepare_month_era5(year, month, xs, ys):
 
 		yield (year, month), ds
 
+
 def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	if not isinstance(xs, slice):
 		xs = slice(*xs.values[[0, -1]])
 	if not isinstance(ys, slice):
 		ys = slice(*ys.values[[0, -1]])
+	fn = meta_attrs['fn']
 
-	return [dict(prepare_func=prepare_func, xs=xs, ys=ys, year=year, month=month)
-			for year, month in yearmonths]
+	logger.info(yearmonths)
+	logger.info([(year, month) for year, month in yearmonths])
+
+	return [
+		dict(
+			prepare_func=prepare_func, 
+			xs=xs, 
+			ys=ys, 
+			year=year, 
+			month=month,
+			fn=fn.format(year=year, month=month)
+		)
+		for year, month in yearmonths
+	]
 
 weather_data_config = {
-	'era5_monthly': dict(
+	'wind_solar_hourly': dict(
+		api_func=api_hourly_era5,
 		file_granularity="monthly",
 		tasks_func=tasks_monthly_era5,
 		meta_prepare_func=prepare_meta_era5,
 		prepare_func=prepare_month_era5,
-		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),)
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),
+		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
+		product='reanalysis-era5-single-levels',
+		variables=[
+					   '100m_u_component_of_wind',
+					   '100m_v_component_of_wind',
+					   '2m_temperature',
+					   'runoff',
+					   'soil_temperature_level_4',
+					   'surface_net_solar_radiation',
+					   'surface_pressure',
+					   'surface_solar_radiation_downwards',
+					   'toa_incident_solar_radiation',
+					   'total_sky_direct_solar_radiation_at_surface',
+					   'forecast_surface_roughness', 
+					   'orography'
+				   ]
+		)
 }
 
 #meta_data_config = dict(prepare_func=prepare_meta_era5)

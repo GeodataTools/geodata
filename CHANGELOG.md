@@ -41,7 +41,7 @@ PR: https://github.com/east-winds/geodata/pull/14
 - Added cases `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'` to allow download from both MERRA2 SLV and radiation datasets and combination into a single combined dataset.
 
 * [`get_data`]
-- Added case for `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'` 
+- Added case for `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'`
 
 ### preparation.py
 * [`cutout_get_meta`] Added in timestamp creation case for `daily means` MERRA2 data.
@@ -50,7 +50,7 @@ PR: https://github.com/east-winds/geodata/pull/14
 * [`weather_data_config`]
 - Added entry `surface_flux_dailymeans` for Daily Means Merra2 data - [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary).
 - Added entries `slv_radiation_hourly`, `slv_radiation_monthly` for downloading and combining separate MERRA2 SLV and radition datasets into a single combined dataset for cutout create and solar output generation:
-    * `slv_radiation_hourly`: 
+    * `slv_radiation_hourly`:
         - [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
         - [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
     * `slv_radiation_monthly`:
