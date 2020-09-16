@@ -114,7 +114,6 @@ def api_merra2(
 		count = 0
 
 		for f in toDownload:
-			print(f)
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 			if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple':
 				logger.info("Preparing API calls for %s", f[1])
@@ -152,7 +151,6 @@ def api_merra2(
 
 				ds_main.to_netcdf(f[1])
 				downloadedFiles.append((f[0], f[1]))
-				logger.info("Successfully downloaded data for %s", f[1])
 				os.close(fd)
 				os.unlink(target)
 				
@@ -172,7 +170,7 @@ def api_merra2(
 						logger.warn(f'Other error occurred: {err}')  # Python 3.6
 
 			count += 1
-			print("file completed")
+			logger.info("Successfully downloaded data for %s", f[1])
 
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
