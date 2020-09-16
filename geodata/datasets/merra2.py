@@ -106,8 +106,7 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 def api_merra2(
 	toDownload,
 	fileGranularity,
-	downloadedFiles,
-	trim=False
+	downloadedFiles
 	):
 	if len(toDownload) == 0:
 		logger.info("All ERA5 files for this dataset have been downloaded.")
