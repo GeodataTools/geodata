@@ -109,7 +109,7 @@ def api_merra2(
 	downloadedFiles
 	):
 	if len(toDownload) == 0:
-		logger.info("All ERA5 files for this dataset have been downloaded.")
+		logger.info("All MERRA2 files for this dataset have been downloaded.")
 	else: 
 		count = 0
 
@@ -117,6 +117,8 @@ def api_merra2(
 			print(f)
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 			if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple':
+				logger.info("Preparing API calls for %s", f[1])
+				logger.info("Making request to %s", f[2])
 				result = requests.get(f[2])
 				fd, target = mkstemp(suffix='.nc4')
 				try:
@@ -131,6 +133,7 @@ def api_merra2(
 				ds_main = xr.open_dataset(target)
 
 				for k in range(3, (len(f)-1)) :
+					logger.info("Making request to %s", f[k])
 					result = requests.get(f[k])
 					fd_temp, target_temp = mkstemp(suffix='.nc4')
 					try:
@@ -149,10 +152,13 @@ def api_merra2(
 
 				ds_main.to_netcdf(f[1])
 				downloadedFiles.append((f[0], f[1]))
+				logger.info("Successfully downloaded data for %s", f[1])
 				os.close(fd)
 				os.unlink(target)
 				
 			else:
+				logger.info("Preparing API call for %s", f[1])
+				logger.info("Making request to %s", f[2])
 				result = requests.get(f[2])
 				try:
 					result.raise_for_status()
@@ -165,12 +171,8 @@ def api_merra2(
 				except Exception as err:
 						logger.warn(f'Other error occurred: {err}')  # Python 3.6
 
-
 			count += 1
 			print("file completed")
-
-
-
 
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
