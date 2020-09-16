@@ -232,78 +232,25 @@ class Dataset(object):
 		#		Run trim_variables function following each download
 		"""
 
-		if self.module == 'era5':
+		api_func = self.weatherconfig['api_func']
 
-			api_func = self.weatherconfig['api_func']
+		if self.module == 'era5':
 
 			api_func(
 				self.toDownload,
 				self.bounds,
 				self.weatherconfig['variables'],
 				self.weatherconfig['product'],
-				)
+			)
 
-				##TODO: Add api download functions for Merra2 in separate PR
+		elif self.module == 'merra2':
+			
+			api_func(
+				self.toDownload,
+				self.weatherconfig['file_granularity'],
+				self.downloadedFiles
+			)
 
-		else:
-			count = 0
-			for f in self.toDownload:
-				print(f)
-				# Make the directory if not exists:
-				os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-				if self.weatherconfig['file_granularity'] == 'daily_multiple' or self.weatherconfig['file_granularity'] == 'monthly_multiple':
-					result = requests.get(f[2])
-					fd, target = mkstemp(suffix='.nc4')
-					fd2, target2 = mkstemp(suffix='.nc4')
-					try:
-						result.raise_for_status()
-						fout = open(target,'wb')
-						fout.write(result.content)
-						fout.close()
-					except HTTPError as http_err:
-							logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-					except Exception as err:
-							logger.warn(f'Other error occurred: {err}')  # Python 3.6
-							# logger.warn('requests.get() returned an error code '+str(result.status_code))
-
-					result = requests.get(f[3])
-					try:
-						result.raise_for_status()
-						fout = open(target2,'wb')
-						fout.write(result.content)
-						fout.close()
-						self.downloadedFiles.append((f[0], f[1])) # What is saved files being used for?
-					except HTTPError as http_err:
-							logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-					except Exception as err:
-							logger.warn(f'Other error occurred: {err}')  # Python 3.6
-							# logger.warn('requests.get() returned an error code '+str(result.status_code))
-					ds_main = xr.open_dataset(target)
-					ds_toadd = xr.open_dataset(target2)
-					merged_version =  xr.merge([ds_main, ds_toadd])
-					merged_version.to_netcdf(f[1])
-					os.close(fd)
-					os.close(fd2)
-					os.unlink(target)
-					os.unlink(target2)
-
-				else:
-					result = requests.get(f[2])
-					try:
-							result.raise_for_status()
-							fout = open(f[1],'wb')
-							fout.write(result.content)
-							fout.close()
-							self.downloadedFiles.append((f[0], f[1])) # What is saved files being used for?
-							if trim:
-								self.trim_variables( fn = [(f[0], f[1])], wind = wind, solar = solar )
-					except HTTPError as http_err:
-							logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-					except Exception as err:
-							logger.warn(f'Other error occurred: {err}')  # Python 3.6
-							# logger.warn('requests.get() returned an error code '+str(result.status_code))
-				count += 1
-				print("file completed")
 
 		if self.downloadedFiles == self.totalFiles:
 			self.prepared = True

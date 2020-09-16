@@ -101,6 +101,78 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
+def api_merra2(
+	toDownload,
+	fileGranularity,
+	trim=False,
+	downloadedFiles
+	):
+	if len(toDownload) == 0:
+		logger.info("All ERA5 files for this dataset have been downloaded.")
+	else: 
+		count = 0
+
+		for f in toDownload:
+			print(f)
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple':
+				result = requests.get(f[2])
+				fd, target = mkstemp(suffix='.nc4')
+				try:
+					result.raise_for_status()
+					fout = open(target,'wb')
+					fout.write(result.content)
+					fout.close()
+				except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				except Exception as err:
+						logger.warn(f'Other error occurred: {err}')
+				ds_main = xr.open_dataset(target)
+				k = 3
+
+				while f[k].startswith('https://goldsmr4.gesdisc.eosdis.nasa.gov'):
+					result = requests.get(f[k])
+					fd_temp, target_temp = mkstemp(suffix='.nc4')
+					try:
+						result.raise_for_status()
+						fout = open(target_temp,'wb')
+						fout.write(result.content)
+						fout.close()
+					except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+					except Exception as err:
+						logger.warn(f'Other error occurred: {err}')
+					ds_toadd = xr.open_dataset(target_temp)
+					ds_main = xr.merge([ds_main, ds_toadd])
+					os.close(fd_temp)
+					os.unlink(target_temp)
+					k = k+1
+
+				ds_main.to_netcdf(f[1])
+				downloadedFiles.append((f[0], f[1]))
+				os.close(fd)
+				os.unlink(target)
+				
+			else:
+				result = requests.get(f[2])
+				try:
+					result.raise_for_status()
+					fout = open(f[1],'wb')
+					fout.write(result.content)
+					fout.close()
+					downloadedFiles.append((f[0], f[1]))	
+				except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				except Exception as err:
+						logger.warn(f'Other error occurred: {err}')  # Python 3.6
+
+
+			count += 1
+			print("file completed")
+
+
+
+
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
 	#	Load dataset into metadata
