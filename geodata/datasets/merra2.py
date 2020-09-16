@@ -295,7 +295,7 @@ def prepare_slv_radiation(fn, year, month, xs, ys):
 		# logger.info("Cutout coords: %s", ds.coords)
 		try:
 			ds = ds.rename({
-				'albedo': 'albedo',
+				'ALBEDO': 'albedo',
 				'swgdn': 'influx',
 				'swtdn': 'influx_toa',
 				't2m': 'temperature'
