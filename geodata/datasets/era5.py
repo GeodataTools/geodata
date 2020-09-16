@@ -28,6 +28,7 @@ import numpy as np
 import xarray as xr
 import shutil
 from six.moves import range
+from requests.exceptions import HTTPError
 from contextlib import contextmanager
 from tempfile import mkstemp
 import logging
