@@ -159,8 +159,20 @@ def convert_and_aggregate(cutout, convert_func, matrix=None,
 
 	for ym in maybe_progressbar(yearmonths):
 		with xr.open_dataset(cutout.datasetfn(ym)) as ds:
+
 			if 'view' in cutout.meta.attrs:
+				if type(cutout.meta.attrs['view']) == str:
+					cutout.meta.attrs['view'] = {}
+					cutout.meta.attrs.setdefault('view', {})['x'] = slice(
+						min(cutout.meta.coords['x']).values.tolist(),
+						max(cutout.meta.coords['x']).values.tolist(),
+					)
+					cutout.meta.attrs.setdefault('view', {})['y'] = slice(
+						min(cutout.meta.coords['y']).values.tolist(),
+						max(cutout.meta.coords['y']).values.tolist(),
+					)
 				ds = ds.sel(**cutout.meta.attrs['view'])
+
 			da = convert_func(ds, **convert_kwds)
 			results.append(aggregate_func(da, **aggregate_kwds).load())
 	# if 'time' in results[0].coords:

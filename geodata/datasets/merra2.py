@@ -113,25 +113,31 @@ def api_merra2(
 	else: 
 		count = 0
 
+		multi = True if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple' else False
+
 		for f in toDownload:
-			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-			if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple':
-				logger.info("Preparing API calls for %s", f[1])
-				logger.info("Making request to %s", f[2])
-				result = requests.get(f[2])
+			if multi:
 				fd, target = mkstemp(suffix='.nc4')
-				try:
-					result.raise_for_status()
-					fout = open(target,'wb')
-					fout.write(result.content)
-					fout.close()
-				except HTTPError as http_err:
-						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-				except Exception as err:
-						logger.warn(f'Other error occurred: {err}')
+			else:
+				target = f[1]
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			logger.info("Preparing API calls for %s", f[1])
+			logger.info("Making request to %s", f[2])
+			result = requests.get(f[2])
+			try:
+				result.raise_for_status()
+				fout = open(target,'wb')
+				fout.write(result.content)
+				fout.close()
+			except HTTPError as http_err:
+					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+			except Exception as err:
+					logger.warn(f'Other error occurred: {err}')
+
+			if multi:
 				ds_main = xr.open_dataset(target)
 
-				for k in range(3, (len(f)-1)) :
+				for k in range(3, len(f)):
 					logger.info("Making request to %s", f[k])
 					result = requests.get(f[k])
 					fd_temp, target_temp = mkstemp(suffix='.nc4')
@@ -150,25 +156,10 @@ def api_merra2(
 					os.unlink(target_temp)
 
 				ds_main.to_netcdf(f[1])
-				downloadedFiles.append((f[0], f[1]))
 				os.close(fd)
 				os.unlink(target)
+			downloadedFiles.append((f[0], f[1]))
 				
-			else:
-				logger.info("Preparing API call for %s", f[1])
-				logger.info("Making request to %s", f[2])
-				result = requests.get(f[2])
-				try:
-					result.raise_for_status()
-					fout = open(f[1],'wb')
-					fout.write(result.content)
-					fout.close()
-					downloadedFiles.append((f[0], f[1]))	
-				except HTTPError as http_err:
-						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
-				except Exception as err:
-						logger.warn(f'Other error occurred: {err}')  # Python 3.6
-
 			count += 1
 			logger.info("Successfully downloaded data for %s", f[1])
 
@@ -295,7 +286,7 @@ def prepare_slv_radiation(fn, year, month, xs, ys):
 		# logger.info("Cutout coords: %s", ds.coords)
 		try:
 			ds = ds.rename({
-				'ALBEDO': 'albedo',
+				'albedo': 'albedo',
 				'swgdn': 'influx',
 				'swtdn': 'influx_toa',
 				't2m': 'temperature'
