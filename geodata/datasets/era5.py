@@ -28,6 +28,7 @@ import numpy as np
 import xarray as xr
 import shutil
 from six.moves import range
+from requests.exceptions import HTTPError
 from contextlib import contextmanager
 from tempfile import mkstemp
 import logging
@@ -46,81 +47,7 @@ except ImportError:
 # Model and Projection Settings
 projection = 'latlong'
 
-# contextmanager (contextlib): ensures that at end of all with statements, the resource is closed
-@contextmanager
-def _get_data(target=None, product='reanalysis-era5-single-levels', chunks=None, **updates):
-	"""
-	Check local folders for ERA5
-	If necessary: download ERA5 data from the Climate Data Store (CDS)
-	"""
-
-	## Check if local copy
-	# filename = first characters of each variable
-	f = "".join([v[0] for v in updates['variable']])
-	if target is None:
-		target = era5_dir
-
-	fn=os.path.join(era5_dir, '{year}/{month:0>2}/{f}.nc'.format(year=updates['year'], month=updates['month'],f=f))
-
-	if os.path.isfile(fn):
-	#	Local file exists
-		with xr.open_dataset(fn, chunks=chunks) as ds:
-			if {'area'}.issubset(updates):
-			# find subset of area
-				yf, x0, y0, xf = updates['area']			# North, West, South, East
-				ds = ds.where((ds.latitude >= y0) & (ds.latitude <= yf) & (ds.longitude >= x0) & (ds.longitude <= xf), drop=True)
-
-			yield ds
-	else:
-	#	Download new file
-
-		# Make the directory if not exists
-		os.makedirs(os.path.dirname(fn), exist_ok=True)
-
-		if not has_cdsapi:
-			raise RuntimeError(
-				"Need installed cdsapi python package available from "
-				"https://cds.climate.copernicus.eu/api-how-to"
-			)
-
-		# Default request
-		request = {
-			'product_type':'reanalysis',
-			'format':'netcdf',
-			'day':[
-				'01','02','03','04','05','06','07','08','09','10','11','12',
-				'13','14','15','16','17','18','19','20','21','22','23','24',
-				'25','26','27','28','29','30','31'
-			],
-			'time':[
-				'00:00','01:00','02:00','03:00','04:00','05:00',
-				'06:00','07:00','08:00','09:00','10:00','11:00',
-				'12:00','13:00','14:00','15:00','16:00','17:00',
-				'18:00','19:00','20:00','21:00','22:00','23:00'
-			]
-		}
-		request.update(updates)
-
-		assert {'year', 'month', 'variable'}.issubset(request), "Need to specify at least 'variable', 'year' and 'month'"
-
-		# main request to API
-		result = cdsapi.Client().retrieve(
-			product,
-			request
-		)
-
-		# if target is None:
-		# 	# make a temp file
-		#     fd, target = mkstemp(suffix='.nc')
-		#     os.close(fd)
-		logger.info("Downloading request for {} variables to {}".format(len(request['variable']), target))
-		result.download(fn)
-
-		with xr.open_dataset(fn, chunks=chunks) as ds:
-			yield ds
-
-		# os.unlink(target)
-
+# Functions
 def _add_height(ds):
 	"""Convert geopotential 'z' to geopotential height following [1]
 

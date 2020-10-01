@@ -26,6 +26,8 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import shutil
+import requests
+from requests.exceptions import HTTPError
 from six.moves import range
 from contextlib import contextmanager
 from tempfile import mkstemp
@@ -100,6 +102,66 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 	if add_lon_lat:
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
+
+def api_merra2(
+	toDownload,
+	fileGranularity,
+	downloadedFiles
+	):
+	if len(toDownload) == 0:
+		logger.info("All MERRA2 files for this dataset have been downloaded.")
+	else: 
+		count = 0
+
+		multi = True if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple' else False
+
+		for f in toDownload:
+			if multi:
+				fd, target = mkstemp(suffix='.nc4')
+			else:
+				target = f[1]
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			logger.info("Preparing API calls for %s", f[1])
+			logger.info("Making request to %s", f[2])
+			result = requests.get(f[2])
+			try:
+				result.raise_for_status()
+				fout = open(target,'wb')
+				fout.write(result.content)
+				fout.close()
+			except HTTPError as http_err:
+					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+			except Exception as err:
+					logger.warn(f'Other error occurred: {err}')
+
+			if multi:
+				ds_main = xr.open_dataset(target)
+
+				for k in range(3, len(f)):
+					logger.info("Making request to %s", f[k])
+					result = requests.get(f[k])
+					fd_temp, target_temp = mkstemp(suffix='.nc4')
+					try:
+						result.raise_for_status()
+						fout = open(target_temp,'wb')
+						fout.write(result.content)
+						fout.close()
+					except HTTPError as http_err:
+						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+					except Exception as err:
+						logger.warn(f'Other error occurred: {err}')
+					ds_toadd = xr.open_dataset(target_temp)
+					ds_main = xr.merge([ds_main, ds_toadd])
+					os.close(fd_temp)
+					os.unlink(target_temp)
+
+				ds_main.to_netcdf(f[1])
+				os.close(fd)
+				os.unlink(target)
+			downloadedFiles.append((f[0], f[1]))
+				
+			count += 1
+			logger.info("Successfully downloaded data for %s", f[1])
 
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
@@ -289,6 +351,7 @@ weather_data_config = {
 #	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year) before downloading
 # 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
 	'surface_flux_hourly': dict(
+		api_func=api_merra2,
 		file_granularity="daily",
 		tasks_func=tasks_daily_merra2,
 		meta_prepare_func=prepare_meta_merra2,
@@ -299,6 +362,7 @@ weather_data_config = {
 		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
 	),
 	'surface_flux_monthly': dict(
+		api_func=api_merra2,
 		file_granularity="monthly",
 		tasks_func=tasks_monthly_merra2,
 		meta_prepare_func=prepare_meta_merra2,
@@ -309,6 +373,7 @@ weather_data_config = {
 		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
 	),
 	'surface_flux_dailymeans': dict(
+		api_func=api_merra2,
 		file_granularity="dailymeans",
 		tasks_func=tasks_daily_merra2,
 		meta_prepare_func=prepare_meta_merra2,
@@ -319,6 +384,7 @@ weather_data_config = {
 		variables = ['hournorain', 'tprecmax', 't2mmax', 't2mmean', 't2mmin']
 	),
 	'slv_radiation_hourly': dict(
+		api_func=api_merra2,
 		file_granularity="daily_multiple",
 		tasks_func=tasks_daily_merra2,
 		meta_prepare_func=prepare_meta_merra2,
@@ -331,7 +397,8 @@ weather_data_config = {
 		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_rad_Nx.{year}{month:0>2}{day:0>2}.nc4'),
 		variables = ['albedo', 'swgdn', 'swtdn', 't2m']
 	),
-		'slv_radiation_monthly': dict(
+	'slv_radiation_monthly': dict(
+		api_func=api_merra2,
 		file_granularity="monthly_multiple",
 		tasks_func=tasks_monthly_merra2,
 		meta_prepare_func=prepare_meta_merra2,
@@ -345,6 +412,7 @@ weather_data_config = {
 		variables = ['albedo', 'swgdn', 'swtdn', 't2m']
 	),
 	'surface_aerosol_hourly': dict(
+		api_func=api_merra2,
 		file_granularity="daily",
 		tasks_func=tasks_daily_merra2,
 		meta_prepare_func=prepare_meta_merra2,
