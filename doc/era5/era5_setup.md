@@ -4,7 +4,7 @@ How to set up access to ERA5 data from the [Copernicus Data Store](https://cds.c
 
 ## Creating a CDS account
 
-To download the ERA5 data from the CDS, you'll need to create a [CDS account here](https://urs.earthdata.nasa.gov/users/new).
+To download the ERA5 data from the CDS, you'll need to create a [CDS account here](https://cds.climate.copernicus.eu/user/register).
 
 Once your account has been created, you'll need to set up access to the API by doing the following:
 
