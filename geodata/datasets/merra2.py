@@ -153,10 +153,12 @@ def api_merra2(
 					ds_toadd = xr.open_dataset(target_temp)
 					ds_main = xr.merge([ds_main, ds_toadd])
 					os.close(fd_temp)
+					os.close(target_temp)
 					os.unlink(target_temp)
 
 				ds_main.to_netcdf(f[1])
 				os.close(fd)
+				os.close(target)
 				os.unlink(target)
 			downloadedFiles.append((f[0], f[1]))
 				
