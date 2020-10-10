@@ -17,21 +17,41 @@ cd geodata
 
 Before building the package, you'll first need to tell it two things: where to put/look for downloaded data, and where to store _cutouts_--subsets of downloaded data needed to generate output variables.  To do so, copy `geodata/config-default.py` to a new file `geodata/config.py`.
 
-* To configure where to store cutouts, change the value of `cutout_dir` so that it points to a folder in your working directory like so:
+* To configure where to store cutouts, change the value of `cutout_dir` so that it points to a folder in your working directory.  You'll need to follow a format that fits your operating system:
+
+Mac OS
 ```
 cutout_dir = '/Users/johndoe/desktop/geodata/data/cutouts'
 ```
-(**Note**: Make sure you are referencing a folder and path that already exists - the package currently does not create it for you.)
+
+Windows
+```
+cutout_dir = 'C:/Users/johndoe/Desktop/geodata/data/cutouts'
+```
+
+
+(**Note**: Make sure you are referencing a folder and path that already exist - the package currently does not create it for you.)
 
 * To configure where downloaded earth system data will be stored, change each datasets respective directory variable like so:
 
 For MERRA2:
 ```
+## Mac OS
 merra2_dir = '/Users/johndoe/desktop/geodata/data/merra2'
+
+## Windows
+merra2_dir = 'C:/Users/johndoe/desktop/geodata/data/merra2'
+
 ```
 For ERA5:
 ```
+## Mac OS
 era5_dir = '/Users/johndoe/desktop/geodata/data/era5'
+
+## Windows
+era5_dir = 'C:/Users/johndoe/desktop/geodata/data/era5'
+
+
 ```
 (**Note**: Again, make sure you are referencing folders and paths that you've created beforehand - the package currently does not create them for you.)
 
@@ -44,6 +64,37 @@ python3 setup.py install
 
 This will build the package and allow you to use it in Python scripts by calling `import geodata`.
 
-For a full list of requirements, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.
-
 **Note**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
+
+## Dependencies and GDAL Driver Installation
+
+For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies except should install automatically upon building the package, with the possible exception of **rasterio**, which requires GDAL.  If **rasterio** does not install automatically, follow the instructions below specific to your operating system + Python package manager.  For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
+
+### Mac OS with pip
+To install **rasterio** and the necessary GDAL library, simply run:
+```
+pip install rasterio
+```
+
+### Windows with pip
+To install **rasterio** and the necessary GDAL library, first download the appropriate binaries for your system ([rasterio](https://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) and [GDAL](https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal)) and run the following command in the downloads folder:
+
+```
+pip install -U pip
+pip install {GDAL binary name here}.whl
+pip install {rasterio binary name here}.whl
+```
+You may need to also install the **wheel** package `pip install wheel` to facilitate building the wheels.
+
+### Anaconda
+
+To install, enable the `conda-forge` channel and install.
+
+```
+conda config --add channels conda-forge
+conda install rasterio
+```
+
+For more documentation/troubleshooting conda installation issues, see: https://github.com/conda-forge/rasterio-feedstock
+
+
