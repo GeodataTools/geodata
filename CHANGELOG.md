@@ -1,7 +1,10 @@
 ## Unreleased
 
+## merra2.py
+* Added lines to close tempfiles used in `api_merra2` function.  This was causing Win32 permissions issues for windows machines.
+
 ## geodata.egg-info/
-* Remove `geodata.egg-info/` from repo.  This should prevent the folder from being tracked.    Otherwise the presence of the folder in the master report trumps listing the file in `.gitignore`.
+* Remove `geodata.egg-info/` from repo.  This should prevent the folder from being tracked.  Otherwise the presence of the folder in the master report trumps listing the file in `.gitignore`.
 
 ## preparation.py
 * Fixed issue where `meta.attrs.setdefault()` could attempt to assign value to subset of string in case of meta file being read in from `xarray.opendataset()`.  Safer to redeclare `view` key as property and then use `meta.attrs.setdefault()`.
