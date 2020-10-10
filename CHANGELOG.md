@@ -1,5 +1,8 @@
 ## Unreleased
 
+## doc/
+* Various updates to setup documentation regarding **rasterio** installation, Merra2 API access, and Windows directory formats.
+
 ## merra2.py
 * Added lines to close tempfiles used in `api_merra2` function.  This was causing Win32 permissions issues for windows machines.
 
