@@ -174,7 +174,9 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 
 			ds.to_netcdf(fn)
 			ds.close()		# close xarray access before unlinking (Win32)
-			for tfn in fns: os.unlink(tfn)
+			for tfn in fns: 
+				os.unlink(tfn)
+				os.close(tfn)
 		logger.debug("Completed files %s", os.path.basename(fn))
 
 	logger.info("Cutout '%s' has been successfully prepared", cutout.name)
