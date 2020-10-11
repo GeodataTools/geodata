@@ -1,5 +1,8 @@
 ## Unreleased
 
+## preparation.py
+* Added lines to close tempfiles.  This was causing Win32 permissions issues for windows machines.
+
 ## doc/
 * Various updates to setup documentation regarding **rasterio** installation, Merra2 API access, and Windows directory formats.
 
