@@ -110,7 +110,7 @@ def api_merra2(
 	):
 	if len(toDownload) == 0:
 		logger.info("All MERRA2 files for this dataset have been downloaded.")
-	else: 
+	else:
 		count = 0
 
 		multi = True if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple' else False
@@ -137,10 +137,12 @@ def api_merra2(
 			if multi:
 				ds_main = xr.open_dataset(target)
 
+				temp_files = []
 				for k in range(3, len(f)):
 					logger.info("Making request to %s", f[k])
 					result = requests.get(f[k])
 					fd_temp, target_temp = mkstemp(suffix='.nc4')
+					temp_files.append([fd_temp, target_temp])
 					try:
 						result.raise_for_status()
 						fout = open(target_temp,'wb')
@@ -152,16 +154,23 @@ def api_merra2(
 						logger.warn(f'Other error occurred: {err}')
 					ds_toadd = xr.open_dataset(target_temp)
 					ds_main = xr.merge([ds_main, ds_toadd])
-					os.close(fd_temp)
-					os.close(target_temp)
-					os.unlink(target_temp)
+					# os.close(fd_temp)
+					# os.unlink(target_temp)
 
 				ds_main.to_netcdf(f[1])
+				ds_main.close()
 				os.close(fd)
-				os.close(target)
+				# os.close(target)
 				os.unlink(target)
+
+				# clear temp files
+				ds_toadd.close()  # close last xr open file
+				for tf in temp_files:
+					os.close(tf[0])
+					os.unlink(tf[1])
+
 			downloadedFiles.append((f[0], f[1]))
-				
+
 			count += 1
 			logger.info("Successfully downloaded data for %s", f[1])
 
