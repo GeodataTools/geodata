@@ -174,7 +174,9 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 
 			ds.to_netcdf(fn)
 
-			for tfn in fns: os.unlink(tfn)
+			for tfn in fns: 
+				os.close(tfn)
+				os.unlink(tfn)
 		logger.debug("Completed files %s", os.path.basename(fn))
 
 	logger.info("Cutout '%s' has been successfully prepared", cutout.name)
