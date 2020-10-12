@@ -159,12 +159,11 @@ def api_merra2(
 
 				ds_main.to_netcdf(f[1])
 				ds_main.close()
-				os.close(fd)
-				os.close(target)
-				os.unlink(target)
+				ds_toadd.close()  # close last xr open file
 
 				# clear temp files
-				ds_toadd.close()  # close last xr open file
+				os.close(fd)
+				os.unlink(target)
 				for tf in temp_files:
 					os.close(tf[0])
 					os.unlink(tf[1])
