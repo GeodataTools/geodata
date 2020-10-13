@@ -171,11 +171,9 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 			with xr.open_mfdataset(fns, combine='by_coords') as ds:
 				if gebco_height:
 					ds['height'] = cutout.meta['height']
+				ds.to_netcdf(fn)
 
-			ds.to_netcdf(fn)
-			ds.close()		# close xarray access before unlinking (Win32)
-			for tfn in fns: 
-				os.close(tfn)
+			for tfn in fns:
 				os.unlink(tfn)
 		logger.debug("Completed files %s", os.path.basename(fn))
 
