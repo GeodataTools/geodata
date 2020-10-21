@@ -160,7 +160,6 @@ def api_merra2(
 				ds_main.to_netcdf(f[1])
 				ds_main.close()
 				os.close(fd)
-				os.close(target)
 				os.unlink(target)
 
 				# clear temp files
