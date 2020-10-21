@@ -2,6 +2,7 @@
 
 ## merra2.py
 * Added lines to close tempfiles used in `api_merra2` function.  This was causing Win32 permissions issues for windows machines.
+* Move function lines following API request inside `try` block so that "Success!" info message does not fire in case of HTTP error.
 
 ## geodata.egg-info/
 * Remove `geodata.egg-info/` from repo.  This should prevent the folder from being tracked.  Otherwise the presence of the folder in the master report trumps listing the file in `.gitignore`.
