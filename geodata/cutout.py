@@ -46,6 +46,7 @@ class Cutout(object):
 		self.prepared = False
 		self.meta_append = 0
 		self.config = cutoutparams.pop('weather_data_config')
+		self.meta = meta = None
 
 
 		if 'bounds' in cutoutparams:
@@ -67,18 +68,10 @@ class Cutout(object):
 			logger.info("No months specified, defaulting to 1-12")
 			cutoutparams.update(months=slice(1, 12))
 
-		# Check if cutout dir and files already exists:
-		# here =
 		if os.path.isdir(self.cutout_dir):
-			if os.path.isfile(self.datasetfn()):  ## creates meta file
+			# If cutout dir exists, check completness of files
+			if os.path.isfile(self.datasetfn()):  # open existing meta file
 				self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
-			else:
-				self.meta = meta = None
-
-			# if not meta is None and all(os.path.isfile(self.datasetfn(ym)) for ym in meta.coords['year-month'].to_index()):
-			# 	# Meta file exists and all files indicated by it exists
-			# 	self.meta_append = 1
-			# xr.open_dataset("soething").stack
 
 			if not meta is None and 'years' in cutoutparams and\
 									'months' in cutoutparams and\
@@ -126,13 +119,25 @@ class Cutout(object):
 			if {"xs", "ys", "years"}.difference(cutoutparams):
 				raise TypeError("Arguments `xs`, `ys` and `years` need to be specified for a cutout.")
 
+			if not meta is None:
+				# if meta.nc exists, close and delete it
+				meta.close()
+				os.remove(self.datasetfn())
+
 			## Main preparation call for metadata
 			#    preparation.cutout_get_meta
 			#    cutout.meta_data_config
 			#    dataset_module.meta_data_config (e.g. prepare_meta_era5)
 			self.meta = self.get_meta(**cutoutparams)
 
-			## START HERE: somehow need to call get_meta_view in order to clip on xs, ys
+			# Ensure cutout directory exists
+			if not os.path.isdir(self.cutout_dir):
+				os.mkdir(self.cutout_dir)
+
+			# Write meta file
+			(self.meta_clean
+				.unstack('year-month')
+				.to_netcdf(self.datasetfn()))
 
 	def datasetfn(self, *args):
 		#    Link to dataset (default to meta.nc)

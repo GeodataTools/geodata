@@ -126,18 +126,17 @@ def api_merra2(
 			result = requests.get(f[2])
 			try:
 				result.raise_for_status()
-				fout = open(target,'wb')
-				fout.write(result.content)
-				fout.close()
+				with open(target,'wb') as fout:
+					fout.write(result.content)
 			except HTTPError as http_err:
 					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
 			except Exception as err:
 					logger.warn(f'Other error occurred: {err}')
 
 			if multi:
-				ds_main = xr.open_dataset(target)
+				# ds_main = xr.open_dataset(target)
 
-				temp_files = []
+				temp_files = [[fd, target]]
 				for k in range(3, len(f)):
 					logger.info("Making request to %s", f[k])
 					result = requests.get(f[k])
@@ -145,25 +144,25 @@ def api_merra2(
 					temp_files.append([fd_temp, target_temp])
 					try:
 						result.raise_for_status()
-						fout = open(target_temp,'wb')
-						fout.write(result.content)
-						fout.close()
+						with open(target_temp,'wb') as fout:
+							fout.write(result.content)
 					except HTTPError as http_err:
 						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
 					except Exception as err:
 						logger.warn(f'Other error occurred: {err}')
-					ds_toadd = xr.open_dataset(target_temp)
-					ds_main = xr.merge([ds_main, ds_toadd])
+					# ds_toadd = xr.open_dataset(target_temp)
+					# ds_main = xr.merge([ds_main, ds_toadd])
 					# os.close(fd_temp)
 					# os.unlink(target_temp)
 
+				ds_main = xr.open_mfdataset([fn[1] for fn in temp_files], combine='by_coords')
 				ds_main.to_netcdf(f[1])
 				ds_main.close()
-				os.close(fd)
-				os.unlink(target)
+				# ds_toadd.close()  # close last xr open file
 
-				# clear temp files
-				ds_toadd.close()  # close last xr open file
+				# close and clear temp files
+				# os.close(fd)
+				# os.unlink(target)
 				for tf in temp_files:
 					os.close(tf[0])
 					os.unlink(tf[1])
