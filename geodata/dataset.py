@@ -232,6 +232,12 @@ class Dataset(object):
 		#		Run trim_variables function following each download
 		"""
 
+		testing = self.testDataset
+		if testing == True:
+			self.toDownload = [self.toDownload[0]]
+			self.totalFiles = [self.totalFiles[0]]
+			self.testDataset = True
+
 		api_func = self.weatherconfig['api_func']
 
 		if self.module == 'era5':
