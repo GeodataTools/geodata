@@ -1,5 +1,9 @@
 ## Unreleased
 
+## dataset.py
+### get_data()
+* Add `testing` flag to enable download of only first entry in dataset download list for debugging purposes.
+
 ## preparation.py
 * Added lines to close tempfiles.  This was causing Win32 permissions issues for windows machines.
 
