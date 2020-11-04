@@ -36,8 +36,12 @@ logger = logging.getLogger(name=__name__)
 def get_windturbineconfig(turbine):
     """Load the 'turbine'.yaml file from local disk and provide a turbine dict."""
 
-    res_name = "resources/windturbine/" + turbine + ".yaml"
-    turbineconf = yaml.safe_load(resource_stream(__name__, res_name))
+    res_name = "resources/windturbine/"+ turbine + ".yaml"
+    res_name = 'E:/Rambo!!!!/geodata/geodata/geodata/resources/windturbine/' + turbine + ".yaml"
+    with open(res_name, 'r') as file_data:
+                    yaml_data = file_data.read()
+    #turbineconf = yaml.safe_load(resource_stream('E:/Rambo!!!!/geodata/geodata/geodata', res_name))
+    turbineconf = yaml.safe_load(yaml_data)
     V, POW, hub_height = itemgetter('V', 'POW', 'HUB_HEIGHT')(turbineconf)
     return dict(V=np.array(V), POW=np.array(POW), hub_height=hub_height, P=np.max(POW))
 
