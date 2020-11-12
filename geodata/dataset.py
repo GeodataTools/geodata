@@ -65,7 +65,8 @@ class Dataset(object):
 		self.years = years = datasetparams['years']
 
 		if not "months" in datasetparams:
-			logger.info("No months specified, defaulting to 1-12")
+			if self.weatherconfig['file_granularity'] != 'yearly':
+				logger.info("No months specified, defaulting to 1-12")
 			self.months = months = slice(1,12)
 		else:
 			self.months = months = datasetparams['months']
@@ -91,6 +92,8 @@ class Dataset(object):
 			else: 
 				raise ValueError("Specified bounds parameter should be list with North, West, South, East coordinates.")
 				## additional checks here later
+		elif self.config == 'modis_land_cover':
+			raise ValueError("Specified bounds parameter should be list with North, West, South, East coordinates for MODIS downloads.")
 		else: 				
 			logger.warn("Bounds not used in preparing dataset. Defaulting to global.")
 
@@ -191,6 +194,24 @@ class Dataset(object):
 						))
 				else:
 					self.downloadedFiles.append((self.config, filename))
+		
+		elif self.config == 'modis_land_cover':
+			for yr in yrs:
+				filename = self.datasetfn(self.weatherconfig['fn'], yr)
+				self.totalFiles.append((self.config, filename))
+				if not os.path.isfile( filename ):
+					self.prepared = False
+					if check_complete:
+						logger.info("File `%s` not found!", filename)
+						incomplete_count += 1
+					self.toDownload.append((
+						self.config, 
+						filename, 
+						self.bounds,
+						self.weatherconfig['band']
+						))
+				else:
+					self.downloadedFiles.append((self.config, filename))
 
 		if not self.prepared:
 
@@ -214,6 +235,8 @@ class Dataset(object):
 			dataset = dict(year=args[0], month=args[1], day=args[2])
 		elif len(args) == 2:
 			dataset = dict(year=args[0], month=args[1])
+		elif len(args) == 1:
+			dataset = dict(year=args[0])
 		else:
 			return False
 		if self.dataset_module.spinup_var:
