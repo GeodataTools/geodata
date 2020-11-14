@@ -197,21 +197,25 @@ class Dataset(object):
 		
 		elif self.config == 'modis_land_cover':
 			for yr in yrs:
-				filename = self.datasetfn(self.weatherconfig['fn'], yr)
-				self.totalFiles.append((self.config, filename))
-				if not os.path.isfile( filename ):
+				nc_filename = self.datasetfn(self.weatherconfig['nc_fn'], yr)
+				tif_filename = self.datasetfn(self.weatherconfig['tif_fn'], yr)
+				image_name = self.datasetfn(self.weatherconfig['image'], yr)
+				self.totalFiles.append((self.config, nc_filename))
+				if not os.path.isfile( nc_filename ):
 					self.prepared = False
 					if check_complete:
-						logger.info("File `%s` not found!", filename)
+						logger.info("File `%s` not found!", nc_filename)
 						incomplete_count += 1
 					self.toDownload.append((
 						self.config, 
-						filename, 
+						nc_filename, 
+						tif_filename,
+						image_name,
 						self.bounds,
 						self.weatherconfig['band']
 						))
 				else:
-					self.downloadedFiles.append((self.config, filename))
+					self.downloadedFiles.append((self.config, nc_filename))
 
 		if not self.prepared:
 
@@ -271,6 +275,13 @@ class Dataset(object):
 			api_func(
 				self.toDownload,
 				self.weatherconfig['file_granularity'],
+				self.downloadedFiles
+			)
+		
+		elif self.module == 'modis':
+
+			api_func(
+				self.toDownload,
 				self.downloadedFiles
 			)
 
