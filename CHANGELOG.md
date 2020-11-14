@@ -1,5 +1,19 @@
 ## Unreleased
 
+## Modis Get Data method - draft
+### dataset.py
+* Added entry for modis data source to construction of download file list (L198).  This calls out the modis config by name explicitly but if additional GEE data sources were added at the yearly level, this block could be modified to be common to all yearly GEE sources.
+* Added call to modis api function in get_data() block.
+
+
+
+
+### modis.py
+* Added config + functions for modis land cover data downloads via GEE python API.  Contains two items:
+- api_modis() - in progress function for downloading modis landcover data (see PR for full notes: https://github.com/east-winds/geodata/pull/36).
+- weather config for modis land cover data.  (see PR for full notes: https://github.com/east-winds/geodata/pull/36)
+
+
 ## preparation.py
 * Added lines to close tempfiles.  This was causing Win32 permissions issues for windows machines.
 
