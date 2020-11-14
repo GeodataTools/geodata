@@ -22,7 +22,12 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 import os
 import glob
 import pandas as pd
+import ee
+import oauth2client
 import numpy as np
+from osgeo import gdal
+from osgeo import osr
+import time
 import xarray as xr
 import shutil
 import requests
@@ -45,11 +50,78 @@ def api_modis(
     toDownload,
     downloadedFiles
     ):
+    # ee.Authenticate()
+    ee.Initialize()
     if len(toDownload) == 0:
         logger.info("All MERRA2 files for this dataset have been downloaded.")
     else:
         count = 0
-        print("get data goes here")
+        
+        for f in toDownload:
+            nc_filename = f[1]
+            tif_filename = f[2]
+            img = ee.Image(f[3])
+            area = ee.Geometry.Rectangle(f[4])
+            band = f[5]
+
+            img = img.select(band)
+
+            latlon = ee.Image.pixelLonLat().addBands(img)
+            latlon_r = latlon.reduceRegion(
+                reducer=ee.Reducer.toList(),
+                geometry=area,
+                maxPixels=1e9,
+                scale=1000)
+
+            data = np.array((ee.Array(latlon_r.get(band)).getInfo()))
+            lats = np.array((ee.Array(latlon_r.get("latitude")).getInfo()))
+            lons = np.array((ee.Array(latlon_r.get("longitude")).getInfo()))
+
+            uniqueLats = np.unique(lats)
+            uniqueLons = np.unique(lons)
+            ncols = len(uniqueLons)    
+            nrows = len(uniqueLats)
+
+            ys = uniqueLats[1] - uniqueLats[0] 
+            xs = uniqueLons[1] - uniqueLons[0]
+
+            arr = np.zeros([nrows, ncols], np.float32) 
+
+            counter =0
+            for y in range(0,len(arr),1):
+                for x in range(0,len(arr[0]),1):
+                    if lats[counter] == uniqueLats[y] and lons[counter] == uniqueLons[x] and counter < len(lats)-1:
+                        counter+=1
+                        arr[len(uniqueLats)-1-y,x] = data[counter] 
+
+            transform = (np.min(uniqueLons),xs,0,np.max(uniqueLats),0,-ys)
+
+            target = osr.SpatialReference()
+            target.ImportFromEPSG(4326)
+
+            driver = gdal.GetDriverByName('GTiff')
+            timestring = time.strftime("%Y%m%d_%H%M%S")
+
+            outputDataset = driver.Create(tif_filename, ncols, nrows, 1, gdal.GDT_Float32)
+            outputDataset.SetMetadata( {
+                'filename': nc_filename,
+                'image': f[3],
+                'band': band,
+                'area': f[4]
+                })
+            outputDataset.SetGeoTransform(transform)
+            outputDataset.SetProjection(target.ExportToWkt())
+            outputDataset.GetRasterBand(1).WriteArray(arr)
+            outputDataset.GetRasterBand(1).SetNoDataValue(-9999)
+            outputDataset = None
+
+            gdal_ds = gdal.Translate(nc_filename, tif_filename, format='NetCDF')
+            
+            downloadedFiles.append((f[0], nc_filename))
+            count += 1
+
+            logger.info("Successfully downloaded data for %s", nc_filename)
+        #
 
 
 weather_data_config = {
@@ -57,6 +129,8 @@ weather_data_config = {
 		api_func=api_modis,
 		file_granularity="yearly",
         band="LC_Type1",
-		fn = os.path.join(modis_dir, '{year}/MODIS_006_MCD12Q1_{year}_01_01.nc')
+        image='MODIS/006/MCD12Q1/{year}_01_01',
+		nc_fn = os.path.join(modis_dir, '{year}/MODIS_006_MCD12Q1_{year}_01_01.nc'),
+        tif_fn = os.path.join(modis_dir, '{year}/MODIS_006_MCD12Q1_{year}_01_01.nc')
 	)
 }
