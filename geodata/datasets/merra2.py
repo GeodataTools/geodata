@@ -334,7 +334,7 @@ def tasks_daily_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	return [dict(prepare_func=prepare_func,
 				 xs=xs, ys=ys,
 				 year=year, month=month,
-				 fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year)) )
+				 fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year, month)) )
 				 for year, month in yearmonths for day in range(1, monthrange(year,month)[1]+1, 1)]
 
 def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
@@ -350,7 +350,7 @@ def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	return [dict(prepare_func=prepare_func,
 				 xs=xs, ys=ys,
 				 year=year, month=month,
-				 fn=fn.format(year=year, month=month, spinup=spinup_year(year)) )
+				 fn=fn.format(year=year, month=month, spinup=spinup_year(year, month)) )
 				 for year, month in yearmonths]
 
 
@@ -468,5 +468,5 @@ def spinup_year(year, month):
 		spinup = '401'
 	else:
 		spinup = '401'
-		
+
 	return spinup
