@@ -462,11 +462,9 @@ def spinup_year(year, month):
 		spinup = '300'
 	elif (year>=2011 and year<2020):
 		spinup = '400'
-	elif (year==2020 and month<=8):
-		spinup = '400'
-	elif (year==2020 and month>=9):
+	elif (year==2020 and month==9):
 		spinup = '401'
 	else:
-		spinup = '401'
+		spinup = '400'
 
 	return spinup
