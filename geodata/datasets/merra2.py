@@ -183,7 +183,7 @@ def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
 	# 	meta = ds.load()
 
 	# Set spinup variable (see MERRA2 documentation, p. 13)
-	spinup = spinup_year(year)
+	spinup = spinup_year(year, month)
 
 	fns = glob.iglob(template.format(year=year, month=month, spinup=spinup))
 	with xr.open_mfdataset(fns, combine='by_coords') as ds:
@@ -453,13 +453,20 @@ lat_direction = True
 
 # Spinup variable
 spinup_var = True
-def spinup_year(year):
+def spinup_year(year, month):
 	if (year>=1980 and year<1992):
 		spinup = '100'
 	elif (year>=1992 and year<2001):
 		spinup = '200'
 	elif (year>=2001 and year<2011):
 		spinup = '300'
-	elif (year>=2011):
+	elif (year>=2011 and year<2020):
 		spinup = '400'
+	elif (year==2020 and month<=8):
+		spinup = '400'
+	elif (year==2020 and month>=9):
+		spinup = '401'
+	else:
+		spinup = '401'
+		
 	return spinup
