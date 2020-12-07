@@ -1,4 +1,4 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker. 
+## Copyright 2020 Michael Davidson (UCSD), William Honaker.
 
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
@@ -88,10 +88,10 @@ class Dataset(object):
 				x1, y1, x2, y2 = datasetparams['bounds']
 				datasetparams.update(xs=slice(x1, x2),
 									ys=slice(y2, y1))
-			else: 
+			else:
 				raise ValueError("Specified bounds parameter should be list with North, West, South, East coordinates.")
 				## additional checks here later
-		else: 				
+		else:
 			logger.warn("Bounds not used in preparing dataset. Defaulting to global.")
 
 		if os.path.isdir(self.datadir):
@@ -145,8 +145,8 @@ class Dataset(object):
 							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
 						self.toDownload.append((
-							self.config, 
-							filename, 
+							self.config,
+							filename,
 							self.datasetfn(self.weatherconfig['url'][0], yr, mo, day),
 							self.datasetfn(self.weatherconfig['url'][1], yr, mo, day)
 							))
@@ -171,7 +171,7 @@ class Dataset(object):
 						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo)))
 				else:
 					self.downloadedFiles.append((self.config, filename))
-		
+
 		elif self.weatherconfig['file_granularity'] == 'monthly_multiple':
 			mo_tuples = [(yr,mo) for yr in yrs for mo in mos]
 			for mo_tuple in mo_tuples:
@@ -184,8 +184,8 @@ class Dataset(object):
 						logger.info("File `%s` not found!", filename)
 						incomplete_count += 1
 					self.toDownload.append((
-						self.config, 
-						filename, 
+						self.config,
+						filename,
 						self.datasetfn(self.weatherconfig['url'][0], yr, mo),
 						self.datasetfn(self.weatherconfig['url'][1], yr, mo)
 						))
@@ -217,7 +217,7 @@ class Dataset(object):
 		else:
 			return False
 		if self.dataset_module.spinup_var:
-			spinup = self.dataset_module.spinup_year(dataset['year'])
+			spinup = self.dataset_module.spinup_year(dataset['year'], dataset['month'])
 			dataset.update({'spinup': spinup})
 
 		return fn.format_map(dataset)
@@ -244,7 +244,7 @@ class Dataset(object):
 			)
 
 		elif self.module == 'merra2':
-			
+
 			api_func(
 				self.toDownload,
 				self.weatherconfig['file_granularity'],

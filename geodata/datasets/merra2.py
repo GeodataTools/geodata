@@ -357,7 +357,7 @@ def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 
 weather_data_config = {
 #	Single file contains all wind variables (≠ ncep)
-#	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year) before downloading
+#	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year, month) before downloading
 # 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
 	'surface_flux_hourly': dict(
 		api_func=api_merra2,
