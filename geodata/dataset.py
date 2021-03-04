@@ -217,7 +217,7 @@ class Dataset(object):
 		else:
 			return False
 		if self.dataset_module.spinup_var:
-			spinup = self.dataset_module.spinup_year(dataset['year'])
+			spinup = self.dataset_module.spinup_year(dataset['year'], dataset['month'])
 			dataset.update({'spinup': spinup})
 
 		return fn.format_map(dataset)

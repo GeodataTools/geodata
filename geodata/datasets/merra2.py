@@ -183,7 +183,7 @@ def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
 	# 	meta = ds.load()
 
 	# Set spinup variable (see MERRA2 documentation, p. 13)
-	spinup = spinup_year(year)
+	spinup = spinup_year(year, month)
 
 	fns = glob.iglob(template.format(year=year, month=month, spinup=spinup))
 	with xr.open_mfdataset(fns, combine='by_coords') as ds:
@@ -334,7 +334,7 @@ def tasks_daily_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	return [dict(prepare_func=prepare_func,
 				 xs=xs, ys=ys,
 				 year=year, month=month,
-				 fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year)) )
+				 fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year, month)) )
 				 for year, month in yearmonths for day in range(1, monthrange(year,month)[1]+1, 1)]
 
 def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
@@ -350,14 +350,14 @@ def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	return [dict(prepare_func=prepare_func,
 				 xs=xs, ys=ys,
 				 year=year, month=month,
-				 fn=fn.format(year=year, month=month, spinup=spinup_year(year)) )
+				 fn=fn.format(year=year, month=month, spinup=spinup_year(year, month)) )
 				 for year, month in yearmonths]
 
 
 
 weather_data_config = {
 #	Single file contains all wind variables (≠ ncep)
-#	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year) before downloading
+#	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year, month) before downloading
 # 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
 	'surface_flux_hourly': dict(
 		api_func=api_merra2,
@@ -453,13 +453,18 @@ lat_direction = True
 
 # Spinup variable
 spinup_var = True
-def spinup_year(year):
+def spinup_year(year, month):
 	if (year>=1980 and year<1992):
 		spinup = '100'
 	elif (year>=1992 and year<2001):
 		spinup = '200'
 	elif (year>=2001 and year<2011):
 		spinup = '300'
-	elif (year>=2011):
+	elif (year>=2011 and year<2020):
 		spinup = '400'
+	elif (year==2020 and month==9):
+		spinup = '401'
+	else:
+		spinup = '400'
+
 	return spinup
