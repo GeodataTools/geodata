@@ -1,6 +1,4 @@
 LICENSE.txt
-MANIFEST.in
-README-geodata.rst
 README.md
 setup.cfg
 setup.py
@@ -18,6 +16,7 @@ geodata/preparation.py
 geodata/resource.py
 geodata/utils.py
 geodata/wind.py
+geodata.egg-info/.DS_Store
 geodata.egg-info/PKG-INFO
 geodata.egg-info/SOURCES.txt
 geodata.egg-info/dependency_links.txt

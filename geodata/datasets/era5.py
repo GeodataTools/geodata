@@ -68,7 +68,7 @@ def _get_data(target=None, product='reanalysis-era5-single-levels', chunks=None,
 			if {'area'}.issubset(updates):
 			# find subset of area
 				yf, x0, y0, xf = updates['area']			# North, West, South, East
-				ds = ds.where((ds.latitude >= y0) & (ds.latitude <= yf) & (ds.longitude >= x0) & (ds.longitude <= xf), drop=True)
+				ds = ds.where((ds.lat >= y0) & (ds.lat <= yf) & (ds.lon >= x0) & (ds.lon <= xf), drop=True)
 
 			yield ds
 	else:
@@ -144,20 +144,25 @@ def _area(xs, ys):
 	return [ys.start, xs.start, ys.stop, xs.stop]
 
 def _rename_and_clean_coords(ds, add_lon_lat=True):
-	"""Rename 'longitude' and 'latitude' columns to 'x' and 'y'
+	"""Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
 
 	Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
 	"""
+	# If applicable, change latitude -> lat, longitude -> lon
+	if 'latitude' in list(ds.coords):
+		ds = ds.rename({'latitude': 'lat'})
+	if 'longitude' in list(ds.coords):
+		ds = ds.rename({'longitude': 'lon'})
 
-	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
+	ds = ds.rename({'lon': 'x', 'lat': 'y'})
 	if add_lon_lat:
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
 def api_hourly_era5(
-	toDownload, 
+	toDownload,
 	bounds,
-	download_vars, 
+	download_vars,
 	product
 	):
 	if not has_cdsapi:
@@ -207,7 +212,7 @@ def api_hourly_era5(
 						product,
 						full_request
 					)
-					
+
 					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
 					full_result.download(f[1])
 					logger.info("Successfully downloaded to {}".format(f[1]))
@@ -218,6 +223,12 @@ def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Rename geographic dimensions to x,y
 	# Subset x,y according to xs, ys
 
+	# If applicable, change latitude -> lat, longitude -> lon
+	if 'latitude' in list(ds.coords):
+		ds = ds.rename({'latitude': 'lat'})
+	if 'longitude' in list(ds.coords):
+		ds = ds.rename({'longitude': 'lon'})
+
 	if not isinstance(xs, slice):
 		first, second, last = np.asarray(xs)[[0,1,-1]]
 		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
@@ -225,20 +236,20 @@ def convert_and_subset_lons_lats_era5(ds, xs, ys):
 		first, second, last = np.asarray(ys)[[0,1,-1]]
 		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
 
-	ds = ds.sel(latitude=ys)
+	ds = ds.sel(lat=ys)
 
 	# longitudes should go from -180. to +180.
-	if len(ds.coords['longitude'].sel(longitude=slice(xs.start + 360., xs.stop + 360.))):
-		ds = xr.concat([ds.sel(longitude=slice(xs.start + 360., xs.stop + 360.)),
-						ds.sel(longitude=xs)],
-					   dim="longitude")
-		ds = ds.assign_coords(longitude=np.where(ds.coords['longitude'].values <= 180,
-											 ds.coords['longitude'].values,
-											 ds.coords['longitude'].values - 360.))
+	if len(ds.coords['lon'].sel(lon=slice(xs.start + 360., xs.stop + 360.))):
+		ds = xr.concat([ds.sel(lon=slice(xs.start + 360., xs.stop + 360.)),
+						ds.sel(lon=xs)],
+					   dim="lon")
+		ds = ds.assign_coords(lon=np.where(ds.coords['lon'].values <= 180,
+											 ds.coords['lon'].values,
+											 ds.coords['lon'].values - 360.))
 	else:
-		ds = ds.sel(longitude=xs)
+		ds = ds.sel(lon=xs)
 
-	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
+	ds = ds.rename({'lon': 'x', 'lat': 'y'})
 	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
@@ -265,11 +276,15 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 	# https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
 
 	fns = glob.iglob(template.format(year=year, month=month))
-	with xr.open_mfdataset(fns, combine='by_coords') as ds:
-		ds = ds.coords.to_dataset()
-		ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
-		meta = ds.load()
-
+	try:
+		with xr.open_mfdataset(fns, combine='by_coords') as ds:
+			ds = ds.coords.to_dataset()
+			ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
+			meta = ds.load()
+	except Exception as e:
+		logger.exception("Error when preparing for cutout: %s",
+						 e.args[0])
+		raise e
 	return meta
 
 
@@ -322,7 +337,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
 	with xr.open_dataset(fn) as ds:
 		logger.info(f'Opening `{fn}`')
 		ds = _rename_and_clean_coords(ds)
-		ds = _add_height(ds)
+		# ds = _add_height(ds)
 		ds = subset_x_y_era5(ds, xs, ys)
 
 		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
@@ -368,10 +383,10 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 
 	return [
 		dict(
-			prepare_func=prepare_func, 
-			xs=xs, 
-			ys=ys, 
-			year=year, 
+			prepare_func=prepare_func,
+			xs=xs,
+			ys=ys,
+			year=year,
 			month=month,
 			fn=fn.format(year=year, month=month)
 		)
@@ -399,13 +414,11 @@ weather_data_config = {
 					   'surface_solar_radiation_downwards',
 					   'toa_incident_solar_radiation',
 					   'total_sky_direct_solar_radiation_at_surface',
-					   'forecast_surface_roughness', 
+					   'forecast_surface_roughness',
 					   'orography'
 				   ]
 		)
 }
-
-#meta_data_config = dict(prepare_func=prepare_meta_era5)
 
 # No separate files for each day (would be coded in weather_data_config list, see merra2.py)
 daily_files = False

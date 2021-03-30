@@ -325,9 +325,7 @@ def _prepare_lat_direction(lat_direction, ys):
 	# Check direction of latitudes encoded in dataset, flip if necessary
 
 	if not lat_direction and ys.stop > ys.start:
-		logger.warn("ys slices are expected from north to south, i.e. slice(70, 40) for europe.")
 		ys = slice(ys.stop, ys.start, -ys.step if ys.step is not None else None)
 	if lat_direction and ys.stop < ys.start:
-		logger.warn("ys slices are expected from south to north, i.e. slice(40, 70) for europe.")
 		ys = slice(ys.stop, ys.start, ys.step if ys.step is not None else None)
 	return ys
