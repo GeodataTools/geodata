@@ -181,7 +181,7 @@ def api_hourly_era5(
 	if len(toDownload) == 0:
 		logger.info("All ERA5 files for this dataset have been downloaded.")
 	else:
-		logger.info("Preparing to download " + str(len(toDownload)) + "files.")
+		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
 
 		for f in toDownload:
 					print(f)
@@ -211,6 +211,54 @@ def api_hourly_era5(
 							'12:00','13:00','14:00','15:00','16:00','17:00',
 							'18:00','19:00','20:00','21:00','22:00','23:00'
 						],
+						'area': bounds,
+						'variable': download_vars
+					}
+
+					full_result = cdsapi.Client().retrieve(
+						product,
+						full_request
+					)
+
+					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+					full_result.download(f[1])
+					logger.info("Successfully downloaded to {}".format(f[1]))
+
+def api_monthly_era5(
+	toDownload,
+	bounds,
+	download_vars,
+	product
+	):
+	if not has_cdsapi:
+		raise RuntimeError(
+					"Need installed cdsapi python package available from "
+					"https://cds.climate.copernicus.eu/api-how-to"
+				)
+
+	if len(toDownload) == 0:
+		logger.info("All ERA5 files for this dataset have been downloaded.")
+	else:
+		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
+
+		for f in toDownload:
+					print(f)
+					os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+
+					fd, target = mkstemp(suffix='.nc4')
+					fd2, target2 = mkstemp(suffix='.nc4')
+
+					## for each file in self.todownload - need to then reextract year month in order to make query
+					query_year = str(f[2])
+					query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+
+					#2. Full data file
+					full_request = {
+						'product_type':'reanalysis',
+						'format':'netcdf',
+						'year':query_year,
+						'month':query_month,
+						'time':['00:00'],
 						'area': bounds,
 						'variable': download_vars
 					}
@@ -270,8 +318,8 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 
 	fns = glob.iglob(template.format(year=year, month=month))
 	try:
-		with xr.open_mfdataset(fns, combine='by_coords') as ds:
-			ds = ds.coords.to_dataset()
+		with xr.open_mfdataset(fns, combine='by_coords') as ds0:
+			ds = ds0.coords.to_dataset()
 			ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
 			meta = ds.load()
 	except Exception as e:
@@ -393,9 +441,33 @@ weather_data_config = {
 		tasks_func=tasks_monthly_era5,
 		meta_prepare_func=prepare_meta_era5,
 		prepare_func=prepare_month_era5,
-		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		product='reanalysis-era5-single-levels',
+		variables=[
+					   '100m_u_component_of_wind',
+					   '100m_v_component_of_wind',
+					   '2m_temperature',
+					   'runoff',
+					   'soil_temperature_level_4',
+					   'surface_net_solar_radiation',
+					   'surface_pressure',
+					   'surface_solar_radiation_downwards',
+					   'toa_incident_solar_radiation',
+					   'total_sky_direct_solar_radiation_at_surface',
+					   'forecast_surface_roughness',
+					   'orography'
+				   ]
+		),
+	'wind_solar_monthly': dict(
+		api_func=api_monthly_era5,
+		file_granularity="monthly",
+		tasks_func=tasks_monthly_era5,
+		meta_prepare_func=prepare_meta_era5,
+		prepare_func=prepare_month_era5,
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_monthly.nc'),
+		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_monthly.nc'),
+		product='reanalysis-era5-single-levels-monthly-means',
 		variables=[
 					   '100m_u_component_of_wind',
 					   '100m_v_component_of_wind',
@@ -416,7 +488,9 @@ weather_data_config = {
 # No separate files for each day (would be coded in weather_data_config list, see merra2.py)
 daily_files = False
 
-# Latitude stored south to north (ie forward, = True) or north to south
+# Latitude direction stored
+# 	South to north = True
+#	North to south = False
 lat_direction = False
 
 # Spinup variable (necessary for MERRA)

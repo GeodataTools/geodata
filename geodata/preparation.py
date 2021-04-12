@@ -291,11 +291,11 @@ def cutout_get_meta_view(cutout, xs=None, ys=None, years=slice(None), months=sli
 
 	# Check if returned non-zero subset
 	#	Future work: can check if whole subset is available
-	dim_len = [len(d) for d in meta.dims]
-	logger.info(dim_len)
+	dim_len = [len(meta.indexes[i]) for i in meta.indexes]
 	if all(d > 0 for d in dim_len):
 		return meta
 	else:
+		logger.info(dim_len)
 		return None
 
 
