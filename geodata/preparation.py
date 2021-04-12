@@ -80,6 +80,10 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		logger.info("The cutout is already prepared. If you want to recalculate it, supply an `overwrite=True` argument.")
 		return True
 
+	if cutout.empty == True:
+		logger.warning("Cutout dimensions are empty. One or more of xs, ys, or time are not available in Dataset.")
+		return False
+
 	logger.info("Starting preparation of cutout '%s'", cutout.name)
 
 	cutout_dir = cutout.cutout_dir
@@ -200,7 +204,6 @@ def cutout_produce_specific_dataseries(cutout, yearmonth, series_name):
 def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	# called in cutout.py as `get_meta()`
 	#	Loads various metadata (coordinates, dims...) from dataset via dataset_module.prepare_func (eg prepare_meta_merra2)
-	#	(Also download files in case of ERA5)
 
 	if months is None:
 		months = slice(1, 12)
@@ -213,11 +216,16 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	# Assign task function here?
 	tasks_func = meta_kwds['tasks_func']
 
-
-	# Get metadata (eg prepare_meta_merra2)
+	# Get metadata
 	prepare_func = meta_kwds.pop('prepare_func')
 	ds = prepare_func(xs=xs, ys=ys, year=years.stop, month=months.stop, **meta_kwds)
 	ds.attrs.update(dataset_params)
+
+	# Check if cutout dimenions are empty
+	dims = [len(ds.indexes[i]) for i in ds.indexes]
+	if np.prod(dims) == 0:
+		logger.warning("Cutout dimensions are empty. One or more of xs, ys, or time are not available in Dataset.")
+		cutout.empty = True
 
 
 	# with metadata, load various parameters

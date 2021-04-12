@@ -44,6 +44,7 @@ class Cutout(object):
 		self.name = name
 		self.cutout_dir = os.path.join(cutout_dir, name)
 		self.prepared = False
+		self.empty = False
 		self.meta_append = 0
 		self.config = cutoutparams.pop('weather_data_config')
 		self.meta = meta = None

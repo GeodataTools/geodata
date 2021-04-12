@@ -225,35 +225,29 @@ def api_hourly_era5(
 
 def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Rename geographic dimensions to x,y
-	# Subset x,y according to xs, ys
+	# Subset x,y according to xs, ys (subset_x_y_era5)
 
-	# If applicable, change latitude -> lat, longitude -> lon
+	# Rename latitude / lat -> y, longitude / lon -> x
 	if 'latitude' in list(ds.coords):
-		ds = ds.rename({'latitude': 'lat'})
+		ds = ds.rename({'latitude': 'y'})
 	if 'longitude' in list(ds.coords):
-		ds = ds.rename({'longitude': 'lon'})
+		ds = ds.rename({'longitude': 'x'})
+	if 'lat' in list(ds.coords):
+		ds = ds.rename({'lat': 'y'})
+	if 'lon' in list(ds.coords):
+		ds = ds.rename({'lon': 'x'})
 
-	if not isinstance(xs, slice):
-		first, second, last = np.asarray(xs)[[0,1,-1]]
-		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
-	if not isinstance(ys, slice):
-		first, second, last = np.asarray(ys)[[0,1,-1]]
-		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+	# Longitudes should go from -180. to +180.
+	if len(ds.coords['x'].sel(x=slice(xs.start + 360., xs.stop + 360.))):
+		ds = xr.concat([ds.sel(x=slice(xs.start + 360., xs.stop + 360.)),
+						ds.sel(x=xs)],
+					   dim="x")
+		ds = ds.assign_coords(x=np.where(ds.coords['x'].values <= 180,
+											 ds.coords['x'].values,
+											 ds.coords['x'].values - 360.))
+	# Subset x and y
+	ds = subset_x_y_era5(ds, xs, ys)
 
-	ds = ds.sel(lat=ys)
-
-	# longitudes should go from -180. to +180.
-	if len(ds.coords['lon'].sel(lon=slice(xs.start + 360., xs.stop + 360.))):
-		ds = xr.concat([ds.sel(lon=slice(xs.start + 360., xs.stop + 360.)),
-						ds.sel(lon=xs)],
-					   dim="lon")
-		ds = ds.assign_coords(lon=np.where(ds.coords['lon'].values <= 180,
-											 ds.coords['lon'].values,
-											 ds.coords['lon'].values - 360.))
-	else:
-		ds = ds.sel(lon=xs)
-
-	ds = ds.rename({'lon': 'x', 'lat': 'y'})
 	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
