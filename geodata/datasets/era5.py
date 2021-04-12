@@ -184,45 +184,47 @@ def api_hourly_era5(
 		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
 
 		for f in toDownload:
-					print(f)
-					os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			print(f)
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 
-					fd, target = mkstemp(suffix='.nc4')
-					fd2, target2 = mkstemp(suffix='.nc4')
+			fd, target = mkstemp(suffix='.nc4')
+			fd2, target2 = mkstemp(suffix='.nc4')
 
-					## for each file in self.todownload - need to then reextract year month in order to make query
-					query_year = str(f[2])
-					query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+			## for each file in self.todownload - need to then reextract year month in order to make query
+			query_year = str(f[2])
+			query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
 
-					#2. Full data file
-					full_request = {
-						'product_type':'reanalysis',
-						'format':'netcdf',
-						'year':query_year,
-						'month':query_month,
-						'day':[
-							'01','02','03','04','05','06','07','08','09','10','11','12',
-							'13','14','15','16','17','18','19','20','21','22','23','24',
-							'25','26','27','28','29','30','31'
-						],
-						'time':[
-							'00:00','01:00','02:00','03:00','04:00','05:00',
-							'06:00','07:00','08:00','09:00','10:00','11:00',
-							'12:00','13:00','14:00','15:00','16:00','17:00',
-							'18:00','19:00','20:00','21:00','22:00','23:00'
-						],
-						'area': bounds,
-						'variable': download_vars
-					}
+			#2. Full data file
+			full_request = {
+				'product_type':'reanalysis',
+				'format':'netcdf',
+				'year':query_year,
+				'month':query_month,
+				'day':[
+					'01','02','03','04','05','06','07','08','09','10','11','12',
+					'13','14','15','16','17','18','19','20','21','22','23','24',
+					'25','26','27','28','29','30','31'
+				],
+				'time':[
+					'00:00','01:00','02:00','03:00','04:00','05:00',
+					'06:00','07:00','08:00','09:00','10:00','11:00',
+					'12:00','13:00','14:00','15:00','16:00','17:00',
+					'18:00','19:00','20:00','21:00','22:00','23:00'
+				],
+				'variable': download_vars
+			}
 
-					full_result = cdsapi.Client().retrieve(
-						product,
-						full_request
-					)
+			if bounds != None:
+				full_request['area'] = bounds
 
-					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
-					full_result.download(f[1])
-					logger.info("Successfully downloaded to {}".format(f[1]))
+			full_result = cdsapi.Client().retrieve(
+				product,
+				full_request
+			)
+
+			logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+			full_result.download(f[1])
+			logger.info("Successfully downloaded to {}".format(f[1]))
 
 def api_monthly_era5(
 	toDownload,
@@ -242,35 +244,37 @@ def api_monthly_era5(
 		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
 
 		for f in toDownload:
-					print(f)
-					os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			print(f)
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 
-					fd, target = mkstemp(suffix='.nc4')
-					fd2, target2 = mkstemp(suffix='.nc4')
+			fd, target = mkstemp(suffix='.nc4')
+			fd2, target2 = mkstemp(suffix='.nc4')
 
-					## for each file in self.todownload - need to then reextract year month in order to make query
-					query_year = str(f[2])
-					query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+			## for each file in self.todownload - need to then reextract year month in order to make query
+			query_year = str(f[2])
+			query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
 
-					#2. Full data file
-					full_request = {
-						'product_type':'reanalysis',
-						'format':'netcdf',
-						'year':query_year,
-						'month':query_month,
-						'time':['00:00'],
-						'area': bounds,
-						'variable': download_vars
-					}
+			#2. Full data file
+			full_request = {
+				'product_type':'reanalysis',
+				'format':'netcdf',
+				'year':query_year,
+				'month':query_month,
+				'time':['00:00'],
+				'variable': download_vars
+			}
 
-					full_result = cdsapi.Client().retrieve(
-						product,
-						full_request
-					)
+			if bounds != None:
+				full_request['area'] = bounds
 
-					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
-					full_result.download(f[1])
-					logger.info("Successfully downloaded to {}".format(f[1]))
+			full_result = cdsapi.Client().retrieve(
+				product,
+				full_request
+			)
+
+			logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+			full_result.download(f[1])
+			logger.info("Successfully downloaded to {}".format(f[1]))
 
 
 

@@ -93,6 +93,7 @@ class Dataset(object):
 				## additional checks here later
 		else:
 			logger.warn("Bounds not used in preparing dataset. Defaulting to global.")
+			self.bounds = None
 
 		if os.path.isdir(self.datadir):
 			# Directory for dataset exists
@@ -222,14 +223,15 @@ class Dataset(object):
 
 		return fn.format_map(dataset)
 
-	def get_data(self, trim=False, testing=False, wind=True, solar=True):
+	def get_data(self, trim=False, testing=False):
 		"""Download data routine
-		# By default, keep variables related to wind (True) and solar (True)
 		#
 		#	Parameters
 		#	---------
-		#	trim: boolean
-		#		Run trim_variables function following each download
+		#	trim: boolean (default = False)
+		#		If true, run trim_variables function following each download
+		#	testing: boolean (default = False)
+		#		If true, download only first file in download list (e.g., first day of month)
 		"""
 
 		if testing == True:
