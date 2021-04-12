@@ -260,9 +260,8 @@ class Dataset(object):
 		if self.downloadedFiles == self.totalFiles:
 			self.prepared = True
 
-	def trim_variables(self, fn = None, wind=True, solar=True):
+	def trim_variables(self, fn = None):
 		""" Reduce size of file by trimming variables in file
-		# 	By default, keep variables related to wind (True) and solar (True)
 		#
 		#	Parameters
 		#	---------

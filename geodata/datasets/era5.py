@@ -152,13 +152,16 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 
 	Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
 	"""
-	# If applicable, change latitude -> lat, longitude -> lon
+	# Rename latitude / lat -> y, longitude / lon -> x
 	if 'latitude' in list(ds.coords):
-		ds = ds.rename({'latitude': 'lat'})
+		ds = ds.rename({'latitude': 'y'})
 	if 'longitude' in list(ds.coords):
-		ds = ds.rename({'longitude': 'lon'})
+		ds = ds.rename({'longitude': 'x'})
+	if 'lat' in list(ds.coords):
+		ds = ds.rename({'lat': 'y'})
+	if 'lon' in list(ds.coords):
+		ds = ds.rename({'lon': 'x'})
 
-	ds = ds.rename({'lon': 'x', 'lat': 'y'})
 	if add_lon_lat:
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
@@ -227,15 +230,8 @@ def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Rename geographic dimensions to x,y
 	# Subset x,y according to xs, ys (subset_x_y_era5)
 
-	# Rename latitude / lat -> y, longitude / lon -> x
-	if 'latitude' in list(ds.coords):
-		ds = ds.rename({'latitude': 'y'})
-	if 'longitude' in list(ds.coords):
-		ds = ds.rename({'longitude': 'x'})
-	if 'lat' in list(ds.coords):
-		ds = ds.rename({'lat': 'y'})
-	if 'lon' in list(ds.coords):
-		ds = ds.rename({'lon': 'x'})
+	# Rename lat and lon
+	ds = _rename_and_clean_coords(ds)
 
 	# Longitudes should go from -180. to +180.
 	if len(ds.coords['x'].sel(x=slice(xs.start + 360., xs.stop + 360.))):
@@ -248,7 +244,6 @@ def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Subset x and y
 	ds = subset_x_y_era5(ds, xs, ys)
 
-	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
 
