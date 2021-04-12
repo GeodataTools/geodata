@@ -102,18 +102,22 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		logger.info("Interpolating gebco to the dataset grid")
 		cutout.meta['height'] = _prepare_gebco_height(xs, ys)
 
-	# Delete cutout_dir
+	# Check if cutout_dir exists
 	if os.path.isdir(cutout_dir):
-		logger.debug("Deleting cutout_dir '%s'", cutout_dir)
-		shutil.rmtree(cutout_dir)
+		# Delete all files except meta.nc
+		logger.debug("Deleting cutout files in '%s'", cutout_dir)
+		for delete_file in glob(os.path.join(cutout_dir,'*.*')):
+			if not delete_file.endswith('meta.nc'):
+				logger.debug(delete_file)
+				os.remove(delete_file)
+		# shutil.rmtree(cutout_dir)
+	else:
+		os.mkdir(cutout_dir)
 
-	os.mkdir(cutout_dir)
-
-	# Write meta file
-	# TODO
-	(cutout.meta_clean
-		.unstack('year-month')
-		.to_netcdf(cutout.datasetfn()))
+	# # Moved to cutout __init__: Write meta file
+	# (cutout.meta_clean
+	# 	.unstack('year-month')
+	# 	.to_netcdf(cutout.datasetfn()))
 
 	# Compute data and fill files
 	tasks = []
@@ -171,10 +175,10 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 			with xr.open_mfdataset(fns, combine='by_coords') as ds:
 				if gebco_height:
 					ds['height'] = cutout.meta['height']
+				ds.to_netcdf(fn)
 
-			ds.to_netcdf(fn)
-
-			for tfn in fns: os.unlink(tfn)
+			for tfn in fns:
+				os.unlink(tfn)
 		logger.debug("Completed files %s", os.path.basename(fn))
 
 	logger.info("Cutout '%s' has been successfully prepared", cutout.name)

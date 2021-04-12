@@ -1,4 +1,4 @@
-#Dataset Settings - Replace example paths with paths to your data.
+# Dataset Settings - Replace example paths with paths to your data.
 gebco_path = '/Users/geodata_example_path/gebco'
 cutout_dir = '/Users/geodata_example_path/cutouts'
 era5_dir = '/Users/geodata_example_path/era5'

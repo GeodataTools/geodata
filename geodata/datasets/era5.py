@@ -28,6 +28,7 @@ import numpy as np
 import xarray as xr
 import shutil
 from six.moves import range
+from requests.exceptions import HTTPError
 from contextlib import contextmanager
 from tempfile import mkstemp
 import logging
@@ -50,8 +51,11 @@ projection = 'latlong'
 @contextmanager
 def _get_data(target=None, product='reanalysis-era5-single-levels', chunks=None, **updates):
 	"""
-	Check local folders for ERA5
-	If necessary: download ERA5 data from the Climate Data Store (CDS)
+	(Soon to be deprecated)
+	Check local folders for sarah data
+	If not found, download sarah data from the Climate Data Store (CDS)
+
+	For ERA5: use separate API function
 	"""
 
 	## Check if local copy

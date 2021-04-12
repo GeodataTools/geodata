@@ -37,15 +37,26 @@ echo "machine urs.earthdata.nasa.gov [login] [password] " >> .netrc
 machine urs.earthdata.nasa.gov [login] [password] "
 ```
 
-* (Windows instructions coming soon.)
+* For Windows, open Notepad and enter the following line in a new document, making sure to substitute `<uid>` and `<password>`for your Earthdata login credentials:
+ 
+ `machine urs.earthdata.nasa.gov login <uid> password <password>`
+
+Save the file to `C:\Users\<username>\.netrc`
 
 
- FInally, you will also need to create a file called `.urs_cookies` to persist cookies across multiple download calls.  You can create this by opening a terminal window and running:
+ Finally, you will also need to create a file called `.urs_cookies` to persist cookies across multiple download calls.  You can create this on Mac OS by opening a terminal window and running:
 
  ```
  touch ~/.urs_cookies
  ```
+
 in your root directory.
 
+For Windows, open a Powershell window, navigate to ``C:\Users\<username>\` and run the following:
 
-To confirm you have set up MERRA2 data access correctly, see: [MERRA2 Setup](https://github.com/east-winds/geodata/blob/master/doc/merra2_setup.md)
+```
+echo $null >> .urs_cookies
+```
+
+
+To confirm you have set up MERRA2 data access correctly, see: [MERRA2 Download](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_download.md))

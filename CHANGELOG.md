@@ -1,19 +1,21 @@
 ## Unreleased
 
-## ERA5 Dataset Update
+## dataset.py
+### get_data()
+* Add `testing` flag to enable download of only first entry in dataset download list for debugging purposes.
 
-### tests
-* Update `era5_test.py` to reflect new Dataset + get_data() workflow for era5 data.
+## preparation.py
+* Added lines to close tempfiles.  This was causing Win32 permissions issues for windows machines.
 
-### dataset.py
-* [`Dataset`]
-- Add case for `era5` dataset declarations and toDownload file list construction.
-- Update `get_data()` function to trigger calls to CDS API for era5 case.  For each monthly file, fires one call to download orography (height data), and one call to download climate data, then combines both files into a single file for later cutout creation.
+## doc/
+* Various updates to setup documentation regarding **rasterio** installation, Merra2 API access, and Windows directory formats.
 
-### era5.py
-* Update `prepare_meta_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
-* Update `prepare_monthly_era5()` to use existing downloaded data from a `Dataset.get_data()` call, rather than trigger call to CDS API.
-* Add parameters for CDS API product, variable specification, and Dataset class filenames to `era5_monthly` weather data config entry.
+## merra2.py
+* Added lines to close tempfiles used in `api_merra2` function.  This was causing Win32 permissions issues for windows machines.
+* Move function lines following API request inside `try` block so that "Success!" info message does not fire in case of HTTP error.
+
+## geodata.egg-info/
+* Remove `geodata.egg-info/` from repo.  This should prevent the folder from being tracked.  Otherwise the presence of the folder in the master report trumps listing the file in `.gitignore`.
 
 ## preparation.py
 * Fixed issue where `meta.attrs.setdefault()` could attempt to assign value to subset of string in case of meta file being read in from `xarray.opendataset()`.  Safer to redeclare `view` key as property and then use `meta.attrs.setdefault()`.
@@ -53,7 +55,7 @@ PR: https://github.com/east-winds/geodata/pull/14
 - Added cases `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'` to allow download from both MERRA2 SLV and radiation datasets and combination into a single combined dataset.
 
 * [`get_data`]
-- Added case for `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'` 
+- Added case for `file_granularity=='daily_multiple'` and `file_granularity=='monthly_multiple'`
 
 ### preparation.py
 * [`cutout_get_meta`] Added in timestamp creation case for `daily means` MERRA2 data.
@@ -62,7 +64,7 @@ PR: https://github.com/east-winds/geodata/pull/14
 * [`weather_data_config`]
 - Added entry `surface_flux_dailymeans` for Daily Means Merra2 data - [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary).
 - Added entries `slv_radiation_hourly`, `slv_radiation_monthly` for downloading and combining separate MERRA2 SLV and radition datasets into a single combined dataset for cutout create and solar output generation:
-    * `slv_radiation_hourly`: 
+    * `slv_radiation_hourly`:
         - [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
         - [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
     * `slv_radiation_monthly`:
