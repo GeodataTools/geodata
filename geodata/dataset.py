@@ -70,6 +70,12 @@ class Dataset(object):
 		else:
 			self.months = months = datasetparams['months']
 
+		if "opendap" in datasetparams:
+			self.opendap = opendap = datasetparams["opendap"]
+			logger.info("OpenDap download: {}".format(self.opendap))
+		else:
+			self.opendap = opendap = False
+
 		#TODO Better date handling that should require just input date string and output date string.
 		#if self.weatherconfig['file_granularity'] != 'daily' and "days" in datasetparams:
 		#	raise ValueError("Indicated data source is not daily.")
@@ -125,7 +131,11 @@ class Dataset(object):
 						if check_complete:
 							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
-						self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
+						if opendap:
+							self.toDownload.append((self.config, filename,
+									self.datasetfn_opendap(self.weatherconfig['url_opendap'], self.weatherconfig['variables'], yr, mo, day)))
+						else:
+							self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
 					else:
 						self.downloadedFiles.append((self.config, filename))
 
@@ -210,7 +220,7 @@ class Dataset(object):
 			return None
 
 	def datasetfn(self, fn, *args):
-		# construct file name from fn template (cf weather_data_config) and args (yr, mo, day)
+		# Construct file name from fn template (cf weather_data_config) and args (yr, mo, day)
 		if len(args) == 3:
 			dataset = dict(year=args[0], month=args[1], day=args[2])
 		elif len(args) == 2:
@@ -222,6 +232,19 @@ class Dataset(object):
 			dataset.update({'spinup': spinup})
 
 		return fn.format_map(dataset)
+
+	def datasetfn_opendap(self, fn, variables, *args):
+		# Construct url for OpenDap protocol
+		#	Depends on datasetfn()
+
+		# MERRA2 requires uppercase variable names
+		if self.module == 'merra2':
+			variables = [v.upper() for v in variables]
+
+		fn = fn + '?' + ",".join(variables) + ",time,lat,lon"
+
+		args = list(args)
+		return self.datasetfn(fn, *args)
 
 	def get_data(self, trim=False, testing=False):
 		"""Download data routine
@@ -248,6 +271,7 @@ class Dataset(object):
 				self.bounds,
 				self.weatherconfig['variables'],
 				self.weatherconfig['product'],
+				self.weatherconfig['product_type']
 			)
 
 		elif self.module == 'merra2':
