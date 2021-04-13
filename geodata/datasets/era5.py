@@ -47,7 +47,84 @@ except ImportError:
 # Model and Projection Settings
 projection = 'latlong'
 
-# Functions
+# contextmanager (contextlib): ensures that at end of all with statements, the resource is closed
+@contextmanager
+def _get_data(target=None, product='reanalysis-era5-single-levels', chunks=None, **updates):
+	"""
+	(Soon to be deprecated)
+	Check local folders for sarah data
+	If not found, download sarah data from the Climate Data Store (CDS)
+
+	For ERA5: use separate API function
+	"""
+
+	## Check if local copy
+	# filename = first characters of each variable
+	f = "".join([v[0] for v in updates['variable']])
+	if target is None:
+		target = era5_dir
+
+	fn=os.path.join(era5_dir, '{year}/{month:0>2}/{f}.nc'.format(year=updates['year'], month=updates['month'],f=f))
+
+	if os.path.isfile(fn):
+	#	Local file exists
+		with xr.open_dataset(fn, chunks=chunks) as ds:
+			if {'area'}.issubset(updates):
+			# find subset of area
+				yf, x0, y0, xf = updates['area']			# North, West, South, East
+				ds = ds.where((ds.lat >= y0) & (ds.lat <= yf) & (ds.lon >= x0) & (ds.lon <= xf), drop=True)
+
+			yield ds
+	else:
+	#	Download new file
+
+		# Make the directory if not exists
+		os.makedirs(os.path.dirname(fn), exist_ok=True)
+
+		if not has_cdsapi:
+			raise RuntimeError(
+				"Need installed cdsapi python package available from "
+				"https://cds.climate.copernicus.eu/api-how-to"
+			)
+
+		# Default request
+		request = {
+			'product_type':'reanalysis',
+			'format':'netcdf',
+			'day':[
+				'01','02','03','04','05','06','07','08','09','10','11','12',
+				'13','14','15','16','17','18','19','20','21','22','23','24',
+				'25','26','27','28','29','30','31'
+			],
+			'time':[
+				'00:00','01:00','02:00','03:00','04:00','05:00',
+				'06:00','07:00','08:00','09:00','10:00','11:00',
+				'12:00','13:00','14:00','15:00','16:00','17:00',
+				'18:00','19:00','20:00','21:00','22:00','23:00'
+			]
+		}
+		request.update(updates)
+
+		assert {'year', 'month', 'variable'}.issubset(request), "Need to specify at least 'variable', 'year' and 'month'"
+
+		# main request to API
+		result = cdsapi.Client().retrieve(
+			product,
+			request
+		)
+
+		# if target is None:
+		# 	# make a temp file
+		#     fd, target = mkstemp(suffix='.nc')
+		#     os.close(fd)
+		logger.info("Downloading request for {} variables to {}".format(len(request['variable']), target))
+		result.download(fn)
+
+		with xr.open_dataset(fn, chunks=chunks) as ds:
+			yield ds
+
+		# os.unlink(target)
+
 def _add_height(ds):
 	"""Convert geopotential 'z' to geopotential height following [1]
 
@@ -71,21 +148,30 @@ def _area(xs, ys):
 	return [ys.start, xs.start, ys.stop, xs.stop]
 
 def _rename_and_clean_coords(ds, add_lon_lat=True):
-	"""Rename 'longitude' and 'latitude' columns to 'x' and 'y'
+	"""Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
 
 	Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
 	"""
+	# Rename latitude / lat -> y, longitude / lon -> x
+	if 'latitude' in list(ds.coords):
+		ds = ds.rename({'latitude': 'y'})
+	if 'longitude' in list(ds.coords):
+		ds = ds.rename({'longitude': 'x'})
+	if 'lat' in list(ds.coords):
+		ds = ds.rename({'lat': 'y'})
+	if 'lon' in list(ds.coords):
+		ds = ds.rename({'lon': 'x'})
 
-	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
 	if add_lon_lat:
 		ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
 def api_hourly_era5(
-	toDownload, 
+	toDownload,
 	bounds,
-	download_vars, 
-	product
+	download_vars,
+	product,
+	product_type
 	):
 	if not has_cdsapi:
 		raise RuntimeError(
@@ -96,77 +182,122 @@ def api_hourly_era5(
 	if len(toDownload) == 0:
 		logger.info("All ERA5 files for this dataset have been downloaded.")
 	else:
-		logger.info("Preparing to download " + str(len(toDownload)) + "files.")
+		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
 
 		for f in toDownload:
-					print(f)
-					os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+			print(f)
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 
-					fd, target = mkstemp(suffix='.nc4')
-					fd2, target2 = mkstemp(suffix='.nc4')
+			fd, target = mkstemp(suffix='.nc4')
+			fd2, target2 = mkstemp(suffix='.nc4')
 
-					## for each file in self.todownload - need to then reextract year month in order to make query
-					query_year = str(f[2])
-					query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+			## for each file in self.todownload - need to then reextract year month in order to make query
+			query_year = str(f[2])
+			query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
 
-					#2. Full data file
-					full_request = {
-						'product_type':'reanalysis',
-						'format':'netcdf',
-						'year':query_year,
-						'month':query_month,
-						'day':[
-							'01','02','03','04','05','06','07','08','09','10','11','12',
-							'13','14','15','16','17','18','19','20','21','22','23','24',
-							'25','26','27','28','29','30','31'
-						],
-						'time':[
-							'00:00','01:00','02:00','03:00','04:00','05:00',
-							'06:00','07:00','08:00','09:00','10:00','11:00',
-							'12:00','13:00','14:00','15:00','16:00','17:00',
-							'18:00','19:00','20:00','21:00','22:00','23:00'
-						],
-						'area': bounds,
-						'variable': download_vars
-					}
+			#2. Full data file
+			full_request = {
+				'product_type':'reanalysis',
+				'format':'netcdf',
+				'year':query_year,
+				'month':query_month,
+				'day':[
+					'01','02','03','04','05','06','07','08','09','10','11','12',
+					'13','14','15','16','17','18','19','20','21','22','23','24',
+					'25','26','27','28','29','30','31'
+				],
+				'time':[
+					'00:00','01:00','02:00','03:00','04:00','05:00',
+					'06:00','07:00','08:00','09:00','10:00','11:00',
+					'12:00','13:00','14:00','15:00','16:00','17:00',
+					'18:00','19:00','20:00','21:00','22:00','23:00'
+				],
+				'variable': download_vars
+			}
 
-					full_result = cdsapi.Client().retrieve(
-						product,
-						full_request
-					)
-					
-					logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
-					full_result.download(f[1])
-					logger.info("Successfully downloaded to {}".format(f[1]))
+			if bounds != None:
+				full_request['area'] = bounds
+
+			full_result = cdsapi.Client().retrieve(
+				product,
+				full_request
+			)
+
+			logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+			full_result.download(f[1])
+			logger.info("Successfully downloaded to {}".format(f[1]))
+
+def api_monthly_era5(
+	toDownload,
+	bounds,
+	download_vars,
+	product,
+	product_type
+	):
+	if not has_cdsapi:
+		raise RuntimeError(
+					"Need installed cdsapi python package available from "
+					"https://cds.climate.copernicus.eu/api-how-to"
+				)
+
+	if len(toDownload) == 0:
+		logger.info("All ERA5 files for this dataset have been downloaded.")
+	else:
+		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
+
+		for f in toDownload:
+			print(f)
+			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+
+			fd, target = mkstemp(suffix='.nc4')
+			fd2, target2 = mkstemp(suffix='.nc4')
+
+			## for each file in self.todownload - need to then reextract year month in order to make query
+			query_year = str(f[2])
+			query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
+
+			#2. Full data file
+			full_request = {
+				'product_type':product_type,
+				'format':'netcdf',
+				'year':query_year,
+				'month':query_month,
+				'time':'00:00',
+				'variable': download_vars
+			}
+
+			if bounds != None:
+				full_request['area'] = bounds
+
+			full_result = cdsapi.Client().retrieve(
+				product,
+				full_request
+			)
+
+			logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+			full_result.download(f[1])
+			logger.info("Successfully downloaded to {}".format(f[1]))
 
 
 
 def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Rename geographic dimensions to x,y
-	# Subset x,y according to xs, ys
+	# Subset x,y according to xs, ys (subset_x_y_era5)
 
-	if not isinstance(xs, slice):
-		first, second, last = np.asarray(xs)[[0,1,-1]]
-		xs = slice(first - 0.1*(second - first), last + 0.1*(second - first))
-	if not isinstance(ys, slice):
-		first, second, last = np.asarray(ys)[[0,1,-1]]
-		ys = slice(first - 0.1*(second - first), last + 0.1*(second - first))
+	# Rename lat and lon
+	ds = _rename_and_clean_coords(ds)
 
-	ds = ds.sel(latitude=ys)
+	# Longitudes should go from -180. to +180.
+	if len(ds.coords['x'].sel(x=slice(xs.start + 360., xs.stop + 360.))):
+		ds = xr.concat([ds.sel(x=slice(xs.start + 360., xs.stop + 360.)),
+						ds.sel(x=xs)],
+					   dim="x")
+		ds = ds.assign_coords(x=np.where(ds.coords['x'].values <= 180,
+											 ds.coords['x'].values,
+											 ds.coords['x'].values - 360.))
+	# Subset x and y
+	ds = subset_x_y_era5(ds, xs, ys)
 
-	# longitudes should go from -180. to +180.
-	if len(ds.coords['longitude'].sel(longitude=slice(xs.start + 360., xs.stop + 360.))):
-		ds = xr.concat([ds.sel(longitude=slice(xs.start + 360., xs.stop + 360.)),
-						ds.sel(longitude=xs)],
-					   dim="longitude")
-		ds = ds.assign_coords(longitude=np.where(ds.coords['longitude'].values <= 180,
-											 ds.coords['longitude'].values,
-											 ds.coords['longitude'].values - 360.))
-	else:
-		ds = ds.sel(longitude=xs)
-
-	ds = ds.rename({'longitude': 'x', 'latitude': 'y'})
-	ds = ds.assign_coords(lon=ds.coords['x'], lat=ds.coords['y'])
 	return ds
 
 
@@ -192,11 +323,15 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 	# https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
 
 	fns = glob.iglob(template.format(year=year, month=month))
-	with xr.open_mfdataset(fns, combine='by_coords') as ds:
-		ds = ds.coords.to_dataset()
-		ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
-		meta = ds.load()
-
+	try:
+		with xr.open_mfdataset(fns, combine='by_coords') as ds0:
+			ds = ds0.coords.to_dataset()
+			ds = convert_and_subset_lons_lats_era5(ds, xs, ys)
+			meta = ds.load()
+	except Exception as e:
+		logger.exception("Error when preparing for cutout: %s",
+						 e.args[0])
+		raise e
 	return meta
 
 
@@ -249,7 +384,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
 	with xr.open_dataset(fn) as ds:
 		logger.info(f'Opening `{fn}`')
 		ds = _rename_and_clean_coords(ds)
-		ds = _add_height(ds)
+		# ds = _add_height(ds)
 		ds = subset_x_y_era5(ds, xs, ys)
 
 		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
@@ -295,10 +430,10 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 
 	return [
 		dict(
-			prepare_func=prepare_func, 
-			xs=xs, 
-			ys=ys, 
-			year=year, 
+			prepare_func=prepare_func,
+			xs=xs,
+			ys=ys,
+			year=year,
 			month=month,
 			fn=fn.format(year=year, month=month)
 		)
@@ -312,9 +447,10 @@ weather_data_config = {
 		tasks_func=tasks_monthly_era5,
 		meta_prepare_func=prepare_meta_era5,
 		prepare_func=prepare_month_era5,
-		template=os.path.join(era5_dir, '{year}/{month:0>2}/*.nc'),
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		product='reanalysis-era5-single-levels',
+		product_type='reanalysis',
 		variables=[
 					   '100m_u_component_of_wind',
 					   '100m_v_component_of_wind',
@@ -326,18 +462,43 @@ weather_data_config = {
 					   'surface_solar_radiation_downwards',
 					   'toa_incident_solar_radiation',
 					   'total_sky_direct_solar_radiation_at_surface',
-					   'forecast_surface_roughness', 
+					   'forecast_surface_roughness',
+					   'orography'
+				   ]
+		),
+	'wind_solar_monthly': dict(
+		api_func=api_monthly_era5,
+		file_granularity="monthly",
+		tasks_func=tasks_monthly_era5,
+		meta_prepare_func=prepare_meta_era5,
+		prepare_func=prepare_month_era5,
+		template=os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_monthly.nc'),
+		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_monthly.nc'),
+		product='reanalysis-era5-single-levels-monthly-means',
+		product_type='monthly_averaged_reanalysis',
+		variables=[
+					   '100m_u_component_of_wind',
+					   '100m_v_component_of_wind',
+					   '2m_temperature',
+					   'runoff',
+					   'soil_temperature_level_4',
+					   'surface_net_solar_radiation',
+					   'surface_pressure',
+					   'surface_solar_radiation_downwards',
+					   'toa_incident_solar_radiation',
+					   'total_sky_direct_solar_radiation_at_surface',
+					   'forecast_surface_roughness',
 					   'orography'
 				   ]
 		)
 }
 
-#meta_data_config = dict(prepare_func=prepare_meta_era5)
-
 # No separate files for each day (would be coded in weather_data_config list, see merra2.py)
 daily_files = False
 
-# Latitude stored south to north (ie forward, = True) or north to south
+# Latitude direction stored
+# 	South to north = True
+#	North to south = False
 lat_direction = False
 
 # Spinup variable (necessary for MERRA)

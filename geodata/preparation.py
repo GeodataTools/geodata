@@ -80,6 +80,10 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		logger.info("The cutout is already prepared. If you want to recalculate it, supply an `overwrite=True` argument.")
 		return True
 
+	if cutout.empty == True:
+		logger.warning("Cutout dimensions are empty. One or more of xs, ys, or time are not available in Dataset.")
+		return False
+
 	logger.info("Starting preparation of cutout '%s'", cutout.name)
 
 	cutout_dir = cutout.cutout_dir
@@ -200,7 +204,6 @@ def cutout_produce_specific_dataseries(cutout, yearmonth, series_name):
 def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	# called in cutout.py as `get_meta()`
 	#	Loads various metadata (coordinates, dims...) from dataset via dataset_module.prepare_func (eg prepare_meta_merra2)
-	#	(Also download files in case of ERA5)
 
 	if months is None:
 		months = slice(1, 12)
@@ -213,11 +216,16 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	# Assign task function here?
 	tasks_func = meta_kwds['tasks_func']
 
-
-	# Get metadata (eg prepare_meta_merra2)
+	# Get metadata
 	prepare_func = meta_kwds.pop('prepare_func')
 	ds = prepare_func(xs=xs, ys=ys, year=years.stop, month=months.stop, **meta_kwds)
 	ds.attrs.update(dataset_params)
+
+	# Check if cutout dimenions are empty
+	dims = [len(ds.indexes[i]) for i in ds.indexes]
+	if np.prod(dims) == 0:
+		logger.warning("Cutout dimensions are empty. One or more of xs, ys, or time are not available in Dataset.")
+		cutout.empty = True
 
 
 	# with metadata, load various parameters
@@ -283,11 +291,11 @@ def cutout_get_meta_view(cutout, xs=None, ys=None, years=slice(None), months=sli
 
 	# Check if returned non-zero subset
 	#	Future work: can check if whole subset is available
-	dim_len = [len(d) for d in meta.dims]
-	logger.info(dim_len)
+	dim_len = [len(meta.indexes[i]) for i in meta.indexes]
 	if all(d > 0 for d in dim_len):
 		return meta
 	else:
+		logger.info(dim_len)
 		return None
 
 
@@ -329,9 +337,7 @@ def _prepare_lat_direction(lat_direction, ys):
 	# Check direction of latitudes encoded in dataset, flip if necessary
 
 	if not lat_direction and ys.stop > ys.start:
-		logger.warn("ys slices are expected from north to south, i.e. slice(70, 40) for europe.")
 		ys = slice(ys.stop, ys.start, -ys.step if ys.step is not None else None)
 	if lat_direction and ys.stop < ys.start:
-		logger.warn("ys slices are expected from south to north, i.e. slice(40, 70) for europe.")
 		ys = slice(ys.stop, ys.start, ys.step if ys.step is not None else None)
 	return ys

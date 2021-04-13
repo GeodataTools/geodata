@@ -356,9 +356,6 @@ def tasks_monthly_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
 
 
 weather_data_config = {
-#	Single file contains all wind variables (≠ ncep)
-#	MERRA2 has additional label for spinup decade--eg 300, 400--that must be calculated via spinup_year(year, month) before downloading
-# 	https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/2015/01/MERRA2_400.tavg1_2d_flx_Nx.20150101.nc4
 	'surface_flux_hourly': dict(
 		api_func=api_merra2,
 		file_granularity="daily",
@@ -367,6 +364,7 @@ weather_data_config = {
 		prepare_func=prepare_month_surface_flux,
 		template=os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4'),
 		url = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4',
+		url_opendap = 'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4.nc4',
 		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4'),
 		variables = ['ustar','z0m','disph','rhoa','ulml','vlml','tstar','hlml','tlml','pblh','hflux','eflux']
 	),
