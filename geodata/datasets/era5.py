@@ -170,7 +170,8 @@ def api_hourly_era5(
 	toDownload,
 	bounds,
 	download_vars,
-	product
+	product,
+	product_type
 	):
 	if not has_cdsapi:
 		raise RuntimeError(
@@ -230,7 +231,8 @@ def api_monthly_era5(
 	toDownload,
 	bounds,
 	download_vars,
-	product
+	product,
+	product_type
 	):
 	if not has_cdsapi:
 		raise RuntimeError(
@@ -256,11 +258,11 @@ def api_monthly_era5(
 
 			#2. Full data file
 			full_request = {
-				'product_type':'reanalysis',
+				'product_type':product_type,
 				'format':'netcdf',
 				'year':query_year,
 				'month':query_month,
-				'time':['00:00'],
+				'time':'00:00',
 				'variable': download_vars
 			}
 
@@ -448,6 +450,7 @@ weather_data_config = {
 		template=os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_hourly.nc'),
 		product='reanalysis-era5-single-levels',
+		product_type='reanalysis',
 		variables=[
 					   '100m_u_component_of_wind',
 					   '100m_v_component_of_wind',
@@ -472,6 +475,7 @@ weather_data_config = {
 		template=os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_monthly.nc'),
 		fn = os.path.join(era5_dir, '{year}/{month:0>2}/wind_solar_monthly.nc'),
 		product='reanalysis-era5-single-levels-monthly-means',
+		product_type='monthly_averaged_reanalysis',
 		variables=[
 					   '100m_u_component_of_wind',
 					   '100m_v_component_of_wind',
