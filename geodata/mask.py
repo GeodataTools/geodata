@@ -98,7 +98,7 @@ class Mask(object):
         
         return (
         f"Mask {self.name}: \n" +
-        f"{len(self.layers)} layers: {list(self.layers.keys())} .\n" + mmask + smask 
+        f"{len(self.layers)} layers: {list(self.layers.keys())}.\n" + mmask + smask 
         + is_save
         )
 
@@ -544,8 +544,8 @@ class Mask(object):
 
         Adjusted from rasterio's documentation on merging: https://rasterio.readthedocs.io/en/latest/api/rasterio.merge.html
         Geospatial bounds and resolution of a new output file in the units of the input file coordinate reference system
-        may be provided, but by default, we will use the layer with the best resolution for the output bounds/resolution. 
-        Unless a reference layer is provided.
+        may be provided, but by default, we will use the layer with the best resolution for the output bounds/resolution, 
+        unless a reference layer is provided.
 
         method (str): either "sum" or "and" method, the difference is explained in the docstring for _sum_method and _and_method
         weights (dict): when the "and" method is used, the weights for each layer. None by default, and in this case the weight will
