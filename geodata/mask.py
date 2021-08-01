@@ -190,6 +190,7 @@ class Mask(object):
             if replace == True:
                 self.layers[layer_name].close()
                 del self.layers[layer_name] #delete old layer from memory
+                logger.info(f"Overwriting existing layer {layer_name}.")
             else:
                 raise ValueError("Layer name %s already existed in mask %s, "
                            "please change the name or replace the existing one with replace = True", 
@@ -294,7 +295,6 @@ class Mask(object):
     def create_temp_tif(self, arr, transform, open_raster = True, **kwargs):
         """
         Create a ras.DatasetReader object openning a temporary rasterio file
-        
         Parameters:
         arr (np.array): np.array contains values for that layer
         transform (affine.Affine): affine transform information for that layer
@@ -310,6 +310,7 @@ class Mask(object):
                 width=arr.shape[1],
                 count=1,
                 dtype=arr.dtype,
+                compress='lzw',
                 crs='+proj=latlong',
                 transform=transform,
             ) as dst:
@@ -332,24 +333,28 @@ class Mask(object):
     def save_raster(self, arr, transform, path, **kwargs):
         """
         Given np.array and Affine transform, save the raster as tif file to the path
+        https://rasterio.readthedocs.io/en/latest/topics/writing.html
 
         arr (np.array): np.array contains values for that layer.
         transform (affine.Affine): affine transform information for that layer
             arr, transform input can be the output for ras.merge.merge and ras.mask.mask)
         path (str): the path to where the tif file is saved.
         """
-        with ras.open(
-            path,
-            'w',
-            driver='GTiff',
-            height=arr.shape[0],
-            width=arr.shape[1],
-            count=1,
-            dtype=arr.dtype,
-            crs='+proj=latlong',
-            transform=transform,
-        ) as dst:
-            dst.write(arr, 1)
+        # Register GDAL format drivers and configuration options with a context manager.
+        with ras.Env():
+            with ras.open(
+                path,
+                'w',
+                driver='GTiff',
+                height=arr.shape[0],
+                width=arr.shape[1],
+                count=1,
+                dtype=arr.dtype,
+                compress='lzw',
+                crs='+proj=latlong',
+                transform=transform,
+            ) as dst:
+                dst.write(arr, 1)
 
     @classmethod
     def crop_raster(self, raster, bounds, lat_lon_bounds = True):
@@ -374,7 +379,7 @@ class Mask(object):
                 'width': window.width,
                 'transform': ras.windows.transform(window, raster.transform)})
 
-            with ras.open(memfile.name, 'w', **kwargs) as dst:
+            with ras.open(memfile.name, 'w', compress='lzw', **kwargs) as dst:
                 dst.write(raster.read(window=window))
                 dst.close()
 
@@ -471,7 +476,7 @@ class Mask(object):
         #write it to another file: the CRS corrected one
         #rasterio.readthedocs.io/en/latest/topics/reproject.html
         with MemoryFile() as memfile:
-            with ras.open(memfile.name, 'w', **kwargs) as dst:
+            with ras.open(memfile.name, 'w', compress='lzw', **kwargs) as dst:
                 for i in range(1, src.count + 1):
                     ras.warp.reproject(
                         source = ras.band(src, i),
@@ -500,7 +505,7 @@ class Mask(object):
         
         """
         new_arr = np.isin(raster.read(1), values) * 1
-        return Mask.create_temp_tif(new_arr, raster.transform)
+        return Mask.create_temp_tif(new_arr.astype(np.int8), raster.transform)
      
     def binarize_layer(self, layer_name, values, dest_layer_name = None):
         """binarize a layer of mask object using Mask.binarize_raster() method"""
@@ -614,6 +619,8 @@ class Mask(object):
             Mask.show(return_ras, title = 'Merged Mask')
 
         if attribute_save == True:
+            if self.merged_mask:
+                logger.info("Overwriting current merged_mask.")
             self.merged_mask = return_ras
             logger.info("Merged Mask saved as attribute 'merged_mask'.")
             
@@ -731,7 +738,7 @@ class Mask(object):
 
         else:
             if not resolution:
-                raise TypeError("Please provide the tuple of (width, height) for the resolution of the new shape raster.")
+                raise TypeError("lPlease provide the tuple of (width, height) for the resolution of the new shape raster.")
 
         if combine_shape:
             if not combine_name: raise ValueError("Please specify combined shape name.")
@@ -743,7 +750,7 @@ class Mask(object):
             if not reference_layer:  
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
             arr = ras.features.geometry_mask(shp, resolution, shape_transform, invert = invert, **kwargs) * 1
-            self.layers[name] = Mask.create_temp_tif(arr, shape_transform)
+            self.layers[name] = Mask.create_temp_tif(arr.astype(np.int8), shape_transform)
             logger.info(f"Layer {name} added to the mask {self.name}.")
 
 
@@ -844,6 +851,10 @@ class Mask(object):
         extension = '.tif'
         
         if not mask_dir: mask_dir = self.mask_dir
+
+        # Ensure mask directory exists
+        if not os.path.isdir(mask_dir):
+            os.mkdir(mask_dir)
 
         #get mask object path
         obj_path = os.path.join(mask_dir, self.name)
