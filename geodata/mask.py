@@ -676,14 +676,21 @@ class Mask(object):
         if (condition_key and not condition_value) or (condition_key and not condition_value):
             raise ValueError("Condition key and condition value must be both null, or have values.")
 
+        #if not conditional key and value are specified
         if (not condition_key and not condition_value):
-            #if no extra condition need to be checked
-            for r in reader.records():
-                r_key = r.attributes[key]
-                if r_key in targets:
+            if not targets:
+                for r in reader.records():
+                    r_key = r.attributes[key]
                     shape_keys.append(r_key)
                     shapes.append(r.geometry)
                     records[r_key] = r.attributes
+            else: #target list provided
+                for r in reader.records():
+                    r_key = r.attributes[key]
+                    if r_key in targets:
+                        shape_keys.append(r_key)
+                        shapes.append(r.geometry)
+                        records[r_key] = r.attributes
 
         else:
             #with extra conditions
@@ -694,7 +701,7 @@ class Mask(object):
                         shape_keys.append(r_key)
                         shapes.append(r.geometry)
                         records[r_key] = r.attributes
-            else:
+            else: #target list provided
                 for r in reader.records():
                     r_key = r.attributes[key]
                     if r.attributes[condition_key] == condition_value and r_key in targets:
