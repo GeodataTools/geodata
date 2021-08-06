@@ -25,6 +25,7 @@ import cartopy.io.shapereader as shpreader
 import logging
 logger = logging.getLogger(__name__)
 import geopandas as gpd
+import shapely
 
 import os, sys
 import rasterio as ras
@@ -340,21 +341,19 @@ class Mask(object):
             arr, transform input can be the output for ras.merge.merge and ras.mask.mask)
         path (str): the path to where the tif file is saved.
         """
-        # Register GDAL format drivers and configuration options with a context manager.
-        with ras.Env():
-            with ras.open(
-                path,
-                'w',
-                driver='GTiff',
-                height=arr.shape[0],
-                width=arr.shape[1],
-                count=1,
-                dtype=arr.dtype,
-                compress='lzw',
-                crs='+proj=latlong',
-                transform=transform,
-            ) as dst:
-                dst.write(arr, 1)
+        with ras.open(
+            path,
+            'w',
+            driver='GTiff',
+            height=arr.shape[0],
+            width=arr.shape[1],
+            count=1,
+            dtype=arr.dtype,
+            compress='lzw',
+            crs='+proj=latlong',
+            transform=transform,
+        ) as dst:
+            dst.write(arr, 1)
 
     @classmethod
     def crop_raster(self, raster, bounds, lat_lon_bounds = True):
@@ -750,9 +749,12 @@ class Mask(object):
         if combine_shape:
             if not combine_name: raise ValueError("Please specify combined shape name.")
                 
-            shapes = {combine_name: list(shapes.values())}
+            shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
 
         for name, shp in shapes.items():
+            if not isinstance(shp, shapely.geometry.multipolygon.MultiPolygon):
+                #make sure that the shape is a geometry.multipolygon
+                shp = shapely.geometry.multipolygon.MultiPolygon([shp])
             shape_bounds = ras.features.bounds(shp)
             if not reference_layer:  
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
@@ -792,16 +794,22 @@ class Mask(object):
         if combine_shape:
             if not combine_name: raise ValueError("Please specify combined shape name.")
                 
-            shapes = {combine_name: list(shapes.values())}
+            shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
 
         return_shape = {}
 
         #loop through shapes to extract and create temp tif raster
         for name, shp in shapes.items():
             if isinstance(shp, list) == False: shp = [shp]
-            arr, aff = rmask.mask(layer, shp, **kwargs)
+            arr, aff = rmask.mask(layer, shp, nodata = 0, **kwargs)
             raster = Mask.create_temp_tif(arr[0], aff)
             return_shape[name] = raster
+            if attribute_save:
+                if name in self.shape_mask:
+                    self.shape_mask[name].close()
+                    logger.info(f"[Overwritten] Extracted shape {name} added to attribute 'shape_mask'.") 
+                else:
+                    logger.info(f"Extracted shape {name} added to attribute 'shape_mask'.") 
 
         if show:
             [Mask.show(r, title=name) for name, r in return_shape.items()]
@@ -809,8 +817,7 @@ class Mask(object):
         if attribute_save:
             self.shape_mask.update(return_shape)
             self.saved = False
-            for name in return_shape.keys():
-                logger.info(f"Shape {name} added to attribute 'shape_mask'.") 
+ 
         else: 
             return return_shape
 
