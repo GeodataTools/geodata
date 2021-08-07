@@ -11,7 +11,7 @@
 ## GNU General Public License for more details.
 
 ## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+## along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 """
@@ -127,12 +127,15 @@ class Mask(object):
         
         #load the layers
         layer_path = os.path.join(obj_dir, 'layers')
+        layer_lst = []
         if (os.path.isdir(layer_path)):
             for i in os.listdir(layer_path):
                 prev_mask.layers[i.split('.')[0]] = ras.open(os.path.join(layer_path, i))
-                logger.info(f"Layer {i.split('.')[0]} loaded to the mask {prev_mask.name}.")
+                layer_lst.append(i.split('.')[0])
         else:
             logger.info("No previously saved mask found for mask %s", name)
+
+        logger.info(f"Layer {layer_lst} loaded to the mask {prev_mask.name}.")
 
         #load the merged layer, if there is one     
         merge_path = os.path.join(obj_dir, 'merged_mask')
@@ -145,11 +148,13 @@ class Mask(object):
 
         #load the shape masks  
         shape_path = os.path.join(obj_dir, 'shape_mask')
+        shape_lst = []
         if (os.path.isdir(shape_path)):
             for i in os.listdir(shape_path):
                 prev_mask.shape_mask[i.split('.')[0]] = ras.open(os.path.join(shape_path, i))
-                logger.info(f"Shape mask {i.split('.')[0]} loaded to the mask {prev_mask.name}.")
-        
+                shape_lst.append(i.split('.')[0])
+            logger.info(f"Shape mask {shape_lst} loaded to the mask {prev_mask.name}.")
+
         prev_mask.saved = True
 
         return prev_mask
@@ -197,7 +202,11 @@ class Mask(object):
                            "please change the name or replace the existing one with replace = True", 
                            layer_name, self.name)
         
-        new_raster = ras.open(layer_path)
+
+        new_raster = ras.open(layer_path, 'r+')
+
+        #make sure that nodata value is 0
+        new_raster.nodata = 0
         
         #check if CRS is lat-lon system
         if ras.crs.CRS.from_string('EPSG:4326') != new_raster.crs:
@@ -801,7 +810,7 @@ class Mask(object):
         #loop through shapes to extract and create temp tif raster
         for name, shp in shapes.items():
             if isinstance(shp, list) == False: shp = [shp]
-            arr, aff = rmask.mask(layer, shp, nodata = 0, **kwargs)
+            arr, aff = rmask.mask(layer, shp, **kwargs)
             raster = Mask.create_temp_tif(arr[0], aff)
             return_shape[name] = raster
             if attribute_save:
