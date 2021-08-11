@@ -177,7 +177,10 @@ class Mask(object):
             openning_tif.close()
         return openning_tif
 
-    def _add_layer(self, layer_path, layer_name = None, replace = True, trim_raster = False):
+    def _add_layer(self, layer_path, layer_name = None, replace = True, 
+                    src_crs = None,
+                    dest_crs = 'EPSG:4326',
+                    trim_raster = False):
         """
         Add a layer to the mask, this method incorporate CRS convertion. 
 
@@ -186,6 +189,8 @@ class Mask(object):
         replace (bool): if the layer with same name will replace the old one
         trim_raster (bool): if the method should trim the all-empty row/column border of the raster
 
+        src_crs (str): the source tif CRS
+        dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
    
         if not layer_name:
@@ -207,12 +212,17 @@ class Mask(object):
 
         #make sure that nodata value is 0
         new_raster.nodata = 0
+
+        if not src_crs:
+            src_crs = new_raster.crs
         
-        #check if CRS is lat-lon system
-        if ras.crs.CRS.from_string('EPSG:4326') != new_raster.crs:
-            self.layers[layer_name] = Mask.reproject_raster(new_raster, trim_raster = trim_raster)
-        else: 
-            self.layers[layer_name] = new_raster
+        if src_crs != dest_crs:
+            #check if CRS is lat-lon system
+            if ras.crs.CRS.from_string(dest_crs) != new_raster.crs:
+                new_raster = Mask.reproject_raster(new_raster, 
+                                    src_crs = src_crs, dst_crs = dest_crs, trim_raster = trim_raster)
+
+        self.layers[layer_name] = new_raster
         
         logger.info(f"Layer {layer_name} added to the mask {self.name}.")
         self.saved = False
@@ -462,7 +472,7 @@ class Mask(object):
         self.saved = False
 
     @classmethod
-    def reproject_raster(self, src, dst_crs = 'EPSG:4326', trim_raster = False, **kwargs):
+    def reproject_raster(self, src, src_crs, dst_crs = 'EPSG:4326', trim_raster = False, **kwargs):
         """
         convert non-lat-lon crs tif file to lat-lon crs
 
@@ -470,9 +480,8 @@ class Mask(object):
         dst_crs (str): by default, we want to make the destination raster lat-lon
         trim_raster (bool): False by default. If True, we will trim the empty border to save space. 
         """
-
         transform, width, height = ras.warp.calculate_default_transform(
-            src.crs, dst_crs, src.width, src.height, *src.bounds)
+            src_crs, dst_crs, src.width, src.height, *src.bounds)
         kwargs = src.meta.copy()
         kwargs.update({
             'crs': dst_crs,
@@ -490,13 +499,13 @@ class Mask(object):
                         source = ras.band(src, i),
                         destination = ras.band(dst, i),
                         src_transform = src.transform,
-                        src_crs = src.crs,
+                        src_crs = src_crs,
                         dst_transform = transform,
                         dst_crs = dst_crs,
                         resampling = ras.warp.Resampling.nearest)
 
             logger.info(f"Raster {src.name} has been reprojected to lat-lon CRS.")    
-            return_ras =  ras.open(memfile.name)
+            return_ras = ras.open(memfile.name)
             
             if trim_raster:
                 return Mask.trim_raster(return_ras)  
@@ -727,7 +736,9 @@ class Mask(object):
         return shapes
     
     def add_shape_layer(self, shapes, reference_layer = None, resolution = None, 
-                        combine_shape = False, combine_name = None, invert = True, **kwargs):
+                        combine_shape = False, combine_name = None, invert = True, 
+                        src_crs = None, dst_crs = 'EPSG:4326',
+                        **kwargs):
         """
         Add shapes to the mask layers. This is different from shape extractions, 
         as we will simply treat one shp file as a layer, instead of grabbing the merged mask within that shape.
@@ -742,6 +753,9 @@ class Mask(object):
         combine_shape (bool): if the user want to combine the shapes as one shape. Only one layer will be added as a result.
         combine_name (str)： the name of the combined shape if combine_shape is True
         invert (bool): True if we want to have 1 inside of shape and 0 outside of the shape in the added layer. True by default.
+
+        src_crs (str): the source tif CRS
+        dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
 
         if reference_layer:
@@ -760,6 +774,9 @@ class Mask(object):
                 
             shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
 
+        if not src_crs:
+            src_crs = 'EPSG:4326'
+
         for name, shp in shapes.items():
             if not isinstance(shp, shapely.geometry.multipolygon.MultiPolygon):
                 #make sure that the shape is a geometry.multipolygon
@@ -768,7 +785,15 @@ class Mask(object):
             if not reference_layer:  
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
             arr = ras.features.geometry_mask(shp, resolution, shape_transform, invert = invert, **kwargs) * 1
-            self.layers[name] = Mask.create_temp_tif(arr.astype(np.int8), shape_transform)
+
+            #create raster
+            shape_raster = Mask.create_temp_tif(arr.astype(np.int8), shape_transform)
+
+            #check CRS convertion
+            if src_crs != dst_crs:
+                shape_raster = Mask.reproject_raster(shape_raster, 
+                                    src_crs = src_crs, dst_crs = dst_crs)
+            self.layers[name] = shape_raster
             logger.info(f"Layer {name} added to the mask {self.name}.")
 
 
@@ -837,6 +862,26 @@ class Mask(object):
                 raise KeyError("Shape mask %s not found in the object.", n)
             self.shape_mask[n].close()
             del self.shape_mask[n]
+
+    @classmethod
+    def ras_to_xarr(self, raster, band_name = None, adjust_coord = True):
+        """Open a raster (rasterio openner) with xarray"""
+        xarr = xr.open_rasterio(raster)
+        if adjust_coord:
+            xarr = xarr.rename({'x': 'lon', 'y': 'lat'})
+            xarr = xarr.sortby(['lat', 'lon'])
+        if band_name:
+            xarr = xarr.rename({'band': band_name})
+        return xarr
+
+    def load_merged_xr(self):
+        """Using xarray to load the merged_layer masks."""
+        if self.saved == False:
+            raise ValueError(f"The Mask object has not been saved, please call save_mask() first.")
+        merge_path = os.path.join(self.mask_dir, self.name, 'merged_mask')
+        merge_tif_path = os.path.join(merge_path, 'merged_mask.tif')
+        return Mask.ras_to_xarr(merge_tif_path)
+
                 
     def load_shape_xr(self, names = None):
         """Using xarray to load the shape masks."""
@@ -846,7 +891,7 @@ class Mask(object):
         xrs = {}
         if not names: names = self.shape_mask.keys()
         for n in names:
-            xrs[n] = xr.open_rasterio(os.path.join(shape_path, (n + '.tif')))
+            xrs[n] = Mask.ras_to_xarr(os.path.join(shape_path, (n + '.tif')))
         return xrs
 
     ### SAVING MASK
