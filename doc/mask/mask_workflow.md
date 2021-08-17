@@ -26,14 +26,14 @@ import geodata
 import numpy as np
 import logging
 logging.basicConfig(level=logging.INFO)
-show = geodata.Mask.show
+from geodata.mask import show
 
 import cartopy.io.shapereader as shpreader
 ```
 
 `import geodata` is required to use **geodata**, while launching a logger allows for detailed debugging via the console.
 
-On the other hand, `import numpy as np` and `show = geodata.Mask.show` are not required. They are only the dependency for this demo, and the jupyter notebook example. We defined the show method as the Mask.show class method so that it is simple to call this visualization method it with one word.
+On the other hand, `import numpy as np` and `from geodata.mask import show` are not required. They are only the dependency for this demo, and the jupyter notebook example. You may also call the show method by "geodata.mask.show()".
 
 `import cartopy.io.shapereader as shpreader` will be needed if the shape data isn't downloaded in the LOADING SHAPES section. If this is the first time to use this workflow example, you would not have the province shape data, and this import is necessary.
 
@@ -135,7 +135,7 @@ Get bounds
 china.get_bounds()
 ```
 
-### CRS convertion, trimming, cropping (if necessary)
+### CRS conversion, trimming, cropping (if necessary)
 
 Method `open_tif` can open a layer without adding it to the layer, this allows us to visualize it before-hand.
 
@@ -143,7 +143,7 @@ Method `open_tif` can open a layer without adding it to the layer, this allows u
 china.open_tif(modis_china_path, show=True)
 ```
 
-The add_layer method incorporate CRS convertion, let us see what the layer look like after we add it to the object.
+The add_layer method incorporate CRS conversion, let us see what the layer look like after we add it to the object.
 
 ```
 china.add_layer(modis_china_path, layer_name = 'modis')
@@ -154,7 +154,7 @@ Note that now the `show` method will show the proper latitude and longitude now,
 We can use `remove_layer` method to remove a layer to mask `china`, method `add_layer` by default can simply replace the old layer as well.
 
 ```
-#same with: geodata.Mask.show(china.layers['modis'])
+#same with: geodata.mask.show(china.layers['modis'])
 show(china.layers['modis'])
 ```
 
@@ -176,7 +176,7 @@ We also have a class method `crop_raster` similar to `crop_layer` but we can hav
 
 ```
 china.crop_layer('modis', bounds = (73, 17, 135, 54))
-#same thing with: china.layers['modis'] = geodata.Mask.crop_raster(china.layers['modis'], (73, 17, 135, 54)) #similar to 5bins
+#same thing with: china.layers['modis'] = geodata.mask.crop_raster(china.layers['modis'], (73, 17, 135, 54)) #similar to 5bins
 show(china.layers['modis'])
 ```
 
@@ -190,7 +190,7 @@ Values 1, 2, 3, 4, 5 are 5 types of forest for the modis layer, let us use metho
 
 ```
 values = np.arange(6, 18)
-china.layers['modis_forest'] = geodata.Mask.binarize_raster(china.layers['modis'], values = values)
+china.layers['modis_forest'] = geodata.mask.binarize_raster(china.layers['modis'], values = values)
 china.remove_layer('modis')
 ```
 
@@ -209,7 +209,6 @@ By default, the `merge_layer` method will use a binary `and` method: if any of t
 ```
 china.merge_layer(attribute_save = False, layers = ['bins', 'forest'])
 ```
-
 
 #### sum method
 
@@ -240,7 +239,6 @@ china.merge_layer(method = 'sum', weights = {
 }, trim = True)
 ```
 
-
 ### LOADING SHAPES, EXTRACTING SHAPE FROM MASK
 
 Let us get provinces shapes from [this site](https://scitools.org.uk/cartopy/docs/v0.15/tutorials/using_the_shapereader.html) to save the path as a string `prov_path`, this can also be the path to any shape files users have.
@@ -253,13 +251,13 @@ prov_path
 Check attributes in the shapes contained in path `prov_path`
 
 ```
-#geodata.Mask.shape_attribute(prov_path)
+#geodata.mask.shape_attribute(prov_path)
 ```
 
 Check out the get_shape() method:
 
 ```
-geodata.Mask.get_shape(
+geodata.mask.get_shape(
     path,
     key,
     targets=None,
@@ -293,16 +291,15 @@ return_dict (str): if a dictionary will be returned, otherwise return a datafram
 ```
 
 ```
-china_all_shapes = geodata.Mask.get_shape(prov_path, key = 'name_en',
+china_all_shapes = geodata.mask.get_shape(prov_path, key = 'name_en',
 condition_key = 'admin', condition_value = 'China')
 china_all_shapes
 ```
 
-
 We can also ignore condition, just take three provinces of China by naming them out:
 
 ```
-china_shapes = geodata.Mask.get_shape(prov_path, key = 'name_en', 
+china_shapes = geodata.mask.get_shape(prov_path, key = 'name_en', 
                          targets = ['Jiangsu', 'Zhejiang', 'Shanghai'],
                          return_dict = True)
 china_shapes
@@ -321,7 +318,6 @@ Mask has not been saved/updated.
 ```
 
 ## SHAPE AS LAYER
-
 
 This is different from shape extractions, as we will simply treat one shp file as a layer, instead of grabbing the merged mask within that shape.
 
@@ -347,15 +343,18 @@ show(china.layers['Jiangsu'])
 >>> china.save_mask()
 INFO:geodata.mask:Mask China successfully saved at D:/Users/davison_lab_data/masks
 ```
+
 Note that since "Mask has been saved", we can now load the layers or shapes with xarray.
+
 ```
 shape_xr_lst = china.load_shape_xr()
 shape_xr_lst['Zhejiang'].plot()
 ```
+
 ### Load a previously saved Mask
 
 ```
->>> china_2 = geodata.Mask.load_mask("china")
+>>> china_2 = geodata.mask.load_mask("china")
 INFO:geodata.mask:Layer bins loaded to the mask china.
 INFO:geodata.mask:Layer forest loaded to the mask china.
 INFO:geodata.mask:Layer Jiangsu loaded to the mask china.
@@ -380,4 +379,3 @@ Mask has been saved.
 If you create another object `china_2` that opens the raster `china` is accessing, and then try to save the original `china` without using `china_2.close_files()`, you should expect an error because Python does not want you to rewrite a file that is used by another program. Therefore, `china_2.close_files()` make sures that only `china` mask is having access to the files. `close_files()` will close all the layers in china_2 and make that mask object un-savable. Therefore, it is best to avoid having multiple mask objects accessing the same files.
 
 Please see the jupyter notebook for more details.
-
