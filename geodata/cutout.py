@@ -248,7 +248,9 @@ class Cutout(object):
 			include the extracted dictionary of shape_mask from the mask object]. Defaults to True.
 
 		"""
+		#make sure data is in correct format for coarsening
 		xr_ds = self.meta.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
+		xr_ds = xr_ds.sortby(['lat', 'lon'])
 		mask = load_mask(name, mask_dir = config.mask_dir)
 
 		if not mask.merged_mask and not mask.shape_mask:
@@ -296,11 +298,16 @@ class Cutout(object):
 
 		self.area = xr_ds
 	
-	def apply_mask(self, dataset, true_area = True, 
+	def mask(self, dataset, true_area = True, 
 					merged_mask = True, shape_mask = True):
 		"""
-		Add converted dataSet variable to masks with optional area variable;
+		Masking converted dataSet variable with previously added masks with optional area variable;
 		Return a dictionary of xarray Dataset.
+
+		The program will automatically search for merged_mask and shape_mask, unless the user 
+		specify 'merged_mask = False' or 'shape_mask = False', the masks in shape_mask 
+		will have the same key in the dictionary returned, and the mask for merged_mask will have the key
+		name "merged_mask".
 		"""
 		axis = ("lat", "lon")
 
