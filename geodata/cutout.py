@@ -238,14 +238,14 @@ class Cutout(object):
 
 	def add_mask(self, name, merged_mask = True, shape_mask = True):
 		"""
-		Add mask values to the cutout. 
-		The mask are coarsened to the same dimension with the cutout
+		Add mask attribute to the cutout, from a previously saved mask objects.
+		The masks will be coarsened to the same dimension with the cutout metadata in Xarray.
 
-		name ([str]): [name of the previously saved mask]
-		merged_mask (bool, optional): [if true, the program will try to 
-			include the merged_mask from the mask object]. Defaults to True.
-		shape_mask (bool, optional): [if true, the program will try to 
-			include the extracted dictionary of shape_mask from the mask object]. Defaults to True.
+		name (str): name of the previously saved mask
+		merged_mask (bool): if true, the program will try to 
+			include the merged_mask from the mask object. Defaults to True.
+		shape_mask (bool): if true, the program will try to 
+			include the extracted dictionary of shape_mask from the mask object. Defaults to True.
 
 		"""
 		#make sure data is in correct format for coarsening
@@ -266,12 +266,14 @@ class Cutout(object):
 
 	def add_grid_area(self, axis = ("lat", "lon"), adjust_coord = True):
 		"""
-		Add area for each grid cell in the cutout metedata
+		Add attribute 'area' to the cutout containing area for each grid cell 
+		in the cutout metedata Xarray.
 
-		axis (tuple, optional): [axis to include in the result xarray dataset]. 
+		axis (tuple): axis to include in the result xarray dataset. 
 			Defaults to ("lat", "lon").
-		adjust_coord (bool, optional): [sort the data by latitude and longitude values if true]. 
+		adjust_coord (bool): sort the data by latitude and longitude values if true. 
 			Defaults to True.
+
 		"""
 		xr_ds = self.meta.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
 		area_arr = np.zeros((xr_ds.lat.shape[0], xr_ds.lon.shape[0]))
@@ -301,13 +303,24 @@ class Cutout(object):
 	def mask(self, dataset, true_area = True, 
 					merged_mask = True, shape_mask = True):
 		"""
-		Masking converted dataSet variable with previously added masks with optional area variable;
-		Return a dictionary of xarray Dataset.
+		Mask a converted Xarray dataSet from cutout with previously added mask attribute
+		with optional area inclusion, and return a dictionary of xarray Dataset.
 
-		The program will automatically search for merged_mask and shape_mask, unless the user 
+		The program will search for 'merged_mask' and 'shape_mask' attributes in the 
+		cutout object, these Xarray data can be generate through 'add_mask', unless the user 
 		specify 'merged_mask = False' or 'shape_mask = False', the masks in shape_mask 
-		will have the same key in the dictionary returned, and the mask for merged_mask will have the key
-		name "merged_mask".
+		will have the same key in the dictionary returned, and the mask for merged_mask will 
+		have the key name "merged_mask".
+
+		dataset (Xarray.DataSet): 
+		true_area (bool): if the returned masks will have the area variable. Defaults to True.
+		merged_mask (bool): if true, the program will try to 
+			include the merged_mask from the cutout object. Defaults to True.
+		shape_mask (bool): if true, the program will try to 
+			include the extracted dictionary of shape_mask from the cutout object. Defaults to True.
+
+		Returns: (dict): a dictionary with name keys and xarray DataSet with mask variable as values.
+		
 		"""
 		axis = ("lat", "lon")
 
@@ -333,10 +346,7 @@ class Cutout(object):
 
 		return res
 		
-			
-
-
-		
+	
 
 	## Preparation functions
 
