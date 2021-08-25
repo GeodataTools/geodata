@@ -2,20 +2,19 @@
 
 A short guide to use the Mask module to process raster files.
 
-For a jupyter notebook with all the codes and outputs, see: [mask.ipynb](https://github.com/east-winds/geodata/tree/master/doc/jupyter_notebooks/mask.ipynb)
+For a jupyter notebook with all the codes and outputs, see: [mask.ipynb](https://github.com/east-winds/geodata/tree/master/tests/mask_test.ipynb)
 
 ## INTRODUCTION
 
-Geodata is also able to process raster files and geospatial shapefiles. Built off the Rasterio library, its mask module function includes adding shapefiles into binary mask layers, merging and flattening multiple raster images together, and extract region data from merged mask and shapefiles.
+Geodata is also able to process raster files and geospatial shapefiles. Built off the Rasterio library, its mask module function includes adding shapefiles into binary mask layers, merging and flattening multiple raster images together, and extracting region data from merged mask and shapefiles.
 
 Its current functionalities in details are:
 
 - Creating mask, adding layers from .tif files
-- CRS convertion, cropping, trimming, binarizing layers
+- CRS conversion, cropping, trimming, binarizing layers
 - Merging and flattening layers
-- Adding .shp files as layers
-- Extracting shapes from merged mask
-- ... More
+- Adding shape files as layers
+- Extracting shapes from mask layers
 
 ## SETUP
 
@@ -29,13 +28,13 @@ logging.basicConfig(level=logging.INFO)
 from geodata.mask import show
 
 import cartopy.io.shapereader as shpreader
-```
 
+```
 `import geodata` is required to use **geodata**, while launching a logger allows for detailed debugging via the console.
 
-On the other hand, `import numpy as np` and `from geodata.mask import show` are not required. They are only the dependency for this demo, and the jupyter notebook example. You may also call the show method by "geodata.mask.show()".
+On the other hand, `import numpy as np` and `from geodata.mask import show` are not required. They are only the dependency for this demo. You may also call the show method by calling its full name "geodata.mask.show()".
 
-`import cartopy.io.shapereader as shpreader` will be needed if the shape data isn't downloaded in the LOADING SHAPES section. If this is the first time to use this workflow example, you would not have the province shape data, and this import is necessary.
+`import cartopy.io.shapereader as shpreader` will be needed if the shape data has not been downloaded in the LOADING SHAPES section. If this is the first time you use this workflow example, you would not have the province shape data, so this import is necessary.
 
 Since this module process raster files, we would use the four following files:
 
@@ -96,23 +95,22 @@ Mask has not been saved/updated.
 
 About the `china` mask we created:
 
-Each Mask object have an attribute `layers`, which is a dictionary of name: rasterio file opener. The <\open DatasetReader> can be the input for many other mask methods for the module.
+Each Mask object had an attribute `layers`, which is a dictionary of name (key)  - rasterio file opener (values). The <\open DatasetReader> can be the input for many other mask methods for the module.  
 
-[FYI: not important for its usage]:
 
-Although we save an openning layer in Rasterio, which only reads/opens/writes data on disk, sometimes we may have in-memory tif files in the `layers` attributes. This is because we might create a new layer after automatic CRS convertion if we detect that the input file is not in latitude-longitude CRS, or create a merged layer. In rasterio, a CRS convertion, merging-flattening, shapes on raster, cropping, and many other methods that make changes to the raster will requires creating a new file on disk, but we can avoid creating too many temporarily files and deleting them later by using memory files. Read more here: https://rasterio.readthedocs.io/en/latest/topics/memory-files.html
+[FYI: not important for its normal usage, but it may be helpful]: Although we save openning layerd in Rasterio, which only reads/opens/writes data on disk, sometimes we may have in-memory tif files in the `layers` attributes, and the product `merged_mask` and `shape_mask` are also in-memory temporary files. This is because we might create a new layer after automatic CRS conversion if we detect that the input file is not in latitude-longitude CRS, and in rasterio, a CRS conversion, merging-flattening, shapes on raster, cropping, and many other methods that make changes to the raster will requires creating a new file on disk, but we can avoid creating too many temporarily files and deleting them later by using memory files. Read more here: https://rasterio.readthedocs.io/en/latest/topics/memory-files.html
 
 The other attributes are:
 
-`merged_mask`: the merged and flatten mask of its layers, will be explained later
+`merged_mask`: the merged and flatten mask of its layers, the merged raster from `layers`
 
-`shape_mask`: similar to the `layers` attribute, but a dictionary of extracted shapes from the merged mask.
+`shape_mask`: similar to the `layers` attribute, but a dictionary of extracted shapes from the merged mask by default. Users may also extracted shape masks from specified layers in `self.layers`.
 
-`saved`: whether this mask object is saved locally.
+`saved`: whether this mask object has been saved locally.
 
-`mask_dir`: the directory to save the mask object, by default it should be the path in config.py
+`mask_dir`: the directory to save the mask object, by default it should be the path in config.py.
 
-Let us finish adding all the layers: add another layers `Elevation_Slope.tif` as `slope`.
+To finish adding all the layers: add another layers `Elevation_Slope.tif` as `slope`.
 
 ```
 china.add_layer(slope_path, layer_name = 'slope')
@@ -126,10 +124,13 @@ Get resolution
 china.get_res()
 ```
 
-If we want to compare the area of the grid cell, so we know which layer has the smallest unit in term of product of coordinate difference of latitude and longitude. Note: it is not area of grid cells.
+If we want to compare the area of the grid cell, so we know which layer has the smallest unit in term of product of coordinate difference of latitude/longitude. 
 
+Note: it is not area of grid cells.
+
+```
 china.get_res(product = True)
-Get bounds
+```
 
 ```
 china.get_bounds()
@@ -143,7 +144,9 @@ Method `open_tif` can open a layer without adding it to the layer, this allows u
 china.open_tif(modis_china_path, show=True)
 ```
 
-The add_layer method incorporate CRS conversion, let us see what the layer look like after we add it to the object.
+The `add_layer` method incorporate CRS conversion, let us see what the layer look like after we add it to the object.
+
+This method will overwrite the layer by default, if it is in the object already.
 
 ```
 china.add_layer(modis_china_path, layer_name = 'modis')
@@ -172,7 +175,7 @@ china.add_layer('MODIS_China.tif', layer_name = 'modis', trim_raster = True)
 
 We can also **arbitrary** crop a raster/layer: method `crop_layer` can take either starting indices of top/left, ending indices of right/bottom, or coordinates values in lat/long to trim the raster.
 
-We also have a class method `crop_raster` similar to `crop_layer` but we can have any raster as input, which indicates that users do not necessarily need to add a raster as a layer to call that method. (Similar method: `trim_layer`/`trim_raster`, `binarize_layer`/`binarize_raster`)
+We also have a method `crop_raster` (`geodata.mask.crop_raster`) similarly to `crop_layer` but we can have any raster as input, which indicates that users do not need to add a raster as a layer to call that method. (Similar method: `trim_layer`/`trim_raster`, `binarize_layer`/`binarize_raster`)
 
 ```
 china.crop_layer('modis', bounds = (73, 17, 135, 54))
@@ -182,11 +185,10 @@ show(china.layers['modis'])
 
 ### Categorical Value Extraction, if necessary
 
-However, the modis layer have 17 different categorical values, we may want to create a layer of binary values, indicating 0 = unavailable land, and 1 = available land.
-
-We may not need to worry about this for continous variable/layers.
+However, the modis layer have 17 distinct values, we may want to create a layer of binary values, indicating unavailable land as 0, and available land as 1. 
 
 Values 1, 2, 3, 4, 5 are 5 types of forest for the modis layer, let us use method `binarize_raster` to create a layer of `modis_forest` mask with 1 and 0. 1, 2, 3, 4, 5 will be unavailable land, therefore we need to take in the rest of the values to make them 1 (available).
+
 
 ```
 values = np.arange(6, 18)
@@ -202,9 +204,9 @@ It merges multiple layers together and flatten it using either 'and' and 'sum' m
 
 #### binary AND method
 
-By default, the `merge_layer` method will use a binary `and` method: if any of the 4 grid cells of the 4 layers at the same location have 0, then the returned `self.merged_layer` will also have 0 at that location. Therefore, if all the layers indicate that a land is not unavailable (!=0), the merged result will have value 1. The `attribute_save` option is by default true, and if it is true, we will save the merged/flattened layers to a object attribute `merged_layer` which can be saved later.
+By default, the `merge_layer` method will use a binary 'and' method: if any of the n grid cells of the n layers at the same location have 0, then the returned `self.merged_layer` will also have 0 at that location. In other words, if all the layers indicate that a land is not unavailable (!=0), the merged result will have value 1. 
 
-`merge_layer` may also take in an optional parameter `layers`, which is a list of layer names stored in the object. If users do not wish to create the final merged mask with all the layers without deleting unnecessary masks, they may specify which layers to use.
+`merge_layer` may also take in an optional parameter `layers`, which is a list of layer names stored in the object. If users do not wish to create the final merged mask with all layers, they can specify which layers to use.
 
 ```
 china.merge_layer(attribute_save = False, layers = ['bins', 'forest'])
@@ -212,15 +214,14 @@ china.merge_layer(attribute_save = False, layers = ['bins', 'forest'])
 
 #### sum method
 
-The sum method will add up the values from all the layers. We can also customize the weights.
-
-Behind the scene of the `sum` method: it multiplys each layers with the corresponding weight, and add the in-memory temporary layers together
+The sum method will add up the values from all the layers. We can also customize the weights. The behind scene of this method is that it multiplys each layers with the corresponding weight, and add the in-memory temporary layers together.
 
 ```
 china.merge_layer(method = 'sum')
 ```
 
-bins: 5%, forest: 25%, slope 40%, and modis_forest 30%. This distribution is completely arbitrary for the purpose of demonstration of the module.
+This distribution is completely arbitrary for the purpose of demonstration of the module:
+- bins: 5%, forest: 25%, slope 40%, and modis_forest 30%. 
 
 ```
 china.merge_layer(method = 'sum', weights = {
@@ -266,30 +267,32 @@ geodata.mask.get_shape(
     condition_value=None,
     return_dict=False,
 )
-Docstring:
-Take the path of the shape file, a attribute key name as the key to store in the output, 
-and a list of targets such as provinces, return the shape of targets with attributes.
+    Docstring:
+    Take the path of the shape file, a attribute key name as the key to store in the output, 
+    and a list of targets such as provinces, return the shape of targets with attributes.
 
-While the targets list the exact names/value of key_name attributes of the shapes, users may
-also ignore it and use condition_key and condition_value to find the desired shapes.
-for example, the call below will find all the shapes of provinces that belongs to China:
-    Mask.get_shape(path_to_province_shapes, key = 'name', 
-        condition_key = 'admin', condition_value = 'China')
-  
-We can also ignore condition, just take three provinces of China by naming them out.
-for example, the call below just take three provinces of China by naming them out:
-    Mask.get_shape(prov_path, key = 'name_en', 
-                 targets = ['Jiangsu', 'Zhejiang', 'Shanghai'])
+    While the targets list the exact names/value of key_name attributes of the shapes, users may
+    also ignore it and use condition_key and condition_value to find the desired shapes.
+    for example, the call below will find all the shapes of provinces that belongs to China:
+        mask.get_shape(path_to_province_shapes, key = 'name', 
+            condition_key = 'admin', condition_value = 'China')
+        
+    We can also ignore condition, just take three provinces of China by naming them out.
+    for example, the call below just take three provinces of China by naming them out:
+        mask.get_shape(prov_path, key = 'name_en', 
+                    targets = ['Jiangsu', 'Zhejiang', 'Shanghai'])
 
-path (str): string path to the shapefile
-key_name (str): key name for the shapefile, can be checked through shape_attribute(path)
-targets (list): target names, if not specified, find all shapes contained in the shapefile.
-save_record (bool): if the records for the shape should be returned as well.
-condition_key (str): optional: the attribute as another condition
-condition_value (str)：optional: the value that the condition_key must equals to in the shape record.
-return_dict (str): if a dictionary will be returned, otherwise return a dataframe. False by default.
-```
+    path (str): string path to the shapefile
+    key_name (str): key name for the shapefile, can be checked through shape_attribute(path)
+    targets (list): target names, if not specified, find all shapes contained in the shapefile.
+    save_record (bool): if the records for the shape should be returned as well.
+    condition_key (str): optional: the attribute as another condition
+    condition_value (str)：optional: the value that the condition_key must equals to in the 
+        shape record.
+    return_dict (str): if a dictionary will be returned, otherwise return a dataframe. 
+        False by default.
 
+    return (dict or pandas.dataframe) the array of feature/shapes extracted from the shapefile
 ```
 china_all_shapes = geodata.mask.get_shape(prov_path, key = 'name_en',
 condition_key = 'admin', condition_value = 'China')
@@ -329,7 +332,7 @@ china.add_shape_layer({'Jiangsu': china_shapes['Jiangsu']},
 show(china.layers['Jiangsu'])
 ```
 
-This method is great when we do not have any layers in the mask object at all. However, since we already have bins, forest, and slope... as the layers, we may want to make the shape layers the similar resolution, and similar boundary with the other layers. We can just specify a `reference_layer` in the method call. We can set it to a layer name in the mask, and the result layer resolution and bounds of the shape layer will be same with that specified layer in the mask object.
+The previous method call is great when we do not have any layers in the mask object at all. However, since we already have bins, forest, and slope... as the layers, we may want to make the shape layers the similar resolution, and similar boundary with the other layers. We can just specify a `reference_layer` in the method call. We can set it to a layer name in the mask, and the result layer resolution and bounds of the shape layer will be same with that specified layer in the mask object.
 
 ```
 china.add_shape_layer(china_shapes, 
@@ -350,6 +353,13 @@ Note that since "Mask has been saved", we can now load the layers or shapes with
 shape_xr_lst = china.load_shape_xr()
 shape_xr_lst['Zhejiang'].plot()
 ```
+
+Optional: closing all the files when saving the mask. This can avoid possible write permission error.
+
+```
+china.save_mask(close_files = True)
+```
+
 
 ### Load a previously saved Mask
 
@@ -376,6 +386,6 @@ Mask has been saved.
 
 ### Possible errors to avoid
 
-If you create another object `china_2` that opens the raster `china` is accessing, and then try to save the original `china` without using `china_2.close_files()`, you should expect an error because Python does not want you to rewrite a file that is used by another program. Therefore, `china_2.close_files()` make sures that only `china` mask is having access to the files. `close_files()` will close all the layers in china_2 and make that mask object un-savable. Therefore, it is best to avoid having multiple mask objects accessing the same files.
+If you create another object `china_2` that opens the raster object `china` is accessing, and then try to save the original `china` without using `china_2.close_files()`, you should expect an error because Python does not want you to rewrite a file that is used by another program. Therefore, `china_2.close_files()` or `china_2.save_mask(close_files = True)` make sures that only one mask is having access to the files. `close_files()` will close all the layers in china_2 and make that mask object un-savable. Therefore, it is best to avoid having multiple mask objects accessing the same files.
 
 Please see the jupyter notebook for more details.
