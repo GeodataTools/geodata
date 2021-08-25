@@ -294,6 +294,7 @@ geodata.mask.get_shape(
 
     return (dict or pandas.dataframe) the array of feature/shapes extracted from the shapefile
 ```
+```
 china_all_shapes = geodata.mask.get_shape(prov_path, key = 'name_en',
 condition_key = 'admin', condition_value = 'China')
 china_all_shapes
