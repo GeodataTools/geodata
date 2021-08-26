@@ -16,7 +16,7 @@ git clone https://github.com/east-winds/geodata.git
 cd geodata
 ```
 
-Before building the package, you'll first need to tell it two things: where to put/look for downloaded data, and where to store _cutouts_--subsets of downloaded data needed to generate output variables.  To do so, copy `geodata/config-default.py` to a new file `geodata/config.py`.
+Before building the package, you'll first need to tell it three things: where to put/look for downloaded data, where to store _cutouts_--subsets of downloaded data needed to generate output variables--and where to stores _masks_--geospatial layers and manipulations to extract on cutouts.  To do so, copy `geodata/config-default.py` to a new file `geodata/config.py`, and adjust the following lines.
 
 * To configure where to store cutouts, change the value of `cutout_dir` so that it points to a folder in your working directory.  You'll need to follow a format that fits your operating system:
 
@@ -32,22 +32,9 @@ Windows
 cutout_dir = 'C:/Users/johndoe/Desktop/geodata/data/cutouts'
 ```
 
-(**Note**: Make sure you are referencing a folder and path that already exist - the package currently does not create it for you.)
+(**Note**: Make sure you are referencing a folder and path that already exists.)
 
-- To configure where to store masks, change the value of `mask_dir` so that it points to a folder in your working directory.  You'll need to follow a format that fits your operating system:
-
-Mac OS
-
-```
-mask_dir = '/Users/johndoe/desktop/geodata/data/masks'
-```
-
-Windows
-
-```
-mask_dir = 'C:/Users/johndoe/Desktop/geodata/data/cutouts'
-```
-
+* To configure where to store masks, change the value of `mask_dir` so that it points to a folder in your working directory.
 
 * To configure where downloaded earth system data will be stored, change each datasets respective directory variable like so:
 
@@ -62,19 +49,6 @@ merra2_dir = 'C:/Users/johndoe/desktop/geodata/data/merra2'
 
 ```
 
-For ERA5:
-
-```
-## Mac OS
-era5_dir = '/Users/johndoe/desktop/geodata/data/era5'
-
-## Windows
-era5_dir = 'C:/Users/johndoe/desktop/geodata/data/era5'
-
-
-```
-
-(**Note**: Again, make sure you are referencing folders and paths that you've created beforehand - the package currently does not create them for you.)
 
 ## Building Geodata
 
@@ -90,7 +64,7 @@ This will build the package and allow you to use it in Python scripts by calling
 
 ## Dependencies and GDAL Driver Installation
 
-For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies except should install automatically upon building the package, with the possible exception of **rasterio**, which requires GDAL.  If **rasterio** does not install automatically, follow the instructions below specific to your operating system + Python package manager.  For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
+For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies should install automatically upon building the package, with the possible exception of **rasterio**, which requires GDAL.  If **rasterio** does not install automatically, follow the instructions below specific to your operating system + Python package manager.  For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
 
 ### Mac OS with pip
 
