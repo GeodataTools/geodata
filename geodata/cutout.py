@@ -324,7 +324,7 @@ class Cutout(object):
 		"""
 		axis = ("lat", "lon")
 
-		if not self.merged_mask and not self.shape_mask:
+		if self.merged_mask == None and self.shape_mask == None:
 			raise ValueError(f"No mask found in cutout. Please add masks with self.add_mask()")
 
 		res = {}

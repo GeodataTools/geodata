@@ -394,7 +394,7 @@ class Mask(object):
     ### loading shapes as layers and extracting shapes
     
     def add_shape_layer(self, shapes, reference_layer = None, resolution = None, 
-                        combine_shape = False, combine_name = None, invert = True, 
+                        combine_name = None, invert = True, 
                         src_crs = None, dst_crs = 'EPSG:4326',
                         **kwargs):
         """
@@ -409,9 +409,8 @@ class Mask(object):
         reference_layer (str): name to the layer which bounds/resolution is used.
         resolution (tuple): tuple of (width, height). If specified with a reference layer, 
             the method ignore the resolution of the referenced layer and use the input resolution.
-        combine_shape (bool): if the user want to combine the shapes as one shape. 
-            Only one layer will be added as a result. False By default.
-        combine_name (str)： the name of the combined shape if combine_shape is True
+        combine_name (str)： the name of the combined shape, if specified, the program will combine the shapes as one shape. 
+            Only one layer will be added as a result. 
         invert (bool): True if we want to have 1 inside of shape and 0 outside of the shape 
             in the added layer. True by default.
         src_crs (str): the source tif CRS
@@ -427,12 +426,10 @@ class Mask(object):
 
         else:
             if not resolution:
-                raise TypeError("lPlease provide the tuple of (width, height) for the resolution of the new shape raster.")
+                raise TypeError("Please provide the tuple of 'resolution = (width, height)' for the resolution of the new shape raster.")
 
-        if combine_shape:
-            if not combine_name: raise ValueError("Please specify combined shape name.")
-                
-            shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
+        if combine_name:
+            shapes = {combine_name: shapely.geometry.multipolygon.MultiPolygon(shapes.values())}
 
         if not src_crs:
             src_crs = 'EPSG:4326'
@@ -643,9 +640,9 @@ def load_mask(name, mask_dir = config.mask_dir):
     Parameters:
     name (str): name for the mask
     mask_dir (str): directory to look for previously saved mask file and where the mask 
-    object will be updated. By default, it should be the mask path in config.py
+        object will be updated. By default, it should be the mask path in config.py
 
-    return ()
+    return (geodata.mask) the mask object created previously
     """
     obj_dir = os.path.join(mask_dir, name)
 
