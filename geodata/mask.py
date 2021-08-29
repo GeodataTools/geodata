@@ -610,9 +610,6 @@ class Mask(object):
         else: 
             if os.path.isfile(merge_tif_path): #deleted previously one
                 os.remove(merge_tif_path)
-            save_opened_raster(self.merged_mask, merge_tif_path) 
-            #8/25 fix issue where users are unable to update merged_mask
-            if not close_files: self.merged_mask = ras.open(merge_tif_path)
 
         #shape path
         shape_path = os.path.join(obj_path, 'shape_mask')
