@@ -6,7 +6,13 @@ For a complete jupyter notebook example, see: [mask.ipynb](https://github.com/ea
 
 Key methods described here (WITH LINKS):
 
-- [add_layer](#3.-Creating-mask-object,-adding-and-manipulating-layers)
+- [creating a mask object](#3-Creating-mask-object-adding-and-manipulating-layers)
+- [add_tif_layer](#3-Creating-mask-object-adding-and-manipulating-layers)
+- [layer_manipulation](#31-CRS-conversion-trimming-cropping-if-necessary)
+- [add_shapefile_layer](#4-Openning-shapefile-and-adding-shape-features-as-a-layer）
+- [merged_layers](#5-Merging-and-flattening-layers)
+- [shape extraction from mask](6-Extracting-shapes-from-mask)
+- [save_and_load_mask](7-Saving-and-Loading-masks)
 
 ## 1. Introduction
 
@@ -93,8 +99,7 @@ Show the `slope` layer in mask `china`. The `show` method will always try to sho
 ```
 show(china.layers['slope'])
 ```
-
-![slope](https://github.com/east-winds/geodata/tree/mask/images/mask_test/slope.png)
+![slope](https://github.com/east-winds/geodata/blob/mask/images/mask_test/slope.png)
 
 Some useful methods for the layers:
 
@@ -118,6 +123,7 @@ Method `open_tif` can open a layer without adding it to the layer, this allows u
 modis_openner = geodata.mask.open_tif(modis_path, show=True)
 modis_openner.close()
 ```
+![modis_open](https://github.com/east-winds/geodata/blob/mask/images/mask_test/modis_open.png)
 
 The `add_layer` method incorporates CRS conversion, let us see what the layer looks like after we add it to the object.
 
@@ -137,6 +143,7 @@ The method will automatically trim the all-zero columns/rows. By default, the pa
 china.add_layer(modis_path, 'modis', trim = False)
 show(china.layers['modis'], title = 'China Modis CRS converted (No trimming)')
 ```
+![modis_no_trimming](https://github.com/east-winds/geodata/blob/mask/images/mask_test/modis_no_trimming.png)
 
 We can also **arbitrary** crop a raster/layer: method `crop_layer` can take either starting indices of top/left, ending indices of right/bottom, or coordinates values in lat/long to trim the raster.
 
@@ -146,6 +153,7 @@ We also have a method `crop_raster` (`geodata.mask.crop_raster`) similarly to `c
 china.crop_layer('modis', bounds = (73, 17, 135, 54))
 show(china.layers['modis'], title = 'China Modis Layer Cropped')
 ```
+![modis_crop](https://github.com/east-winds/geodata/blob/mask/images/mask_test/modis_crop.png)
 
 The line below performs the same function with the code block above in arbitrary cropping the modis layer.
 
@@ -158,6 +166,7 @@ china.layers['modis'] = geodata.mask.crop_raster(china.layers['modis'], (73, 17,
 However, the modis layer have 17 distinct values, we may want to create a layer of binary values, indicating unavailable land as 0, and available land as 1.
 
 Values 1, 2, 3, 4, 5 are 5 types of forest for the modis layer, let us use method `binarize_raster` to create a layer of `modis_forest` mask with 1 and 0. 1, 2, 3, 4, 5 will be unavailable land, therefore we need to take in the rest of the values to make them 1 (available).
+![modis_info](https://github.com/east-winds/geodata/blob/mask/images/mask_test/modis_info.png)
 
 ```
 values = np.arange(6, 18)
@@ -165,6 +174,7 @@ china.layers['modis_forest'] = geodata.mask.binarize_raster(china.layers['modis'
 china.remove_layer('modis')
 show(china.layers['modis_forest'])
 ```
+![modis_binarize](https://github.com/east-winds/geodata/blob/mask/images/mask_test/modis_binarize.png)
 
 ## 4. Openning shapefile and adding shape features as a layer
 
@@ -184,7 +194,7 @@ There are more examples of the `get_shape` method later in this demo when we wan
 824
 ```
 
-There are 824 shapes, but we want to add all the shapes to one new layer instead of 824 new layers. Therefore, in the `add_shape_layer` method, we will pecify `combine_name` so that the program will combine the features to one layer with the `combine_name` as its layer name.
+There are 824 shapes, but we want to add all the shapes to one new layer instead of 824 new layers. Therefore, in the `add_shape_layer` method, we will specify a `combine_name`, so that the program will combine the features to one layer with the `combine_name` as its layer name.
 
 We will also use `reference layer = 'slope'` so the new shape layer will have the same dimension with the `slope` layer. If the mask is empty and does not contain any layer, the user will have to specify the dimension as another parameter.
 
@@ -197,6 +207,7 @@ china.add_shape_layer(protected_area_shapes,
                       invert = False)
 show(china.layers['protected'], title = 'Protected area shape features as a new layer')
 ```
+![protected](https://github.com/east-winds/geodata/blob/mask/images/mask_test/protected.png)
 
 ## 5. Merging and flattening layers
 
@@ -225,6 +236,7 @@ By default, the `merge_layer` method will use a binary 'and' method: if any of t
 ```
 china.merge_layer(attribute_save = False, layers = ['slope', 'modis_forest'])
 ```
+![merge1](https://github.com/east-winds/geodata/blob/mask/images/mask_test/merge1.png)
 
 Try a different reference layer.
 
@@ -246,6 +258,7 @@ The sum method will add up the values from all the layers. We can also customize
 ```
 china.merge_layer(method = 'sum')
 ```
+![merge2](https://github.com/east-winds/geodata/blob/mask/images/mask_test/merge2.png)
 
 This distribution is completely arbitrary for the purpose of demonstration of the module:
 
@@ -260,6 +273,7 @@ china.merge_layer(method = 'sum', weights = {
     'protected': 0.45
 })
 ```
+![merge3](https://github.com/east-winds/geodata/blob/mask/images/mask_test/merge3.png)
 
 We can also trim the border of the merged mask since not 4 layers have the same boundary, and the border values are not useful. We can set the parameter `trim = True`.
 
@@ -267,8 +281,9 @@ We can also trim the border of the merged mask since not 4 layers have the same 
 china.merge_layer(method = 'sum', weights = {'slope': 0.25, 'modis_forest': 0.3, 'protected': 0.45},
                  trim = True)
 ```
+![merge4](https://github.com/east-winds/geodata/blob/mask/images/mask_test/merge4.png)
 
-## 6.0 Extracting shapes from mask
+## 6. Extracting shapes from mask
 
 Extracting shapes from mask is different from section 4, where we added shape features as a new layer. The purpose of shape extraction is that the user may need to generate masks and perform analysis on a state/province level. After generating the `merged_mask` with appropriate mask values, the program can generate the `merged_mask` for every state or province. The result of shape extraction is a dictionary of state_name - state mask pair in `shape_mask` attribute of the mask object. It is still the case that the values in the mask will be 0 outside of the shape in the mask, but inside of the shape of the province/state, we will have the merged_mask values.
 
@@ -327,6 +342,7 @@ Note that since "Mask has been saved", we can now load the layers or shapes with
 shape_xr_lst = china.load_shape_xr()
 shape_xr_lst['Zhejiang'].plot()
 ```
+![zhejiang](https://github.com/east-winds/geodata/blob/mask/images/mask_test/zhejiang.png)
 
 Optional: closing all the files when saving the mask. This can avoid possible write permission error.
 
