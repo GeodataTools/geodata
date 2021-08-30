@@ -324,19 +324,19 @@ class Cutout(object):
 		"""
 		axis = ("lat", "lon")
 
-		if self.merged_mask == None and self.shape_mask == None:
+		if self.merged_mask is None and self.shape_mask is None:
 			raise ValueError(f"No mask found in cutout. Please add masks with self.add_mask()")
 
 		res = {}
 		
-		if self.merged_mask and merged_mask:
+		if self.merged_mask is not None and merged_mask:
 			ds = dataset.assign({"mask": (axis, self.merged_mask.data[0])})
 			if true_area:
-				ds = ds.assign({"area": (axis, self.area['area'])})
+				ds = ds.assign({"area": (axis, self.area['area'].data)})
 			res['merged_mask'] = ds
 			logger.info("merged_mask combined with dataset. ")
 
-		if self.shape_mask and shape_mask:
+		if self.shape_mask is not None and shape_mask:
 			for key, val in self.shape_mask.items():
 				ds = dataset.assign({"mask": (axis, val.data[0])})
 				if true_area:

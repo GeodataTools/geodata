@@ -53,7 +53,7 @@ class Mask(object):
     saved (boolean): whether the mask has been saved/updated
     """
 
-    ### initialization, adding layerse
+    ### initialization, adding layers
 
     def __init__(self, name, layer_path = None, layer_name = None, mask_dir = config.mask_dir, **kwargs):
         """
@@ -110,7 +110,7 @@ class Mask(object):
         return (f"Mask {self.name}")
 
     def _add_layer(self, layer_path, layer_name = None, 
-                    replace = True, trim = False,
+                    replace = True, trim = True,
                     src_crs = None, dest_crs = 'EPSG:4326'):
         """
         Add a layer to the mask, this method incorporates CRS conversion. 
@@ -121,7 +121,7 @@ class Mask(object):
         replace (bool): if the layer input with same name will replace the old one
             By default True.
         trim (bool): if the method will trim the all-empty row/column border of the raster.
-            By default False.
+            By default True.
         src_crs (str): the source file CRS
         dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
@@ -357,10 +357,10 @@ class Mask(object):
                         reference_layer = k
                         best_res = res[0] * res[1]
 
-                temp_layers = {}
-                for lay_name, lay_weight in weights.items():
-                    temp_layers[lay_name] = create_temp_tif(layers[lay_name].read(1) * lay_weight,
-                                                    layers[lay_name].transform)   
+            temp_layers = {}
+            for lay_name, lay_weight in weights.items():
+                temp_layers[lay_name] = create_temp_tif(layers[lay_name].read(1) * lay_weight,
+                                                layers[lay_name].transform)   
 
             #make sure highest resolution layer is the first input for ras.merge
             merged_lst = [temp_layers[reference_layer]]
