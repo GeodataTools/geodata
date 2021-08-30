@@ -9,7 +9,7 @@ Key methods described here (WITH LINKS):
 - [creating a mask object](#3-Creating-mask-object-adding-and-manipulating-layers)
 - [add_tif_layer](#3-Creating-mask-object-adding-and-manipulating-layers)
 - [layer_manipulation](#31-CRS-conversion-trimming-cropping-if-necessary)
-- [add_shapefile_layer](#4-Openning-shapefile-and-adding-shape-features-as-a-layer）
+- [add_shapefile_layer](#4-Openning-shapefile-and-adding-shape-features-as-a-layer)
 - [merged_layers](#5-Merging-and-flattening-layers)
 - [shape extraction from mask](6-Extracting-shapes-from-mask)
 - [save_and_load_mask](7-Saving-and-Loading-masks)
