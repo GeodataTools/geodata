@@ -2,7 +2,7 @@
 
 A short guide to use the mask module to process geospatial files and extract on cutouts.
 
-For a complete jupyter notebook example, see: [mask.ipynb](https://github.com/east-winds/geodata/tree/mask/tests/mask_test.ipynb)
+For a complete jupyter notebook example, see: [mask_test.ipynb](https://github.com/east-winds/geodata/tree/mask/tests/mask_test.ipynb)
 
 Key methods described here (WITH LINKS):
 
