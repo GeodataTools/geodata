@@ -26,14 +26,31 @@ import logging
 logging.basicConfig(level=logging.INFO)
 ```
 
-We will use a cutout object created through:
+We will use a cutout object created from a downloaded dataset. We first download the dataset through `geodata.Dataset()`.
+
+In `get_data()`, if we specify `testing = true`, the program downloads only first file in download list (e.g., first day of month))
 
 ```
-geodata.Dataset(module="merra2", years=slice(2011, 2011),month=slice(1,12),weather_data_config = "slv_radiation_monthly")
+DS_hourly_test_chn = geodata.Dataset(module = "merra2", 
+                                 years = slice(2011, 2011),
+                                 month = slice(1,1),
+                                 weather_data_config = "slv_radiation_hourly")
+if DS_hourly_test_chn.prepared == False: 
+    DS_hourly_test_chn.get_data(testing = True)
+    
+DS_hourly_test_chn.trim_variables()
 ```
 
+Extract the cutout from the trimmed dataset.
 ```
-geodata.Cutout(name = "china-2011-slv-test",module = "merra2",weather_data_config = "slv_radiation_monthly", xs = slice(73, 136),ys = slice(18, 54),years = slice(2011, 2011), months = slice(1,12))
+cutout = geodata.Cutout(name = "china-2011-slv-hourly-test",
+                        module = "merra2",
+                        weather_data_config = "slv_radiation_hourly",
+                        xs = slice(73, 136), 
+                        ys = slice(18, 54), 
+                        years = slice(2011, 2011), 
+                        months = slice(1,1))
+cutout.prepare()
 ```
 
 ## 3. Loading mask
@@ -91,7 +108,7 @@ ds_solar = geodata.convert.pv(cutout, panel = "KANENA", orientation = "latitude_
 ds_solar = ds_solar.reset_coords(['lon', 'lat'], drop = True)
 ds_solar = ds_solar.rename({'x': 'lon', 'y': 'lat'})
 ds_cutout = ds_solar.to_dataset(name = 'solar')
-ds_cutout = ds_cutout.coarsen(time = 12, boundary = 'exact').mean()
+ds_cutout = ds_cutout.coarsen(time = 24, boundary = 'exact').mean()
 ds_cutout = ds_cutout.transpose("time", "lat", "lon")
 ```
 
