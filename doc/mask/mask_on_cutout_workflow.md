@@ -103,6 +103,7 @@ cutout.add_grid_area()
 
 The code block below will use the `geodata.convert.pv` method to generate `ds_cutout`, an xarray Dataset that contains the pv variable for the cutout.
 
+`ds_cutout.coarsen(time = 24, boundary = 'exact').mean()` will aggregate the values over its 24 timestamps, since we have pv values for each of the 24 hours in the dataset.
 ```
 ds_solar = geodata.convert.pv(cutout, panel = "KANENA", orientation = "latitude_optimal")
 ds_solar = ds_solar.reset_coords(['lon', 'lat'], drop = True)
