@@ -17,4 +17,6 @@ Find documentation about how to use the **geodata** package here.
   - [Outputting Data with ERA5](https://github.com/east-winds/geodata/blob/master/doc/era5/era5_example_output.md)
   - [ERA5 Output Details](https://github.com/east-winds/geodata/blob/master/doc/era5/era5_outputs.md)
 
-- [Creating and Using Masks](https://github.com/east-winds/geodata/blob/mask/doc/mask/mask_workflow.md)
+- Creating and Using Masks
+  - [Mask Creation Workflow](https://github.com/east-winds/geodata/blob/mask/doc/mask/mask_creation_workflow.md)
+  - [Mask on Cutout Workflow](https://github.com/east-winds/geodata/blob/mask/doc/mask/mask_on_cutout_workflow.md)
