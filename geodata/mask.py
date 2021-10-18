@@ -26,6 +26,7 @@ import logging
 logger = logging.getLogger(__name__)
 import geopandas as gpd
 import shapely
+import pyproj
 
 import os, sys
 import rasterio as ras
@@ -52,6 +53,7 @@ class Mask(object):
             with the shape names and ras.DatasetReader values
     saved (boolean): whether the mask has been saved/updated
     """
+
 
     ### initialization, adding layers
 
@@ -258,6 +260,18 @@ class Mask(object):
         self.layers[dest_layer_name] = trim_raster(self.layers[layer_name])
         self.saved = False
 
+
+    def filter_layer(self, layer_name, dest_layer_name = None, values = None, min_bound = None, max_bound = None,
+                binarize = False):
+        """Trim a layer of mask object using trim_raster() method"""
+        if not dest_layer_name: 
+            dest_layer_name = layer_name
+
+        self.layers[dest_layer_name] = filter_raster(self.layers[layer_name], 
+                                                values, min_bound, max_bound, binarize)
+        self.saved = False
+
+
     def binarize_layer(self, layer_name, values, dest_layer_name = None):
         """binarize a layer of mask object using binarize_raster() method"""
         if not dest_layer_name: dest_layer_name = layer_name
@@ -394,8 +408,8 @@ class Mask(object):
     ### loading shapes as layers and extracting shapes
     
     def add_shape_layer(self, shapes, reference_layer = None, resolution = None, 
-                        combine_name = None, invert = True, 
-                        src_crs = None, dst_crs = 'EPSG:4326',
+                        combine_name = None, invert = True, buffer = 0,
+                        src_crs = 'EPSG:4326', buffer_crs = None, dst_crs = 'EPSG:4326',
                         **kwargs):
         """
         Add shapes to the mask layers. This is different from shape extractions, 
@@ -405,7 +419,7 @@ class Mask(object):
         can also use a reference layer that is present in the mask object to avoid
         manuelly finding resolution.
 
-        shapes (dict): a dictionary of shapes
+        shapes (dict or GeoDataFrame): a dictionary or GeoPanda's dataframe of shapes
         reference_layer (str): name to the layer which bounds/resolution is used.
         resolution (tuple): tuple of (width, height). If specified with a reference layer, 
             the method ignore the resolution of the referenced layer and use the input resolution.
@@ -413,10 +427,16 @@ class Mask(object):
             Only one layer will be added as a result. 
         invert (bool): True if we want to have 1 inside of shape and 0 outside of the shape 
             in the added layer. True by default.
-        src_crs (str): the source tif CRS
+        buffer (float): round buffer distance in km^2 extending out the shapes; if input is greater than 0, 
+            method will give approximate representation of all points within this given distance of 
+            the shapes objects.
+        src_crs (str): the source tif CRS, by default it is 'EPSG:4326' lat lon coordinate system
         dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
 
+        if type(shapes) == gpd.geodataframe.GeoDataFrame:
+            shapes = shapes[['shapes']].to_dict()['shapes']
+        
         if reference_layer:
             shape_transform = self.layers[reference_layer].transform
             if not resolution:
@@ -431,13 +451,25 @@ class Mask(object):
         if combine_name:
             shapes = {combine_name: shapely.geometry.multipolygon.MultiPolygon(shapes.values())}
 
-        if not src_crs:
-            src_crs = 'EPSG:4326'
-
         for name, shp in shapes.items():
             if not isinstance(shp, shapely.geometry.multipolygon.MultiPolygon):
                 #make sure that the shape is a geometry.multipolygon
                 shp = shapely.geometry.multipolygon.MultiPolygon([shp])
+
+            #convert CRS for shapes
+            if src_crs != dst_crs:
+                shp = convert_shape_crs(shp, src_crs = src_crs, dst_src = dst_crs)
+
+            #add buffer
+            if buffer > 0:
+                if not buffer_crs:
+                    raise ValueError("Please specify a CRS value for projecting shapes for buffer.")
+
+                #convert the shape to a CRS with meter as unit, buffer the shape, and convert it back
+                shp = convert_shape_crs(shp, src_crs = dst_crs, dst_src = buffer_crs)
+                shp = shp.buffer(buffer * 1000)
+                shp = convert_shape_crs(shp, src_crs = buffer_crs, dst_src = dst_crs)
+
             shape_bounds = ras.features.bounds(shp)
             if not reference_layer:  
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
@@ -446,21 +478,19 @@ class Mask(object):
             #create raster
             shape_raster = create_temp_tif(arr.astype(np.int8), shape_transform)
 
-            #check CRS conversion
-            if src_crs != dst_crs:
-                shape_raster = reproject_raster(shape_raster, 
-                                    src_crs = src_crs, dst_crs = dst_crs)
             self.layers[name] = shape_raster
             logger.info(f"Layer {name} added to the mask {self.name}.")
 
-    def extract_shapes(self, shapes, layer = None, 
+    def extract_shapes(self, shapes, layer = None,
                        combine_shape = False, combine_name = None,
-                       show = False, attribute_save = True, **kwargs):
+                       show = False, attribute_save = True, 
+                       src_crs = 'EPSG:4326', dst_crs = 'EPSG:4326',
+                       **kwargs):
         """
         Extract the shapes on the (by default) merged_mask layer, and save the result 
         shape rasters as a dictionary in 'shape_mask' attribute.
         
-        shapes (dict): a dictionary of shapes
+        shapes (dict or GeoDataFrame): a dictionary or GeoPanda's dataframe of shapes
         layer (str): the layer to extract shape from. By default the layer should be None 
             and we want to extract the shapes from the 'merged_mask' layer.
         combine_shape (bool): if the user want to combine the shapes as one shape, and only 
@@ -469,7 +499,17 @@ class Mask(object):
         show (bool): if the program will plot the result shapes. True by default.
         attribute_save (bool): if the program will want to save the shapes to the shape_mask attributes. 
             True by default.
+        src_crs (str): the source tif CRS, by default it is 'EPSG:4326' lat lon coordinate system
+        dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
+        
+        if type(shapes) == gpd.geodataframe.GeoDataFrame:
+            shapes = shapes[['shapes']].to_dict()['shapes']
+
+        #convert CRS for shapes
+        if src_crs != dst_crs:
+            for k, v in shapes.items():
+                shapes[k] = convert_shape_crs(shapes[v], src_crs = src_crs, dst_src = dst_crs)
 
         if not layer:
             if not self.merged_mask:
@@ -845,19 +885,56 @@ def reproject_raster(src, src_crs, dst_crs = 'EPSG:4326', trim = False, **kwargs
             return trim_raster(return_ras)  
 
         return return_ras
-       
-def binarize_raster(raster, values):
-    """
-    Map values to one in a new binary raster layer
+
+def filter_raster(raster, values = None, min_bound = None, max_bound = None,
+                binarize = False):
+    """ 
+    Filter the raster with a list of values to be True. This method can also set
+    a min bound and max bound to select values in the raster higher or lower than 
+    these two boundaries. If binarize is False (by default), the method will return
+    the original values of the raster that satisfy the condition.
 
     raster (ras.DatasetReader): the source raster
-    values (list): the list of numberic values in the raster array to filter out as 1
+    values (list): the list of numberic values in the raster array to be selected
+    min_bound (float): the lower boundary of data to be selected
+    max_bound (float): the upper boundary of data to be selected
+    binarized (bool): if to convert the selected data to be True
 
     return: (ras.DatasetReader) the binarized raster
-    
     """
-    new_arr = np.isin(raster.read(1), values) * 1
-    return create_temp_tif(new_arr.astype(np.int8), raster.transform)
+    if (values is None and min_bound is None) and max_bound is None:
+        raise ValueError("Please specify any of values, min_bound, or max_bound.")
+        
+    bool_arr = raster.read(1)
+    if values is not None:
+        bool_arr = np.isin(bool_arr, values)
+    if min_bound is not None:
+        bool_arr = (bool_arr > min_bound) * 1
+    if max_bound is not None:
+        bool_arr = (bool_arr < max_bound) * 1
+
+    # if the method return 0 and 1 for the raster
+
+    if binarize:
+        return create_temp_tif(bool_arr * 1, raster.transform)
+
+    else:
+        return create_temp_tif(bool_arr * raster.read(1), raster.transform)
+       
+# def binarize_raster(raster, values):
+#     """
+#     Map values to one in a new binary raster layer
+
+#     raster (ras.DatasetReader): the source raster
+#     values (list): the list of numberic values in the raster array to filter out as 1
+
+#     return: (ras.DatasetReader) the binarized raster
+    
+#     """
+#     new_arr = np.isin(raster.read(1), values) * 1
+#     return create_temp_tif(new_arr.astype(np.int8), raster.transform)
+
+
 
 def trim_raster(raster):
     """
@@ -927,7 +1004,7 @@ def shape_attribute(path):
     """
     return next(shpreader.Reader(path).records()).attributes 
 
-def get_shape(path, key, targets = None, save_record = False, 
+def get_shape(path, key = None, targets = None, save_record = False, 
                 condition_key = None, condition_value = None,
                 return_dict = False):
     """
@@ -947,16 +1024,22 @@ def get_shape(path, key, targets = None, save_record = False,
 
     path (str): string path to the shapefile
     key_name (str): key name for the shapefile, can be checked through shape_attribute(path)
+        when it is not specified, all the shapes in the shapefile will be selected with number index.
     targets (list): target names, if not specified, find all shapes contained in the shapefile.
     save_record (bool): if the records for the shape should be returned as well.
     condition_key (str): optional: the attribute as another condition
     condition_value (str)：optional: the value that the condition_key must equals to in the 
         shape record.
     return_dict (str): if a dictionary will be returned, otherwise return a dataframe. 
-        False by default.
+        False by default. Warning: if a dictionary output is preferred, the output will eliminate 
+        shapes with duplicate key_name.
 
     return (dict or pandas.dataframe) the array of feature/shapes extracted from the shapefile
     """
+
+    if targets is not None and key is None:
+        raise ValueError("Please specify a key when target list is provided.")
+
     reader = shpreader.Reader(path)
 
     shapes = []
@@ -966,17 +1049,23 @@ def get_shape(path, key, targets = None, save_record = False,
     if (condition_key and not condition_value) or (condition_key and not condition_value):
         raise ValueError("Condition key and condition value must be both null, or have values.")
 
+    num_record = 0
+
     #if not conditional key and value are specified
     if (not condition_key and not condition_value):
         if not targets:
             for r in reader.records():
-                r_key = r.attributes[key]
+                if not key: 
+                    r_key = num_record
+                    num_record += 1
+                else:
+                    r_key = r.attributes[key]
                 shape_keys.append(r_key)
                 shapes.append(r.geometry)
                 records[r_key] = r.attributes
         else: #target list provided
             for r in reader.records():
-                r_key = r.attributes[key]
+                r_key = r.attributes[key]   
                 if r_key in targets:
                     shape_keys.append(r_key)
                     shapes.append(r.geometry)
@@ -986,7 +1075,12 @@ def get_shape(path, key, targets = None, save_record = False,
         #with extra conditions
         if not targets:
             for r in reader.records():
-                r_key = r.attributes[key]
+                if not key: 
+                    r_key = num_record
+                    num_record += 1
+                else:
+                    r_key = r.attributes[key]
+                
                 if r.attributes[condition_key] == condition_value:
                     shape_keys.append(r_key)
                     shapes.append(r.geometry)
@@ -1008,15 +1102,28 @@ def get_shape(path, key, targets = None, save_record = False,
 
     return shapes
 
+def convert_shape_crs(shape, src_crs, dst_src):
+    """Convert the CRS of a shape object given its source CRS and destinated CRS"""
+    
+    src_crs = pyproj.CRS(src_crs)
+    dst_src = pyproj.CRS(dst_src)
+
+    buffer_project = pyproj.Transformer.from_crs(src_crs, dst_src, 
+                                                always_xy=True).transform
+
+    return shapely.ops.transform(buffer_project, shape)
+
+
 ## VISUALIZATION METHOD
 
-def show(raster, title=None, colorbar = True, **kwargs):
+def show(raster, title=None, colorbar = True, grid = False, **kwargs):
     """
     Plot a rasterio file given ras.DatasetReader
 
     raster (ras.DatasetReader): rasterio file opener, the value in the layers, shape_mask, and merged_mask attribute.
     title (str): the title of the plot
-    colorbar (bool): if show the legend for the values of the plot. True by default
+    colorbar (bool): whether the program shows the legend for the values of the plot. True by default.
+    grid (bool): whether the program shows the grid. False by default.
     """
     plt.imshow(raster.read(1), 
             extent = plotting_extent(raster.read(1), raster.transform),
@@ -1024,7 +1131,9 @@ def show(raster, title=None, colorbar = True, **kwargs):
     if title == True: title = raster.name
     plt.title(title)
     if colorbar: plt.colorbar()
+    if grid: plt.grid()
     plt.show()
+
 raster_show = show
 
 def show_all(r_dict, **kwargs):
