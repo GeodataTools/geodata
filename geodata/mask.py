@@ -272,11 +272,11 @@ class Mask(object):
         self.saved = False
 
 
-    def binarize_layer(self, layer_name, values, dest_layer_name = None):
-        """binarize a layer of mask object using binarize_raster() method"""
-        if not dest_layer_name: dest_layer_name = layer_name
-        self.layers[dest_layer_name] = binarize_raster(self.layers[layer_name], values)
-        self.saved = False
+    # def binarize_layer(self, layer_name, values, dest_layer_name = None):
+    #     """binarize a layer of mask object using binarize_raster() method"""
+    #     if not dest_layer_name: dest_layer_name = layer_name
+    #     self.layers[dest_layer_name] = binarize_raster(self.layers[layer_name], values)
+    #     self.saved = False
 
     ### merging
     
@@ -344,20 +344,8 @@ class Mask(object):
         
         #specify layers to be used in the merged process
         layers = {k: self.layers[k] for k in layers}
-        
-        if method == 'and':
-            arr, aff = merge(list(layers.values()), method = Mask._and_method, **kwargs)
-            
-        elif method == 'sum':
-            if not weights:
-                logger.warning('No weight dictionary provided, all the layers for merging will have weights of 1 by default')
-                weights = {k: 1 for k in layers.keys()}
-            else:
-                for k in layers.keys():
-                    if k not in set(weights.keys()):
-                        weights[k] = 1
-            
-            if not reference_layer: #if no reference layer is provided, using the layer with best resolution
+
+        if not reference_layer: #if no reference layer is provided, using the layer with best resolution
 
                 #find all resolutions
                 resolutions = {}
@@ -370,6 +358,24 @@ class Mask(object):
                     if res[0] * res[1] < best_res:
                         reference_layer = k
                         best_res = res[0] * res[1]
+        
+        if method == 'and':
+            
+            #make sure highest resolution layer is the first input for ras.merge
+            merged_lst = [layers[reference_layer]]
+            layers.pop(reference_layer)
+            merged_lst += list(layers.values())
+
+            arr, aff = merge(merged_lst, method = Mask._and_method, **kwargs)
+            
+        elif method == 'sum':
+            if not weights:
+                logger.warning('No weight dictionary provided, all the layers for merging will have weights of 1 by default')
+                weights = {k: 1 for k in layers.keys()}
+            else:
+                for k in layers.keys():
+                    if k not in set(weights.keys()):
+                        weights[k] = 1
 
             temp_layers = {}
             for lay_name, lay_weight in weights.items():
@@ -409,7 +415,7 @@ class Mask(object):
     
     def add_shape_layer(self, shapes, reference_layer = None, resolution = None, 
                         combine_name = None, invert = True, buffer = 0,
-                        src_crs = 'EPSG:4326', buffer_crs = None, dst_crs = 'EPSG:4326',
+                        src_crs = 'EPSG:4326', buffer_crs = 'EPSG:6933', dst_crs = 'EPSG:4326',
                         **kwargs):
         """
         Add shapes to the mask layers. This is different from shape extractions, 
@@ -431,7 +437,7 @@ class Mask(object):
             method will give approximate representation of all points within this given distance of 
             the shapes objects.
         src_crs (str): the source tif CRS, by default it is 'EPSG:4326' lat lon coordinate system
-        dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
+        dst_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
 
         if type(shapes) == gpd.geodataframe.GeoDataFrame:
@@ -458,7 +464,7 @@ class Mask(object):
 
             #convert CRS for shapes
             if src_crs != dst_crs:
-                shp = convert_shape_crs(shp, src_crs = src_crs, dst_src = dst_crs)
+                shp = convert_shape_crs(shp, src_crs = src_crs, dst_crs = dst_crs)
 
             #add buffer
             if buffer > 0:
@@ -466,14 +472,15 @@ class Mask(object):
                     raise ValueError("Please specify a CRS value for projecting shapes for buffer.")
 
                 #convert the shape to a CRS with meter as unit, buffer the shape, and convert it back
-                shp = convert_shape_crs(shp, src_crs = dst_crs, dst_src = buffer_crs)
+                shp = convert_shape_crs(shp, src_crs = dst_crs, dst_crs = buffer_crs)
                 shp = shp.buffer(buffer * 1000)
-                shp = convert_shape_crs(shp, src_crs = buffer_crs, dst_src = dst_crs)
+                shp = convert_shape_crs(shp, src_crs = buffer_crs, dst_crs = dst_crs)
 
             shape_bounds = ras.features.bounds(shp)
             if not reference_layer:  
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
-            arr = ras.features.geometry_mask(shp, resolution, shape_transform, invert = invert, **kwargs) * 1
+            arr = ras.features.geometry_mask(shp, out_shape = resolution, 
+                                        transform = shape_transform, invert = invert, **kwargs) * 1
 
             #create raster
             shape_raster = create_temp_tif(arr.astype(np.int8), shape_transform)
@@ -509,7 +516,7 @@ class Mask(object):
         #convert CRS for shapes
         if src_crs != dst_crs:
             for k, v in shapes.items():
-                shapes[k] = convert_shape_crs(shapes[v], src_crs = src_crs, dst_src = dst_crs)
+                shapes[k] = convert_shape_crs(shapes[v], src_crs = src_crs, dst_crs = dst_crs)
 
         if not layer:
             if not self.merged_mask:
@@ -935,7 +942,6 @@ def filter_raster(raster, values = None, min_bound = None, max_bound = None,
 #     return create_temp_tif(new_arr.astype(np.int8), raster.transform)
 
 
-
 def trim_raster(raster):
     """
     Remove the all-zero columns and rows at the border of the raster and returns the trimmed raster.
@@ -992,6 +998,78 @@ def trim_raster(raster):
     bounds = (t_idx, b_idx, l_idx, r_idx)
 
     return crop_raster(raster, bounds, lat_lon_bounds = False)
+
+
+def eliminate_small_area(self, area_km2,
+                         layer_name = None,
+                         dest_layer_name = None, 
+                         area_value = 1, 
+                         area_calc_crs = 'EPSG:6933', connectivity = 4):
+
+    """
+    Eliminate the small area of a certain value in the raster by converting it to
+    an equal-area reprojected series of connected shapes, removing shapes that are 
+    smaller than the given area in km^2, and turning it back to a raster.
+
+    area_km2 (float): the area threshold in km^2. Any connected group with smaller area
+        then this parameter will be removed from the raster.
+    layer_name (str): the name of the raster to be selected from the mask object
+        None by default, where the program will use the merged_mask.
+    dest_layer_name (str): the name of the new raster to be formed from eliminating 
+        small area in the original layer. None by default, where the program will 
+        return the raster instead of assigning it to the layers.
+    area_value (int): the value of the grid cells to be groups for elimination. 
+        1 by default. (find all the connected groups of cells with area 1)
+    area_calc_crs (str): the CRS used for reprojecting the raster for area calculation.
+    connectivity (int): should either be 4 or 8. If 4, then the 4 surrounding cells of 
+        each grid cell will be counted for grouping connected grid cells, otherwise, all 
+        8 surround cells of each grid cell will be counted.
+    
+    """
+    
+    if layer_name is None: 
+        raster = self.merged_mask
+    elif layer_name in self.layers:
+        raster = self.layers[layer_name]
+    else:
+        raise KeyError("Specified raster does not exist in the mask object.")
+    
+    logger.info(f"Reprojecting the raster to {area_calc_crs} for equal area calculation.")
+    #reproject the raster into equal area projection 
+    reproj = reproject_raster(raster, src_crs = 'EPSG:4326', dst_crs = area_calc_crs)
+    
+    #general shapes
+    res_shapes = list(ras.features.shapes(reproj.read(1).astype('uint8'), 
+                                          connectivity = connectivity, transform = reproj.transform))
+    
+    res_shapes = [shapely.geometry.shape(i[0]) for i in res_shapes if i[1] == area_value]
+    
+    g_series = gpd.GeoSeries(res_shapes)
+    
+    #filter the shapes by area
+    filtered_shape = g_series[g_series.area > area_km2 * (1000 * 1000)]
+
+    #set up transform and shape for shape to raster
+    shape_transform = raster.transform
+    resolution = raster.shape
+
+    shp = shapely.geometry.multipolygon.MultiPolygon(filtered_shape.values)
+    
+    shp = convert_shape_crs(shp, src_crs = area_calc_crs, dst_crs = 'EPSG:4326')
+
+    logger.info(f"Reverting the remaining shapes back to a raster.")
+    arr = ras.features.geometry_mask(shp, out_shape = resolution, 
+                                    transform = shape_transform, invert = True) * 1
+
+    #create raster
+    shape_raster = create_temp_tif(arr.astype(np.int8), shape_transform)
+    
+    if dest_layer_name:
+        self.layers[dest_layer_name] = shape_raster
+        
+    else:
+        return shape_raster
+
 
 ## SHAPE METHOD
 
@@ -1102,13 +1180,13 @@ def get_shape(path, key = None, targets = None, save_record = False,
 
     return shapes
 
-def convert_shape_crs(shape, src_crs, dst_src):
+def convert_shape_crs(shape, src_crs, dst_crs):
     """Convert the CRS of a shape object given its source CRS and destinated CRS"""
     
     src_crs = pyproj.CRS(src_crs)
-    dst_src = pyproj.CRS(dst_src)
+    dst_crs = pyproj.CRS(dst_crs)
 
-    buffer_project = pyproj.Transformer.from_crs(src_crs, dst_src, 
+    buffer_project = pyproj.Transformer.from_crs(src_crs, dst_crs, 
                                                 always_xy=True).transform
 
     return shapely.ops.transform(buffer_project, shape)
