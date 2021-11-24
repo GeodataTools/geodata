@@ -1,5 +1,8 @@
 ## Unreleased
 
+## mask.py
+* Added optional buffer parameter in add_shape_layer() and filter_area() method.
+
 ## dataset.py
 ### get_data()
 * Add `testing` flag to enable download of only first entry in dataset download list for debugging purposes.
