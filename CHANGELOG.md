@@ -1,7 +1,7 @@
 ## Unreleased
 
 ## mask.py
-* Added optional buffer parameter in add_shape_layer() and filter_area() method.
+* Added optional buffer parameter in `add_shape_layer()` and `filter_area()` method.
 
 ## dataset.py
 ### get_data()
