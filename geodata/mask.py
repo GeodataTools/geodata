@@ -1000,25 +1000,25 @@ def trim_raster(raster):
     return crop_raster(raster, bounds, lat_lon_bounds = False)
 
 
-def eliminate_small_area(self, area_km2,
-                         layer_name = None,
-                         dest_layer_name = None, 
-                         area_value = 1, 
-                         area_calc_crs = 'EPSG:6933', connectivity = 4):
+def filter_area(self, min_area,
+                layer_name = None,
+                dest_layer_name = None, 
+                shape_value = 1, 
+                area_calc_crs = 'EPSG:6933', connectivity = 4):
 
     """
     Eliminate the small area of a certain value in the raster by converting it to
     an equal-area reprojected series of connected shapes, removing shapes that are 
     smaller than the given area in km^2, and turning it back to a raster.
 
-    area_km2 (float): the area threshold in km^2. Any connected group with smaller area
+    min_area (float): the area threshold in km^2. Any connected group with smaller area
         then this parameter will be removed from the raster.
     layer_name (str): the name of the raster to be selected from the mask object
         None by default, where the program will use the merged_mask.
     dest_layer_name (str): the name of the new raster to be formed from eliminating 
         small area in the original layer. None by default, where the program will 
         return the raster instead of assigning it to the layers.
-    area_value (int): the value of the grid cells to be groups for elimination. 
+    shape_value (int): the value of the grid cells to be groups for elimination. 
         1 by default. (find all the connected groups of cells with area 1)
     area_calc_crs (str): the CRS used for reprojecting the raster for area calculation.
     connectivity (int): should either be 4 or 8. If 4, then the 4 surrounding cells of 
@@ -1042,12 +1042,12 @@ def eliminate_small_area(self, area_km2,
     res_shapes = list(ras.features.shapes(reproj.read(1).astype('uint8'), 
                                           connectivity = connectivity, transform = reproj.transform))
     
-    res_shapes = [shapely.geometry.shape(i[0]) for i in res_shapes if i[1] == area_value]
+    res_shapes = [shapely.geometry.shape(i[0]) for i in res_shapes if i[1] == shape_value]
     
     g_series = gpd.GeoSeries(res_shapes)
     
     #filter the shapes by area
-    filtered_shape = g_series[g_series.area > area_km2 * (1000 * 1000)]
+    filtered_shape = g_series[g_series.area > min_area * (1000 * 1000)]
 
     #set up transform and shape for shape to raster
     shape_transform = raster.transform
