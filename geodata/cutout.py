@@ -327,6 +327,9 @@ class Cutout(object):
 		if self.merged_mask is None and self.shape_mask is None:
 			raise ValueError(f"No mask found in cutout. Please add masks with self.add_mask()")
 
+		if self.area is None and true_area == True:
+			raise ValueError("No area data found. Please call self.add_grid_area() or set true_area to False.")
+
 		res = {}
 		
 		if self.merged_mask is not None and merged_mask:
