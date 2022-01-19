@@ -34,4 +34,4 @@ trim/
 geodata/config.py
 
 hidden_tests/
-tests/*.csv
+example_notebooks/*.csv
