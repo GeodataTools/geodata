@@ -52,7 +52,7 @@ def as_slice(zs, pad=True):
 
 from ..config import sarah_dir
 from ..gis import regrid, Resampling, maybe_swap_spatial_dims
-from .era5 import prepare_for_sarah
+#from .era5 import prepare_for_sarah
 
 # Model and Projection Settings
 projection = 'latlong'
@@ -174,7 +174,7 @@ def tasks_monthly_sarah(xs, ys, yearmonths, prepare_func, era5_func, template_si
 weather_data_config = {
     '_': dict(tasks_func=tasks_monthly_sarah,
               prepare_func=prepare_month_sarah,
-              era5_func=prepare_for_sarah,
+              #era5_func=prepare_for_sarah,
               template_sid=os.path.join(sarah_dir, 'sid', 'SIDin{year}{month:02}*.nc'),
               template_sis=os.path.join(sarah_dir, 'sis', 'SISin{year}{month:02}*.nc'))
 }
