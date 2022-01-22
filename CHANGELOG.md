@@ -1,5 +1,11 @@
 ## Unreleased
 
+## datasets/
+* Removal of `cordex.py`
+
+## geodata/config-default.py
+* Removal of `cordex_dir`
+
 ## dataset.py
 ### get_data()
 * Add `testing` flag to enable download of only first entry in dataset download list for debugging purposes.
