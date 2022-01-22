@@ -1,5 +1,19 @@
 ## Unreleased
 
+## datasets/
+* Removal of `sarah.py`
+
+## geodata/config-default.py
+* Removal of `sarah_dir`
+
+## era5.py
+* Remove following unused functions:
+  - get_data
+  - _add_height
+  - _add_area
+  - prepare_for_sarah
+* Remove various unused import statements
+
 ## dataset.py
 ### get_data()
 * Add `testing` flag to enable download of only first entry in dataset download list for debugging purposes.
