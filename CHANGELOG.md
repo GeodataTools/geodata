@@ -1,5 +1,11 @@
 ## Unreleased
 
+## datasets/
+* Removal of `ncep.py`
+
+## geodata/config-default.py
+* Removal of `ncep_dir`
+
 ## dataset.py
 ### get_data()
 * Add `testing` flag to enable download of only first entry in dataset download list for debugging purposes.
