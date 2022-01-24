@@ -72,10 +72,8 @@ Let us get province shapes from `cartopy` and save the path as `prov_path`. This
 ```python
 prov_path = shpreader.natural_earth(resolution='10m', category='cultural', 
                                     name = 'admin_1_states_provinces')
-prov_path
 ```
 
-'C:\\Users\\fengj\\.local\\share\\cartopy\\shapefiles\\natural_earth\\cultural\\ne_10m_admin_1_states_provinces.shp'
 Load the shapes contained in path `prov_path` using the `geopandas` library.
 
 ```python
@@ -337,6 +335,7 @@ china.get_bounds()
  'modis': BoundingBox(left=44.81844021698865, bottom=17.092253634655307, right=179.98824371508368, top=58.38850413860287)}
  
  
+ 
 Note that the modis layer has a very different bounding box then the slope layer in lat-lon coordinate system. This is because the modis layer was converted to the lat-lon CRS from a different CRS when it was added to the object. The following section will explore CRS conversion.
 
 ### 3.1 CRS conversion, trimming, and cropping (if necessary)
@@ -558,6 +557,9 @@ No merged_mask ready.
 No shape has been extracted. 
   
 Mask has not been saved/updated. 
+  
+  
+  
   
 Try again with the `reference_layer` parameter:
   
@@ -784,6 +786,9 @@ china_shapes_subset
  'Shanghai': <shapely.geometry.multipolygon.MultiPolygon at 0x26f6eb5fbb0>,
   
  'Jiangsu': <shapely.geometry.multipolygon.MultiPolygon at 0x26f6eb5fca0>}
+  
+  
+  
   
 Extract the shapes from the merged_mask.
 
