@@ -6,12 +6,12 @@ Geodata is able to process geospatial data to extract cutouts over specified geo
 
 Functionalities explored in this notebook:
 
-- Creating a mask object, adding and manipulating layers
-- Opening a shapefile and adding shape features as layers
-- Merging and flattening layers
-- Eliminate small contiguous areas
-- Extracting shapes from mask
-- Saving and loading masks
+- [Creating a mask object, adding and manipulating layers](#3-Creating-mask-object-adding-and-manipulating-layers)
+- [Opening a shapefile and adding shape features as layers](#4-Openning-shapefile-and-adding-shape-features-as-a-layer)
+- [Merging and flattening layers](#5-Merging-and-flattening-layers)
+- [Eliminate small contiguous areas](6-Eliminate-small-contiguous-areas)
+- [Extracting shapes from mask](#7-Extracting-shapes-from-mask)
+- [Saving and loading masks](#8-Saving-and-Loading-masks)
 
 ## 2. Setup
 
@@ -83,19 +83,6 @@ all_shapes = gpd.read_file(prov_path, encoding = 'utf-8')
 all_shapes.head(2)
 ```
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-.dataframe tbody tr th {
-    vertical-align: top;
-}
-
-.dataframe thead th {
-    text-align: right;
-}
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -191,19 +178,6 @@ wdpa_shapes = gpd.read_file(wdpa_shape_path_0
 wdpa_shapes.head(2)
 ```
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-.dataframe tbody tr th {
-    vertical-align: top;
-}
-
-.dataframe thead th {
-    text-align: right;
-}
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -295,44 +269,43 @@ china = geodata.Mask("China", layer_path = elevation_path)
 china.rename_layer('china_elevation', 'elevation')
 china.add_layer(modis_path, layer_name = 'modis')
 ```
-INFO:geodata.mask:Layer china_elevation added to the mask China.
-INFO:geodata.mask:Raster data/china_modis.tif has been reprojected to EPSG:4326 CRS.
-INFO:geodata.mask:Layer modis added to the mask China.
+
 ```python
 # Method 2:  Initialize empty, add two layers using dict
 china = geodata.Mask("China")
 china.add_layer(layer_path = {'elevation': elevation_path,
                              'modis': modis_path})
 ```
-INFO:geodata.mask:Layer elevation added to the mask China.
-INFO:geodata.mask:Raster data/china_modis.tif has been reprojected to EPSG:4326 CRS.
-INFO:geodata.mask:Layer modis added to the mask China.
+
 ```python
 # Method 3:  Initalize with two layers passed as list
 china = geodata.Mask("China", layer_path = [elevation_path, modis_path],
              layer_name = ['elevation', 'modis'])
 ```
-INFO:geodata.mask:Layer elevation added to the mask China.
-INFO:geodata.mask:Raster data/china_modis.tif has been reprojected to EPSG:4326 CRS.
-INFO:geodata.mask:Layer modis added to the mask China.
+
 ```python
 # Method 4:  Initialize with two layers passed as dict
 china = geodata.Mask("China", layer_path = {'elevation': elevation_path,
                               'modis': modis_path})
 ```
-INFO:geodata.mask:Layer elevation added to the mask China.
-INFO:geodata.mask:Raster data/china_modis.tif has been reprojected to EPSG:4326 CRS.
-INFO:geodata.mask:Layer modis added to the mask China.
+
 Display the mask object in the jupyter notebook:
 
 ```python
 china
 ```
 Mask China: 
+
 2 layers: ['elevation', 'modis'].
+
 No merged_mask ready. 
+
 No shape has been extracted. 
+
 Mask has not been saved/updated. 
+
+
+
 Each mask object has several attributes:
 
 - `layers`: a dictionary of name (key)  - rasterio file opener (values). The <\open DatasetReader> can be the input for many other mask methods for the module.
@@ -358,7 +331,10 @@ show(china.layers['elevation'], title = 'Elevator of China in meters')
 china.get_bounds()
 ```
 {'elevation': BoundingBox(left=72.99253346658085, bottom=17.994777314571174, right=136.0003674947241, top=58.23031889028454),
+
  'modis': BoundingBox(left=44.81844021698865, bottom=17.092253634655307, right=179.98824371508368, top=58.38850413860287)}
+ 
+ 
 Note that the modis layer has a very different bounding box then the slope layer in lat-lon coordinate system. This is because the modis layer was converted to the lat-lon CRS from a different CRS when it was added to the object. The following section will explore CRS conversion.
 
 ### 3.1 CRS conversion, trimming, and cropping (if necessary)
@@ -371,7 +347,6 @@ modis_opener.close()
 ```
 ![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_36_0.png)
 
-INFO:geodata.mask:Please remember to close the file with .close()
 We can use `remove_layer` method to remove a layer to mask `china`. This method will properly close the raster file, because the raster file would remain open after being added to the mask.
 
 ```python
@@ -385,8 +360,6 @@ The method will automatically trim the all-zero columns/rows. By default, the pa
 china.add_layer(modis_path, 'modis', trim = False)
 show(china.layers['modis'], title = 'China Modis CRS converted (No trimming)')
 ```
-INFO:geodata.mask:Raster data/china_modis.tif has been reprojected to EPSG:4326 CRS.
-INFO:geodata.mask:Layer modis added to the mask China.
 ![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_40_1.png)
 
 We can also crop a raster/layer with user-defined dimensions: method `crop_layer` can take either starting indices of top/left, ending indices of right/bottom, or coordinates values in lat/long to trim the raster.
@@ -455,7 +428,7 @@ china.filter_layer('elevation',
 china.remove_layer('elevation')
 show(china.layers['elevation_filtered'])
 ```
-![png](output_53_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_53_0.png)
 
 #### c). Filter slope layer
 
@@ -469,8 +442,7 @@ First, add the slope raster to the china mask.
 china.add_layer(slope_path, layer_name = 'slope')
 show(china.layers['slope'])
 ```
-INFO:geodata.mask:Layer slope added to the mask China.
-![png](output_56_1.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_56_1.png)
 
 Filter the raster, delete the old slope layer.
 
@@ -484,7 +456,7 @@ china.filter_layer('slope',
 china.remove_layer('slope')
 show(china.layers['slope_filtered'])
 ```
-![png](output_59_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_59_0.png)
 
 ### 3.3 Additional show options
 
@@ -493,7 +465,7 @@ We can plot the provinces on a selected layer by taking `shape` input in the `sh
 ```python
 show(china.layers['modis_filtered'], shape = china_shapes['geometry'])
 ```
-![png](output_62_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_62_0.png)
 
 ## 4. Opening a shapefile and adding shape features as a layer
 
@@ -503,6 +475,9 @@ Recall that we have previously loaded the environmental protected shapes of Chin
 len(wdpa_shapes)
 ```
 78
+
+
+
 The three shapefiles have 78 features altogether, but we want to add all the features to one new layer instead of 78 new layers. The input shape should be a python dictionary, where there is a key for each unique shape. Also, in the `add_shape_layer` method, we will specify a `combine_name` to combine the features into one layer in this case, since we want the mask to have just one more layers, not 78 more layers.
 
 When adding a shapefile, we must specify the dimensions. We will also use `reference layer = 'slope_filtered'` so the new shape layer will have the same dimension with the `slope_filtered` layer. If the mask is empty and does not contain any layer, the user will have to specify the `resolution` parameter for the raster layer dimension.
@@ -517,8 +492,7 @@ show(china.layers['protected'],
      title = 'WDPA Protected area shape features as a new layer',
      grid = True)
 ```
-INFO:geodata.mask:Layer protected added to the mask China.
-![png](output_67_1.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_67_1.png)
 
 We can also use the parameter `buffer` in `add_shape_layer` method to create an approximate representation of all locations within a given (perpindicular) distance of the shape object. The units for the buffer are given in kilometers.
 
@@ -538,8 +512,7 @@ show(china.layers['protected_with_buffer'],
 
 china.remove_layer('protected_with_buffer')
 ```
-INFO:geodata.mask:Layer protected_with_buffer added to the mask China.
-![png](output_69_1.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_69_1.png)
 
 ## 5. Merging and flattening layers
 
@@ -566,38 +539,47 @@ By default, the `merge_layer` method will use a binary 'and' method: for each gr
 # merge and plot only, do not save
 china.merge_layer(attribute_save = False, layers = ['slope_filtered', 'modis_filtered'])
 ```
-![png](output_76_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_76_0.png)
 
 <open DatasetReader name='/vsimem/47a585bd-eec9-4672-8ee7-2e20d120ccda/47a585bd-eec9-4672-8ee7-2e20d120ccda.tif' mode='r'>
+  
 ```python
 china
 ```
+  
 Mask China: 
+  
 4 layers: ['modis_filtered', 'elevation_filtered', 'slope_filtered', 'protected'].
+  
 No merged_mask ready. 
+  
 No shape has been extracted. 
+  
 Mask has not been saved/updated. 
+  
 Try again with the `reference_layer` parameter:
+  
 
 ```python
 china.merge_layer(layers = ['elevation_filtered', 'modis_filtered'], reference_layer = 'elevation_filtered', show = False)
 ```
-INFO:geodata.mask:Merged Mask saved as attribute 'merged_mask'.
+
 The result of the `merged_mask` method is saved to `china.merged_mask` with the same resolution as the reference layer, in this case `elevation_filtered`.
 
 ```python
 china.merged_mask.res
 ```
 (0.008983152841195215, 0.008983152841195215)
+  
+  
 For the purpose of this demonstration, we will select the AND method for the final merged_mask. We can also trim the border of the merged mask since the 4 layers have different boundaries. We can set the parameter `trim = True`.
 
 ```python
 china.merge_layer(trim = True)
 ```
-![png](output_83_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_83_0.png)
 
-INFO:geodata.mask:Overwriting current merged_mask.
-INFO:geodata.mask:Merged Mask saved as attribute 'merged_mask'.
+
 ### 5.2 sum method
 
 The sum method will add up the values from all the layers using weights. When there is no weight dict provided, all the layers for merging will have weights of 1 by default.
@@ -609,10 +591,12 @@ china.merge_layer(method = 'sum',
                   attribute_save = False,
                   trim = True)
 ```
-INFO:geodata.mask:No weight dictionary provided, all the layers for merging will have weights of 1 by default
-![png](output_86_1.png)
+
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_86_1.png)
+  
 
 <open DatasetReader name='/vsimem/1bab6b72-616b-4f7a-995a-9edb7c795457/1bab6b72-616b-4f7a-995a-9edb7c795457.tif' mode='r'>
+  
 This distribution is completely arbitrary for the purpose of demonstration of the module: (Note: The weights do not need to have a total of 1)
 
 - elevation_filtered: 0.15, slope_filtered: 0.1, modis_filtered: 0.3, protected: 0.45
@@ -627,7 +611,7 @@ customized_merged_layer = china.merge_layer(method = 'sum', weights = {
         'protected': 0.45
     }, attribute_save = False, trim = True)
 ```
-![png](output_88_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_88_0.png)
 
 If the continuous value created by `merged_mask` represents a suitability metric, we could set a minimum value of 0.8 to be considered "suitable" (or 1). We then apply the `filter_raster` method on the merged layer.
 
@@ -635,7 +619,7 @@ If the continuous value created by `merged_mask` represents a suitability metric
 customized_merged_layer = geodata.mask.filter_raster(customized_merged_layer, min_bound = 0.8, binarize = True)
 show(customized_merged_layer)
 ```
-![png](output_90_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_90_0.png)
 
 ## 6. Eliminate small contiguous areas
 
@@ -653,23 +637,21 @@ For example, if we focus on Guangdong province in Southern China from the merged
 plt.imshow(china.merged_mask.read(1)[4800:5300, 5700:6600], interpolation = 'none')
 plt.show()
 ```
-![png](output_94_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_94_0.png)
 
 Call `filter_area` to remove all contiguous suitable region shapes smaller than 100 km$^2$:
 
 ```python
 china.merged_mask = geodata.mask.filter_area(china, min_area = 100)
 ```
-INFO:geodata.mask:Reprojecting the raster to EPSG:6933 for equal area calculation.
-INFO:geodata.mask:Raster /vsimem/df9c4752-7f5c-49e5-9bf9-11f0be52adee/df9c4752-7f5c-49e5-9bf9-11f0be52adee.tif has been reprojected to EPSG:6933 CRS.
-INFO:geodata.mask:Reverting the remaining shapes back to a raster.
+
 There shapes are removed in the new merged_mask.
 
 ```python
 plt.imshow(china.merged_mask.read(1)[4800:5300, 5700:6600], interpolation = 'none')
 plt.show()
 ```
-![png](output_98_0.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_98_0.png)
 
 ## 7. Extracting shapes from mask
 
@@ -683,19 +665,6 @@ china_shapes_subset = china_shapes[china_shapes['name'].isin(
 china_shapes_subset
 ```
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-.dataframe tbody tr th {
-    vertical-align: top;
-}
-
-.dataframe thead th {
-    text-align: right;
-}
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -809,8 +778,11 @@ china_shapes_subset = china_shapes_subset[['name',
 china_shapes_subset
 ```
 {'Zhejiang': <shapely.geometry.multipolygon.MultiPolygon at 0x26f6eb5fbe0>,
+  
  'Shanghai': <shapely.geometry.multipolygon.MultiPolygon at 0x26f6eb5fbb0>,
+  
  'Jiangsu': <shapely.geometry.multipolygon.MultiPolygon at 0x26f6eb5fca0>}
+  
 Extract the shapes from the merged_mask.
 
 ```python
@@ -825,53 +797,57 @@ The resulting mask object contains the dictionary `shape_mask` with the extracte
 china
 ```
 Mask China: 
+  
 4 layers: ['modis_filtered', 'elevation_filtered', 'slope_filtered', 'protected'].
+  
 Merged_mask merged/flattened. 
+  
 3 shape_mask: ['Zhejiang', 'Shanghai', 'Jiangsu']. 
+  
 Mask has not been saved/updated. 
+  
 ## 8. Saving and Loading masks
 
 ```python
 china.save_mask()
 ```
-INFO:geodata.mask:Mask China successfully saved at D:/Users/davison_lab_data/masks
 With the mask saved, the user can now load the layers or shapes with `xarray` instead if preferred.
 
 ```python
 shape_xr_lst = china.load_shape_xr()
 shape_xr_lst['Zhejiang'].plot()
 ```
-INFO:geodata.mask:Please close the shape_mask xarray(s) for further changes of the mask object.
 
 
 
 
 
 <matplotlib.collections.QuadMesh at 0x26f11e347c0>
-![png](output_112_2.png)
+![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_112_2.png)
 
 Optional: closing all the files when saving the mask. This can avoid possible write permission error.
 
 ```python
 china.save_mask(close_files = True)
 ```
-INFO:geodata.mask:Mask China successfully saved at D:/Users/davison_lab_data/masks
+  
 Loading a previously saved mask.
 
 ```python
 china_2 = geodata.mask.load_mask("china")
 ```
-INFO:geodata.mask:Layer ['elevation_filtered', 'modis_filtered', 'protected', 'slope_filtered'] loaded to the mask china.
-INFO:geodata.mask:Merged_mask loaded to the mask china.
-INFO:geodata.mask:Shape mask ['Jiangsu', 'Shanghai', 'Zhejiang'] loaded to the mask china.
+
 ```python
 china_2
 ```
 Mask china: 
+  
 4 layers: ['elevation_filtered', 'modis_filtered', 'protected', 'slope_filtered'].
+  
 Merged_mask merged/flattened. 
+  
 3 shape_mask: ['Jiangsu', 'Shanghai', 'Zhejiang']. 
+  
 Mask has been saved. 
-```python
+  
 
-```
