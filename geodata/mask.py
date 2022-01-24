@@ -372,7 +372,7 @@ class Mask(object):
             
         elif method == 'sum':
             if not weights:
-                logger.warning('No weight dictionary provided, all the layers for merging will have weights of 1 by default')
+                logger.info('No weight dictionary provided, all the layers for merging will have weights of 1 by default')
                 weights = {k: 1 for k in layers.keys()}
             else:
                 for k in layers.keys():
@@ -910,7 +910,6 @@ def filter_raster(raster, values = None, min_bound = None, max_bound = None,
     min_bound (float): the lower boundary of data to be selected
     max_bound (float): the upper boundary of data to be selected
     binarized (bool): if to convert the selected data to be True
-
     return: (ras.DatasetReader) the binarized raster
     """
     if (values is None and min_bound is None) and max_bound is None:
@@ -920,9 +919,9 @@ def filter_raster(raster, values = None, min_bound = None, max_bound = None,
     if values is not None:
         bool_arr = np.isin(bool_arr, values)
     if min_bound is not None:
-        bool_arr = (bool_arr > min_bound) * 1
+        bool_arr = np.greater(bool_arr, min_bound) * 1
     if max_bound is not None:
-        bool_arr = (bool_arr < max_bound) * 1
+        bool_arr = np.less(bool_arr, max_bound) * 1
 
     # if the method return 0 and 1 for the raster
 
