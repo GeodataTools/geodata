@@ -7,11 +7,11 @@ Geodata is able to process geospatial data to extract cutouts over specified geo
 Functionalities explored in this notebook:
 
 - [Creating a mask object, adding and manipulating layers](#3-Creating-mask-object-adding-and-manipulating-layers)
-- [Opening a shapefile and adding shape features as layers](#4-Openning-shapefile-and-adding-shape-features-as-a-layer)
-- [Merging and flattening layers](#5-Merging-and-flattening-layers)
-- [Eliminate small contiguous areas](6-Eliminate-small-contiguous-areas)
-- [Extracting shapes from mask](#7-Extracting-shapes-from-mask)
-- [Saving and loading masks](#8-Saving-and-Loading-masks)
+- [Opening a shapefile and adding shape features as layers](#4-opening-a-shapefile-and-adding-shape-features-as-a-layer)
+- [Merging and flattening layers](#5-merging-and-flattening-layers)
+- [Eliminate small contiguous areas](#6-eliminate-small-contiguous-areas)
+- [Extracting shapes from mask](#7-extracting-shapes-from-mask)
+- [Saving and loading masks](#8-saving-and-loading-masks)
 
 ## 2. Setup
 
@@ -303,6 +303,8 @@ No merged_mask ready.
 No shape has been extracted. 
 
 Mask has not been saved/updated. 
+
+
 
 
 
@@ -629,7 +631,7 @@ By default, `filter_area` uses the merged mask raster and returns a new raster, 
 
 By default, its `shape_value` parameter is 1, indicating that we are only interested in finding all groups of cells with value 1 (suitable) for elimination. We specify the threshold with the `min_area` parameter.
 
-Note: the `filter_area` method may take a long time (5 or more minutes depending on the complexity of your layer and your computational setup). The method relies upon `rasterio.rasterize`, see performance notes: https://rasterio.readthedocs.io/en/latest/api/rasterio.features.html#rasterio.features.rasterize
+Note: the `filter_area` method may take a long time (5 or more minutes depending on the complexity of your layer and your computational setup). The method relies upon `rasterio.rasterize`, see performance notes on the rasterio [documentation](https://rasterio.readthedocs.io/en/latest/api/rasterio.features.html#rasterio.features.rasterize)
 
 For example, if we focus on Guangdong province in Southern China from the merged mask, we notice that there are many small islands in the ocean that are marked as suitable areas. We want to exclude these small regions from our merged mask.
 
@@ -788,14 +790,13 @@ Extract the shapes from the merged_mask.
 ```python
 china.extract_shapes(china_shapes_subset)
 ```
-INFO:geodata.mask:Extracted shape Zhejiang added to attribute 'shape_mask'.
-INFO:geodata.mask:Extracted shape Shanghai added to attribute 'shape_mask'.
-INFO:geodata.mask:Extracted shape Jiangsu added to attribute 'shape_mask'.
 The resulting mask object contains the dictionary `shape_mask` with the extracted values:
 
 ```python
 china
 ```
+  
+  
 Mask China: 
   
 4 layers: ['modis_filtered', 'elevation_filtered', 'slope_filtered', 'protected'].
@@ -805,6 +806,8 @@ Merged_mask merged/flattened.
 3 shape_mask: ['Zhejiang', 'Shanghai', 'Jiangsu']. 
   
 Mask has not been saved/updated. 
+  
+  
   
 ## 8. Saving and Loading masks
 
