@@ -1,4 +1,4 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng, Yuanbo Shi. 
+## Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi. 
 ## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
 ## This program is free software; you can redistribute it and/or

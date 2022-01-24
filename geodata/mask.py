@@ -54,7 +54,6 @@ class Mask(object):
     saved (boolean): whether the mask has been saved/updated
     """
 
-
     ### initialization, adding layers
 
     def __init__(self, name, layer_path = None, layer_name = None, mask_dir = config.mask_dir, **kwargs):
@@ -273,14 +272,6 @@ class Mask(object):
                                                 values, min_bound, max_bound, binarize)
         self.saved = False
 
-
-    # def binarize_layer(self, layer_name, values, dest_layer_name = None):
-    #     """binarize a layer of mask object using binarize_raster() method"""
-    #     if not dest_layer_name: dest_layer_name = layer_name
-    #     self.layers[dest_layer_name] = binarize_raster(self.layers[layer_name], values)
-    #     self.saved = False
-
-    ### merging
     
     def _sum_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
         """The sum method will add up the values from all the layers. We can also 
@@ -1072,112 +1063,6 @@ def filter_area(self, min_area,
         
     else:
         return shape_raster
-
-
-## SHAPE METHOD
-
-# def shape_attribute(path):
-#     """
-#     Get the first shape objects (key value pairs) in that path to check attributes
-#     Knowing the key is important as we need to specify key names in get_shapes()
-#     path (str): string path to the shapefile
-#     """
-#     return next(shpreader.Reader(path).records()).attributes 
-
-# def get_shape(path, key = None, targets = None, save_record = False, 
-#                 condition_key = None, condition_value = None,
-#                 return_dict = False):
-#     """
-#     Take the path of the shape file, a attribute key name as the key to store in the output, 
-#     and a list of targets such as provinces, return the shape of targets with attributes.
-#     While the targets list the exact names/value of key_name attributes of the shapes, users may
-#     also ignore it and use condition_key and condition_value to find the desired shapes.
-#     for example, the call below will find all the shapes of provinces that belongs to China:
-#         mask.get_shape(path_to_province_shapes, key = 'name', 
-#             condition_key = 'admin', condition_value = 'China')
-        
-#     We can also ignore condition, just take three provinces of China by naming them out.
-#     for example, the call below just take three provinces of China by naming them out:
-#         mask.get_shape(prov_path, key = 'name_en', 
-#                         targets = ['Jiangsu', 'Zhejiang', 'Shanghai'])
-#     path (str): string path to the shapefile
-#     key_name (str): key name for the shapefile, can be checked through shape_attribute(path)
-#         when it is not specified, all the shapes in the shapefile will be selected with number index.
-#     targets (list): target names, if not specified, find all shapes contained in the shapefile.
-#     save_record (bool): if the records for the shape should be returned as well.
-#     condition_key (str): optional: the attribute as another condition
-#     condition_value (str)：optional: the value that the condition_key must equals to in the 
-#         shape record.
-#     return_dict (str): if a dictionary will be returned, otherwise return a dataframe. 
-#         False by default. Warning: if a dictionary output is preferred, the output will eliminate 
-#         shapes with duplicate key_name.
-#     return (dict or pandas.dataframe) the array of feature/shapes extracted from the shapefile
-#     """
-
-#     if targets is not None and key is None:
-#         raise ValueError("Please specify a key when target list is provided.")
-
-#     reader = shpreader.Reader(path)
-
-#     shapes = []
-#     shape_keys = []
-#     records = {}
-
-#     if (condition_key and not condition_value) or (condition_key and not condition_value):
-#         raise ValueError("Condition key and condition value must be both null, or have values.")
-
-#     num_record = 0
-
-#     #if not conditional key and value are specified
-#     if (not condition_key and not condition_value):
-#         if not targets:
-#             for r in reader.records():
-#                 if not key: 
-#                     r_key = num_record
-#                     num_record += 1
-#                 else:
-#                     r_key = r.attributes[key]
-#                 shape_keys.append(r_key)
-#                 shapes.append(r.geometry)
-#                 records[r_key] = r.attributes
-#         else: #target list provided
-#             for r in reader.records():
-#                 r_key = r.attributes[key]   
-#                 if r_key in targets:
-#                     shape_keys.append(r_key)
-#                     shapes.append(r.geometry)
-#                     records[r_key] = r.attributes
-
-#     else:
-#         #with extra conditions
-#         if not targets:
-#             for r in reader.records():
-#                 if not key: 
-#                     r_key = num_record
-#                     num_record += 1
-#                 else:
-#                     r_key = r.attributes[key]
-                
-#                 if r.attributes[condition_key] == condition_value:
-#                     shape_keys.append(r_key)
-#                     shapes.append(r.geometry)
-#                     records[r_key] = r.attributes
-#         else: #target list provided
-#             for r in reader.records():
-#                 r_key = r.attributes[key]
-#                 if r.attributes[condition_key] == condition_value and r_key in targets:
-#                     shape_keys.append(r_key)
-#                     shapes.append(r.geometry)
-#                     records[r_key] = r.attributes
-
-#     shapes = gpd.GeoDataFrame({key: shape_keys, 'shapes': shapes})
-    
-#     if return_dict: shapes = shapes.set_index(key).to_dict()['shapes']
-
-#     if save_record:
-#         return shapes, records
-
-#     return shapes
 
 
 def convert_shape_crs(shape, src_crs, dst_crs):
