@@ -1,9 +1,11 @@
 ## Unreleased
 
 ## datasets/
+* Removal of `cordex.py`
 * Removal of `ncep.py`
 
 ## geodata/config-default.py
+* Removal of `cordex_dir`
 * Removal of `ncep_dir`
 
 ## dataset.py
