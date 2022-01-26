@@ -129,12 +129,11 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 	#for series in itervalues(cutout.weather_data_config[cutout.config]):
 		# dict of tasks w/structure (tasks_func, prepare_func)
 		# .. could be one task and prepare (eg prepare_month_era5)
-		# .. or multiple tasks and prepares (eg prepare_influx_ncep)
 	series = cutout.weather_data_config[cutout.config]
 	series['meta_attrs'] = cutout.meta.attrs
 	tasks_func = series['tasks_func']
 
-	# form call to task_func (eg tasks_monthly_ncep)
+	# form call to task_func (eg tasks_monthly_merra2)
 	# .. **series contains prepare_func
 	# returns: dict(prepare_func=prepare_func, xs=xs, ys=ys, year=year, month=month)
 	# .. or: dict(prepare_func=prepare_func, xs=xs, ys=ys, fn=next(glob...), engine=engine, yearmonth=ym)
