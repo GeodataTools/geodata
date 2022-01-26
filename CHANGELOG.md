@@ -1,12 +1,22 @@
 ## Unreleased
 
 ## datasets/
+* Removal of `sarah.py`
 * Removal of `cordex.py`
 * Removal of `ncep.py`
 
 ## geodata/config-default.py
+* Removal of `sarah_dir`
 * Removal of `cordex_dir`
 * Removal of `ncep_dir`
+
+## era5.py
+* Remove following unused functions:
+  - get_data
+  - _add_height
+  - _add_area
+  - prepare_for_sarah
+* Remove various unused import statements
 
 ## dataset.py
 ### get_data()
