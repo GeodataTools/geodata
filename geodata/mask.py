@@ -21,7 +21,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import numpy as np
 import matplotlib.pyplot as plt
-import cartopy.io.shapereader as shpreader
 import logging
 logger = logging.getLogger(__name__)
 import geopandas as gpd

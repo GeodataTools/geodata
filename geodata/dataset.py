@@ -278,9 +278,13 @@ class Dataset(object):
 		"""
 
 		if testing == True:
-			self.toDownload = [self.toDownload[0]]
-			self.totalFiles = [self.totalFiles[0]]
-			self.testDataset = True
+			if len(self.downloadedFiles) > 0:
+				logger.info('First file for testing has already been downloaded.')
+				return
+			else:
+				self.toDownload = [self.toDownload[0]]
+				self.totalFiles = [self.totalFiles[0]]
+				self.testDataset = True
 
 		api_func = self.weatherconfig['api_func']
 
