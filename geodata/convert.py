@@ -34,7 +34,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from .aggregate import aggregate_sum, aggregate_matrix
-from .gis import spdiag, compute_indicatormatrix
 
 from .pv.solar_position import SolarPosition
 from .pv.irradiation import TiltedIrradiation
@@ -51,11 +50,7 @@ from .resource import (get_windturbineconfig, get_solarpanelconfig,
 
 from .utils import make_optional_progressbar
 
-def convert_and_aggregate(cutout, convert_func, matrix=None,
-						  index=None, layout=None, shapes=None,
-						  shapes_proj='latlong', per_unit=False,
-						  return_capacity=False, capacity_factor=False,
-						  show_progress=True, **convert_kwds):
+def convert_cutout(cutout, convert_func, show_progress=True, **convert_kwds):
 	"""
 	Convert and aggregate a weather-based renewable generation time-series.
 
@@ -64,34 +59,8 @@ def convert_and_aggregate(cutout, convert_func, matrix=None,
 	generation functions like pv and wind. Thus, all its parameters are also
 	available from these.
 
-	- creates layout grid if matrix or shapes are passed		(cutout.indicatormatrix → gis.compute_indicatormatrix)
-	- loads data by month and converts 							(convert_func(ds, **convert_kwds) (e.g., convert.convert_wind))
-	- optionally aggregates										(aggregate_func(da, **aggregate_kwds))
-
 	Parameters (passed through as **params)
 	---------------------------------------
-	matrix : sp.sparse.csr_matrix or None
-		If given, it is used to aggregate the `grid_cells` to buses.
-	index : pd.Index
-		Buses
-	layout : X x Y - np.array or xr.DataArray
-		The capacity to be build in each of the `grid_cells`.
-	shapes : list or pd.Series of shapely.geometry.Polygon
-		If given, matrix is constructed as indicatormatrix of the polygons, its
-		index determines the bus index on the time-series.
-	shapes_proj : str or pyproj.Proj
-		Defaults to 'latlong'. If different to the map projection of the
-		cutout, the shapes are reprojected using pyproj.transform to match
-		cutout.projection (defaults to 'latlong').
-	per_unit : boolean
-		Returns the time-series in per-unit units, instead of in MW (defaults
-		to False).
-	return_capacity : boolean
-		Additionally returns the installed capacity at each bus corresponding
-		to `layout` (defaults to False).
-	capacity_factor : boolean
-		If True, the capacity factor of the chosen resource for each grid cell
-		is computed.
 	show_progress : boolean|string
 		Whether to show a progress bar if boolean and its label if given as a
 		string (defaults to True).
@@ -102,9 +71,6 @@ def convert_and_aggregate(cutout, convert_func, matrix=None,
 		Time-series of renewable generation aggregated to buses, if
 		`matrix` or equivalents are provided else the total sum of
 		generated energy.
-	units : xr.DataArray (optional)
-		The installed units per bus in MW corresponding to `layout`
-		(only if `return_capacity` is True).
 
 	Internal Parameters (provided by f.ex. wind and pv)
 	---------------------------------------------------
@@ -113,49 +79,19 @@ def convert_and_aggregate(cutout, convert_func, matrix=None,
 	"""
 	assert cutout.prepared, "The cutout has to be prepared first."
 
-	if shapes is not None:
-		if isinstance(shapes, pd.Series) and index is None:
-			index = shapes.index
-
-		matrix = cutout.indicatormatrix(shapes, shapes_proj)
-
-	if layout is not None:
-		if isinstance(layout, xr.DataArray):
-			layout = layout.reindex_like(cutout.meta).stack(spatial=('y', 'x')).values
-		else:
-			assert layout.shape == cutout.shape
-		matrix = (layout.reshape((1,-1))
-				  if matrix is None
-				  else sp.sparse.csr_matrix(matrix).dot(spdiag(layout.ravel())))
-
-	if matrix is not None:
-		# provided a matrix to aggregate cells
-		matrix = sp.sparse.csr_matrix(matrix)
-
-		if index is None:
-			index = pd.RangeIndex(matrix.shape[0])
-		aggregate_func = aggregate_matrix
-		aggregate_kwds = dict(matrix=matrix, index=index)
-	else:
-		# keep default space and time dimensions
-		aggregate_func = lambda x: x
-		aggregate_kwds = {}
-
 	results = []
 
 	yearmonths = cutout.coords['year-month'].to_index()
 
-	# Progressbar (turned off for now because of errors)
 	if isinstance(show_progress, string_types):
 		prefix = show_progress
 	else:
 		func_name = (convert_func.__name__[len('convert_'):]
 						if convert_func.__name__.startswith('convert_')
 						else convert_func.__name__)
-		prefix = 'Convert and aggregate `{}`: '.format(func_name)
-	# maybe_progressbar = make_optional_progressbar(show_progress, prefix, len(yearmonths))
-	maybe_progressbar = make_optional_progressbar(False, prefix, len(yearmonths))
+		prefix = 'Convert `{}`: '.format(func_name)
 
+	maybe_progressbar = make_optional_progressbar(False, prefix, len(yearmonths))
 
 	for ym in maybe_progressbar(yearmonths):
 		with xr.open_dataset(cutout.datasetfn(ym)) as ds:
@@ -174,32 +110,11 @@ def convert_and_aggregate(cutout, convert_func, matrix=None,
 				ds = ds.sel(**cutout.meta.attrs['view'])
 
 			da = convert_func(ds, **convert_kwds)
-			results.append(aggregate_func(da, **aggregate_kwds).load())
-	# if 'time' in results[0].coords:
-	# 	results = xr.concat(results, dim='time')
-	# else:
-	# 	# sum over time
-	# 	results = sum(results)
+			results.append(da.load())
+
 	results = xr.concat(results, dim='time')
-	# logger.info("Keeping time dimension.")
 
-	if capacity_factor:
-		assert aggregate_func is aggregate_sum, \
-			"The arguments `matrix`, `shapes` and `layout` are incompatible with capacity_factor"
-		results /= len(cutout.meta['time'])
-
-	if per_unit or return_capacity:
-		assert aggregate_func is aggregate_matrix, \
-			"One of `matrix`, `shapes` and `layout` must be given for `per_unit`"
-		capacity = xr.DataArray(np.asarray(matrix.sum(axis=1)).reshape(-1), [index])
-
-	if per_unit:
-		results = (results / capacity).fillna(0.)
-
-	if return_capacity:
-		return results, capacity
-	else:
-		return results
+	return results
 
 
 ## temperature
@@ -214,7 +129,7 @@ def convert_temperature(ds):
 	return ds['temperature'] - 273.15
 
 def temperature(cutout, **params):
-	return cutout.convert_and_aggregate(convert_func=convert_temperature, **params)
+	return cutout.convert_cutout(convert_func=convert_temperature, **params)
 
 
 
@@ -234,7 +149,7 @@ def convert_soil_temperature(ds):
 	return (ds['soil temperature'] - 273.15).fillna(0.)
 
 def soil_temperature(cutout, **params):
-	return cutout.convert_and_aggregate(convert_func=convert_soil_temperature, **params)
+	return cutout.convert_cutout(convert_func=convert_soil_temperature, **params)
 
 
 
@@ -293,10 +208,10 @@ def heat_demand(cutout, threshold=15., a=1., constant=0., hour_shift=0., **param
 	Note
 	----
 	You can also specify all of the general conversion arguments
-	documented in the `convert_and_aggregate` function.
+	documented in the `convert_cutout` function.
 	"""
 
-	return cutout.convert_and_aggregate(convert_func=convert_heat_demand,
+	return cutout.convert_cutout(convert_func=convert_heat_demand,
 										threshold=threshold, a=a,
 										constant=constant,
 										hour_shift=hour_shift,
@@ -353,7 +268,7 @@ def solar_thermal(cutout, orientation={'slope': 45., 'azimuth': 180.},
 	Note
 	----
 	You can also specify all of the general conversion arguments
-	documented in the `convert_and_aggregate` function.
+	documented in the `convert_cutout` function.
 
 	References
 	----------
@@ -364,7 +279,7 @@ def solar_thermal(cutout, orientation={'slope': 45., 'azimuth': 180.},
 	if not callable(orientation):
 		orientation = get_orientation(orientation)
 
-	return cutout.convert_and_aggregate(convert_func=convert_solar_thermal,
+	return cutout.convert_cutout(convert_func=convert_solar_thermal,
 										orientation=orientation,
 										trigon_model=trigon_model,
 										clearsky_model=clearsky_model,
@@ -457,7 +372,7 @@ def wind(cutout, turbine, smooth=False, **params):
 
 	- loads turbine dict based on passed parameters  	(resource.get_windturbineconfig)
 	- optionally, smooths turbine power curve 			(resource.windturbine_smooth)
-	- calls convert_wind								(convert.convert_and_aggregate)
+	- calls convert_wind								(convert.convert_cutout)
 
 	Parameters
 	----------
@@ -473,7 +388,7 @@ def wind(cutout, turbine, smooth=False, **params):
 	Note
 	----
 	You can also specify all of the general conversion arguments
-	documented in the `convert_and_aggregate` function.
+	documented in the `convert_cutout` function.
 
 	References
 	----------
@@ -487,14 +402,14 @@ def wind(cutout, turbine, smooth=False, **params):
 	if smooth:
 		turbine = windturbine_smooth(turbine, params=smooth)
 
-	return cutout.convert_and_aggregate(convert_func=convert_wind, turbine=turbine,
+	return cutout.convert_cutout(convert_func=convert_wind, turbine=turbine,
 										**params)
 
 def windspd(cutout, **params):
 	"""
 	Generate wind speed time-series
 
-	convert.convert_and_aggregate → convert.convert_windspd
+	convert.convert_cutout → convert.convert_windspd
 
 	Parameters
 	----------
@@ -506,7 +421,7 @@ def windspd(cutout, **params):
 				Extrapolation height
 
 		Can also specify all of the general conversion arguments
-		documented in the `convert_and_aggregate` function.
+		documented in the `convert_cutout` function.
 			e.g. var_height='lml'
 
 	"""
@@ -527,14 +442,14 @@ def windspd(cutout, **params):
 
 	params['hub_height'] = hub_height
 
-	return cutout.convert_and_aggregate(convert_func=convert_windspd, **params)
+	return cutout.convert_cutout(convert_func=convert_windspd, **params)
 
 
 def windwpd(cutout, **params):
 	"""
 	Generate wind power density time-series
 
-	convert.convert_and_aggregate → convert.convert_windwpd
+	convert.convert_cutout → convert.convert_windwpd
 
 	Parameters
 	----------
@@ -546,7 +461,7 @@ def windwpd(cutout, **params):
 				Extrapolation height
 
 		Can also specify all of the general conversion arguments
-		documented in the `convert_and_aggregate` function.
+		documented in the `convert_cutout` function.
 			e.g. var_height='lml'
 
 	"""
@@ -567,7 +482,7 @@ def windwpd(cutout, **params):
 
 	params['hub_height'] = hub_height
 
-	return cutout.convert_and_aggregate(convert_func=convert_windwpd, **params)
+	return cutout.convert_cutout(convert_func=convert_windwpd, **params)
 
 ## solar PV
 
@@ -611,7 +526,7 @@ def pv(cutout, panel, orientation, clearsky_model=None, **params):
 	Note
 	----
 	You can also specify all of the general conversion arguments
-	documented in the `convert_and_aggregate` function.
+	documented in the `convert_cutout` function.
 
 	References
 	----------
@@ -630,7 +545,7 @@ def pv(cutout, panel, orientation, clearsky_model=None, **params):
 	if not callable(orientation):
 		orientation = get_orientation(orientation)
 
-	return cutout.convert_and_aggregate(convert_func=convert_pv,
+	return cutout.convert_cutout(convert_func=convert_pv,
 										panel=panel, orientation=orientation,
 										clearsky_model=clearsky_model,
 										**params)
@@ -647,7 +562,7 @@ def convert_runoff(ds, weight_with_height=True):
 
 def runoff(cutout, smooth=None, lower_threshold_quantile=None,
 		   normalize_using_yearly=None, **params):
-	result = cutout.convert_and_aggregate(convert_func=convert_runoff, **params)
+	result = cutout.convert_cutout(convert_func=convert_runoff, **params)
 
 	if smooth is not None:
 		if smooth is True: smooth = 24*7
@@ -762,7 +677,7 @@ def pm25(cutout, **params):
 
 	"""
 
-	return cutout.convert_and_aggregate(convert_func=convert_pm25, **params)
+	return cutout.convert_cutout(convert_func=convert_pm25, **params)
 
 
 ## Manipulate arbitrary variables
@@ -786,7 +701,7 @@ def get_var(cutout, var, **params):
 	Returns: dataarray
 	"""
 	logger.info("Getting variable: " + str(var))
-	return cutout.convert_and_aggregate(convert_func=_get_var,
+	return cutout.convert_cutout(convert_func=_get_var,
 										var=var,
 										**params)
 
@@ -809,6 +724,6 @@ def compute_var(cutout, fn, **params):
 	Returns: dataarray
 	"""
 	logger.info("Computing variable: " + str(fn))
-	return cutout.convert_and_aggregate(convert_func=_compute_var,
+	return cutout.convert_cutout(convert_func=_compute_var,
 										fn=fn,
 										**params)

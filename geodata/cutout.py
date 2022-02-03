@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 from . import config, datasets
 
-from .convert import (convert_and_aggregate, heat_demand, hydro, temperature,
+from .convert import (convert_cutout, heat_demand, hydro, temperature,
 					  wind, pv, runoff, solar_thermal, soil_temperature)
 from .preparation import (cutout_do_task, cutout_prepare,
 						  cutout_produce_specific_dataseries,
@@ -363,7 +363,7 @@ class Cutout(object):
 
 	## Conversion and aggregation functions
 
-	convert_and_aggregate = convert_and_aggregate
+	convert_cutout = convert_cutout
 
 	heat_demand = heat_demand
 
