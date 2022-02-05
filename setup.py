@@ -45,13 +45,6 @@ requirement_list = ['numpy',
 				  'progressbar2',
 				  'geopandas']
 
-parser = argparse.ArgumentParser()
-parser.add_argument("command", type=str, help="command")
-args = parser.parse_args()
-if args.command == 'requirements':
-	print ("Requirement list: %s" % requirement_list)
-	exit()
-
 with open('README.md', encoding='utf-8') as f:
 	long_description = f.read()
 
