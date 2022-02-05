@@ -23,8 +23,13 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import os
 import glob
+import pandas as pd
 import numpy as np
 import xarray as xr
+import shutil
+from six.moves import range
+from requests.exceptions import HTTPError
+from contextlib import contextmanager
 from tempfile import mkstemp
 import logging
 logger = logging.getLogger(__name__)
@@ -41,6 +46,106 @@ except ImportError:
 
 # Model and Projection Settings
 projection = 'latlong'
+
+# contextmanager (contextlib): ensures that at end of all with statements, the resource is closed
+@contextmanager
+def _get_data(target=None, product='reanalysis-era5-single-levels', chunks=None, **updates):
+	"""
+	(Soon to be deprecated)
+	Check local folders for sarah data
+	If not found, download sarah data from the Climate Data Store (CDS)
+
+	For ERA5: use separate API function
+	"""
+
+	## Check if local copy
+	# filename = first characters of each variable
+	f = "".join([v[0] for v in updates['variable']])
+	if target is None:
+		target = era5_dir
+
+	fn=os.path.join(era5_dir, '{year}/{month:0>2}/{f}.nc'.format(year=updates['year'], month=updates['month'],f=f))
+
+	if os.path.isfile(fn):
+	#	Local file exists
+		with xr.open_dataset(fn, chunks=chunks) as ds:
+			if {'area'}.issubset(updates):
+			# find subset of area
+				yf, x0, y0, xf = updates['area']			# North, West, South, East
+				ds = ds.where((ds.lat >= y0) & (ds.lat <= yf) & (ds.lon >= x0) & (ds.lon <= xf), drop=True)
+
+			yield ds
+	else:
+	#	Download new file
+
+		# Make the directory if not exists
+		os.makedirs(os.path.dirname(fn), exist_ok=True)
+
+		if not has_cdsapi:
+			raise RuntimeError(
+				"Need installed cdsapi python package available from "
+				"https://cds.climate.copernicus.eu/api-how-to"
+			)
+
+		# Default request
+		request = {
+			'product_type':'reanalysis',
+			'format':'netcdf',
+			'day':[
+				'01','02','03','04','05','06','07','08','09','10','11','12',
+				'13','14','15','16','17','18','19','20','21','22','23','24',
+				'25','26','27','28','29','30','31'
+			],
+			'time':[
+				'00:00','01:00','02:00','03:00','04:00','05:00',
+				'06:00','07:00','08:00','09:00','10:00','11:00',
+				'12:00','13:00','14:00','15:00','16:00','17:00',
+				'18:00','19:00','20:00','21:00','22:00','23:00'
+			]
+		}
+		request.update(updates)
+
+		assert {'year', 'month', 'variable'}.issubset(request), "Need to specify at least 'variable', 'year' and 'month'"
+
+		# main request to API
+		result = cdsapi.Client().retrieve(
+			product,
+			request
+		)
+
+		# if target is None:
+		# 	# make a temp file
+		#     fd, target = mkstemp(suffix='.nc')
+		#     os.close(fd)
+		logger.info("Downloading request for {} variables to {}".format(len(request['variable']), target))
+		result.download(fn)
+
+		with xr.open_dataset(fn, chunks=chunks) as ds:
+			yield ds
+
+		# os.unlink(target)
+
+def _add_height(ds):
+	"""Convert geopotential 'z' to geopotential height following [1]
+
+	References
+	----------
+	[1] ERA5: surface elevation and orography, retrieved: 10.02.2019
+	https://confluence.ecmwf.int/display/CKB/ERA5%3A+surface+elevation+and+orography
+
+	"""
+	g0 = 9.80665
+	z = ds['z']
+	if 'time' in z.coords:
+		z = z.isel(time=0, drop=True)
+	ds['height'] = z/g0
+	ds = ds.drop('z')
+	return ds
+
+def _area(xs, ys):
+	# Return array with bounding coordinates
+	# North, West, South, East.
+	return [ys.start, xs.start, ys.stop, xs.stop]
 
 def _rename_and_clean_coords(ds, add_lon_lat=True):
 	"""Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
@@ -144,6 +249,9 @@ def api_monthly_era5(
 			print(f)
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 
+			fd, target = mkstemp(suffix='.nc4')
+			fd2, target2 = mkstemp(suffix='.nc4')
+
 			## for each file in self.todownload - need to then reextract year month in order to make query
 			query_year = str(f[2])
 			query_month = str(f[3]) if len(str(f[3])) == 2 else '0' + str(f[3])
@@ -225,6 +333,36 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 						 e.args[0])
 		raise e
 	return meta
+
+
+def prepare_for_sarah(year, month, xs, ys, dx, dy, chunks=None):
+	area = _area(xs, ys)
+	grid = [dx, dy]
+
+	with _get_data(area=area, grid=grid, year=year, month=month,
+				   variable=['2m_temperature',
+							 'toa_incident_solar_radiation',
+							 'surface_solar_radiation_downwards',
+							 'surface_net_solar_radiation'],
+				   chunks=chunks) as ds:
+		ds = _rename_and_clean_coords(ds, add_lon_lat=False)
+
+		ds = ds.rename({'t2m': 'temperature'})
+		ds = ds.rename({'tisr': 'influx_toa'})
+
+		logger.debug("Calculating albedo")
+		ds['albedo'] = (((ds['ssrd'] - ds['ssr'])/ds['ssrd']).fillna(0.)
+						.assign_attrs(units='(0 - 1)', long_name='Albedo'))
+		ds = ds.drop(['ssrd', 'ssr'])
+
+		logger.debug("Fixing units of influx_toa")
+		# Convert from energy to power J m**-2 -> W m**-2
+		ds['influx_toa'] /= 60.*60.
+		ds['influx_toa'].attrs['units'] = 'W m**-2'
+
+		logger.debug("Yielding ERA5 results")
+		yield ds.chunk(chunks)
+		logger.debug("Cleaning up ERA5")
 
 def prepare_month_era5(fn, year, month, xs, ys):
 
