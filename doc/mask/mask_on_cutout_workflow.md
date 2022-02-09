@@ -59,7 +59,7 @@ cutout.prepare()
 True
 ## 3. Load Mask
 
-In this tutorial, we use the `china` mask, created in this documentation: [mask_creation_workflow](https://github.com/east-winds/geodata/blob/mask/doc/mask/mask_creation_workflow.md)
+In this tutorial, we use the `china` mask, created in this documentation: [mask_creation_workflow](https://github.com/east-winds/geodata/blob/master/doc/mask/mask_creation_workflow.md)
 
 ```python
 # View the contents of the china mask
@@ -93,7 +93,7 @@ Plot the merged mask, coarsened to cutout resolution
 cutout.merged_mask.plot()
 ```
 <matplotlib.collections.QuadMesh at 0x1ee15b33a90>
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/output_21_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/output_21_1.png)
 
 ### 4.2 Adding area variable
 
@@ -141,7 +141,7 @@ From the output variable `combine_mean`, check out the combined xarray.Dataset f
 ```python
 combine_mean['Jiangsu']
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/output_37_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/output_37_1.png)
 
 Visualize the averaged PV value for each grid cell in the Cutout. Note that the data is the aggregated value for the date.
 
@@ -150,7 +150,7 @@ combine_mean['Jiangsu']['solar'].plot()
 ```
 <matplotlib.collections.QuadMesh at 0x1ee15dd8a90>
 
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/xarray_output1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/xarray_output1.png)
 
 Visualize the masking value for each grid cell in the Cutout.
 
@@ -158,7 +158,7 @@ Visualize the masking value for each grid cell in the Cutout.
 combine_mean['Jiangsu']['mask'].plot()
 ```
 <matplotlib.collections.QuadMesh at 0x1ee15e72520>
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/output_39_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/output_39_1.png)
 
 **Area- and mask-weighted hourly PV values**
 
@@ -173,7 +173,7 @@ dict_keys(['merged_mask', 'Jiangsu', 'Shanghai', 'Zhejiang'])
 
 Calculate the aggregated mean solar PV for each provinces, at each time point. We will apply this equation below to calculate the area-weighted average. We save the result into a dictionary `PV_dict`, where its keys are the provinces, and the corresponding values are the PV series.
 
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/equation.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/equation.png)
 
 ```python
 PV_dict = {}
@@ -191,7 +191,7 @@ The aggregated PV time-series for Zhejiang province.
 ```python
 PV_dict['Zhejiang']
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/xarray_output2.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/xarray_output2.png)
 
 Finally, for each province, plot the solar series weighted by mask * area.
 
@@ -206,7 +206,7 @@ for prov_name, series in PV_dict.items():
     plt.xlabel("2011-01-01 Hour")
     plt.ylabel("Aggregated weighted PV value for suitable area")
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_on_cutout_workflow/output_47_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/output_47_0.png)
 
 ```python
 
