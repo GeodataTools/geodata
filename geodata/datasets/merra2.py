@@ -108,14 +108,14 @@ def api_merra2(
 	fileGranularity,
 	downloadedFiles
 	):
+
 	if len(toDownload) == 0:
 		logger.info("All MERRA2 files for this dataset have been downloaded.")
 	else:
-		count = 0
-
 		multi = True if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple' else False
 
 		for f in toDownload:
+			error_files = []
 			if multi:
 				fd, target = mkstemp(suffix='.nc4')
 			else:
@@ -129,9 +129,11 @@ def api_merra2(
 				with open(target,'wb') as fout:
 					fout.write(result.content)
 			except HTTPError as http_err:
-					logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				error_files.append(f[1])
 			except Exception as err:
-					logger.warn(f'Other error occurred: {err}')
+				logger.warn(f'Other error occurred: {err}')
+				error_files.append(f[1])
 
 			if multi:
 				# ds_main = xr.open_dataset(target)
@@ -148,8 +150,10 @@ def api_merra2(
 							fout.write(result.content)
 					except HTTPError as http_err:
 						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+						error_files.append(f[k])
 					except Exception as err:
 						logger.warn(f'Other error occurred: {err}')
+						error_files.append(f[k])
 					# ds_toadd = xr.open_dataset(target_temp)
 					# ds_main = xr.merge([ds_main, ds_toadd])
 					# os.close(fd_temp)
@@ -166,11 +170,12 @@ def api_merra2(
 				for tf in temp_files:
 					os.close(tf[0])
 					os.unlink(tf[1])
-
-			downloadedFiles.append((f[0], f[1]))
-
-			count += 1
-			logger.info("Successfully downloaded data for %s", f[1])
+			
+			if len(error_files) > 0:
+				logger.warn("Unsuccessful download for %s", error_files)
+			else:
+				logger.info("Successfully downloaded data for %s", f[1])
+				downloadedFiles.append((f[0], f[1]))
 
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
@@ -401,8 +406,13 @@ weather_data_config = {
 			'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4',
 			'https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXRAD.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_rad_Nx.{year}{month:0>2}{day:0>2}.nc4'
 		],
+	    url_opendap = [
+			'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4.nc4',
+			'https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXRAD.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_rad_Nx.{year}{month:0>2}{day:0>2}.nc4.nc4'
+		],
 		fn = os.path.join(merra2_dir, '{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_rad_Nx.{year}{month:0>2}{day:0>2}.nc4'),
-		variables = ['albedo', 'swgdn', 'swtdn', 't2m']
+		variables = ['albedo', 'swgdn', 'swtdn', 't2m'],
+		variables_list = [['t2m'],['albedo', 'swgdn', 'swtdn']]
 	),
 	'slv_radiation_monthly': dict(
 		api_func=api_merra2,

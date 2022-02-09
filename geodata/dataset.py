@@ -98,7 +98,7 @@ class Dataset(object):
 				raise ValueError("Specified bounds parameter should be list with North, West, South, East coordinates.")
 				## additional checks here later
 		else:
-			logger.warn("Bounds not used in preparing dataset. Defaulting to global.")
+			logger.info("Using global bounds.")
 			self.bounds = None
 
 		if os.path.isdir(self.datadir):
@@ -131,10 +131,13 @@ class Dataset(object):
 						if check_complete:
 							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
-						if opendap:
+						if opendap and 'url_opendap' in self.weatherconfig:
 							self.toDownload.append((self.config, filename,
 									self.datasetfn_opendap(self.weatherconfig['url_opendap'], self.weatherconfig['variables'], yr, mo, day)))
 						else:
+							if opendap:
+								logger.warn("OpenDAP URL not specified for given dataset. Defaulting to standard download.")
+
 							self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
 					else:
 						self.downloadedFiles.append((self.config, filename))
@@ -155,12 +158,23 @@ class Dataset(object):
 						if check_complete:
 							logger.info("File `%s` not found!", filename)
 							incomplete_count += 1
-						self.toDownload.append((
-							self.config,
-							filename,
-							self.datasetfn(self.weatherconfig['url'][0], yr, mo, day),
-							self.datasetfn(self.weatherconfig['url'][1], yr, mo, day)
-							))
+						if opendap and 'url_opendap' in self.weatherconfig:
+							self.toDownload.append((
+								self.config,
+								filename,
+								self.datasetfn_opendap(self.weatherconfig['url_opendap'][0], self.weatherconfig['variables_list'][0], yr, mo, day),
+								self.datasetfn_opendap(self.weatherconfig['url_opendap'][1], self.weatherconfig['variables_list'][1], yr, mo, day)
+								))
+						else:
+							if opendap:
+								logger.warn("OpenDAP URL not specified for given dataset. Defaulting to standard download.")
+
+							self.toDownload.append((
+								self.config,
+								filename,
+								self.datasetfn(self.weatherconfig['url'][0], yr, mo, day),
+								self.datasetfn(self.weatherconfig['url'][1], yr, mo, day)
+								))
 					else:
 						self.downloadedFiles.append((self.config, filename))
 
@@ -241,12 +255,18 @@ class Dataset(object):
 		if self.module == 'merra2':
 			variables = [v.upper() for v in variables]
 
+		# TODO: Add lat lon subsetting based on self.bounds
+		# opendap URL format requires knowing the indexes in MERRA2 -- not just lat, lon bounds --
+		# e.g., https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]
+		if self.bounds != None:
+			logger.info('Bounds not used in OpenDAP call. Defaulting to global.')
+
 		fn = fn + '?' + ",".join(variables) + ",time,lat,lon"
 
 		args = list(args)
 		return self.datasetfn(fn, *args)
 
-	def get_data(self, trim=False, testing=False):
+	def get_data(self, trim=True, testing=False):
 		"""Download data routine
 		#
 		#	Parameters
@@ -258,9 +278,13 @@ class Dataset(object):
 		"""
 
 		if testing == True:
-			self.toDownload = [self.toDownload[0]]
-			self.totalFiles = [self.totalFiles[0]]
-			self.testDataset = True
+			if len(self.downloadedFiles) > 0:
+				logger.info('First file for testing has already been downloaded.')
+				return
+			else:
+				self.toDownload = [self.toDownload[0]]
+				self.totalFiles = [self.totalFiles[0]]
+				self.testDataset = True
 
 		api_func = self.weatherconfig['api_func']
 
@@ -285,6 +309,9 @@ class Dataset(object):
 
 		if self.downloadedFiles == self.totalFiles:
 			self.prepared = True
+
+		if trim == True:
+			self.trim_variables()
 
 	def trim_variables(self, fn = None):
 		""" Reduce size of file by trimming variables in file

@@ -23,8 +23,8 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 from __future__ import absolute_import
 
 from .cutout import Cutout
+from .mask import Mask
 from .dataset import Dataset
-from .gis import compute_indicatormatrix, regrid
 
 from ._version import __version__
 
