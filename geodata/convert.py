@@ -40,7 +40,6 @@ from .pv.irradiation import TiltedIrradiation
 from .pv.solar_panel_model import SolarPanelModel
 from .pv.orientation import get_orientation, SurfaceOrientation
 
-from . import hydro as hydrom
 from . import wind as windm
 
 from .resource import (get_windturbineconfig, get_solarpanelconfig,
@@ -549,95 +548,6 @@ def pv(cutout, panel, orientation, clearsky_model=None, **params):
 										panel=panel, orientation=orientation,
 										clearsky_model=clearsky_model,
 										**params)
-
-## hydro
-
-def convert_runoff(ds, weight_with_height=True):
-	runoff = ds['runoff'].clip(min=0.)
-
-	if weight_with_height:
-		runoff = runoff * ds['height']
-
-	return runoff
-
-def runoff(cutout, smooth=None, lower_threshold_quantile=None,
-		   normalize_using_yearly=None, **params):
-	result = cutout.convert_cutout(convert_func=convert_runoff, **params)
-
-	if smooth is not None:
-		if smooth is True: smooth = 24*7
-		if "return_capacity" in params.keys():
-			result = result[0].rolling(time=smooth, min_periods=1).mean(), result[1]
-		else:
-			result = result.rolling(time=smooth, min_periods=1).mean()
-
-	if lower_threshold_quantile is not None:
-		if lower_threshold_quantile is True: lower_threshold_quantile = 5e-3
-		lower_threshold = pd.Series(result.values.ravel()).quantile(lower_threshold_quantile)
-		result.values[result.values < lower_threshold] = 0.
-
-	if normalize_using_yearly is not None:
-		normalize_using_yearly_i = normalize_using_yearly.index
-		if isinstance(normalize_using_yearly_i, pd.DatetimeIndex):
-			normalize_using_yearly_i = normalize_using_yearly_i.year
-		else:
-			normalize_using_yearly_i = normalize_using_yearly_i.astype(int)
-
-		years = (pd.Series(pd.to_datetime(result.coords['time'].values).year)
-				 .value_counts().loc[lambda x: x>8700].index
-				 .intersection(normalize_using_yearly_i))
-		assert len(years), "Need at least a full year of data (more is better)"
-		years_overlap = slice(str(min(years)), str(max(years)))
-
-		dim = result.dims[1 - result.get_axis_num('time')]
-		result *= ((xr.DataArray(normalize_using_yearly.loc[years_overlap].sum(), dims=[dim]) /
-				   result.sel(time=years_overlap).sum('time'))
-				   .reindex(countries=result.coords['countries']))
-
-	return result
-
-def hydro(cutout, plants, hydrobasins, flowspeed=1, weight_with_height=False, show_progress=True, **kwargs):
-	"""
-	Compute inflow time-series for `plants` by aggregating over catchment basins from `hydrobasins`
-
-	Parameters
-	----------
-	plants : pd.DataFrame
-		Run-of-river plants or dams with lon, lat columns.
-	hydrobasins : str|gpd.GeoDataFrame
-		Filename or GeoDataFrame of one level of the HydroBASINS dataset.
-	flowspeed : float
-		Average speed of water flows to estimate the water travel time from
-		basin to plant (default: 1 m/s).
-	weight_with_height : bool
-		Whether surface runoff should be weighted by potential height (probably
-		better for coarser resolution).
-	show_progress : bool
-		Whether to display progressbars.
-
-	References
-	----------
-	[1] Liu, Hailiang, et al. "A validated high-resolution hydro power
-	time-series model for energy systems analysis." arXiv preprint
-	arXiv:1901.08476 (2019).
-	[2] Lehner, B., Grill G. (2013): Global river hydrography and network
-	routing: baseline data and new approaches to study the world’s large river
-	systems. Hydrological Processes, 27(15): 2171–2186. Data is available at
-	www.hydrosheds.org.
-	"""
-	basins = hydrom.determine_basins(plants, hydrobasins, show_progress=show_progress)
-
-	matrix = cutout.indicatormatrix(basins.shapes)
-	matrix_normalized = matrix / matrix.sum(axis=1) # compute the average surface runoff in each basin
-	runoff = cutout.runoff(matrix=matrix_normalized, index=basins.shapes.index,
-						   weight_with_height=weight_with_height,
-						   show_progress="Convert and aggregate runoff per basin" if show_progress else False,
-						   **kwargs)
-	# The hydrological parameters are in units of "m of water per day" and so
-	# they should be multiplied by 1000 and the basin area to convert to m3 d-1 = m3 h-1 / 24
-	runoff *= (1000. / 24.) * xr.DataArray(basins.shapes.to_crs(dict(proj="aea")).area)
-
-	return hydrom.shift_and_aggregate_runoff_for_plants(basins, runoff, flowspeed, show_progress)
 
 
 ## Air pollution
