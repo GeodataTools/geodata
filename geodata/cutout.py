@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 from . import config, datasets
 
-from .convert import (convert_cutout, heat_demand, hydro, temperature,
+from .convert import (convert_cutout, heat_demand, temperature,
 					  wind, pv, runoff, solar_thermal, soil_temperature)
 from .preparation import (cutout_do_task, cutout_prepare,
 						  cutout_produce_specific_dataseries,
@@ -377,9 +377,7 @@ class Cutout(object):
 
 	pv = pv
 
-	runoff = runoff
 
-	hydro = hydro
 
 def _find_intercept(list1, list2, start, threshold = 0):
 	'''
