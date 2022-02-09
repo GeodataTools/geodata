@@ -319,7 +319,7 @@ Show the `slope` layer in mask `china`. The `show` method will always try to sho
 ```python
 show(china.layers['elevation'], title = 'Elevator of China in meters')
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_30_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_30_0.png)
 
 **Some useful methods to examine the layers**
 
@@ -346,7 +346,7 @@ Method `open_tif` can open a layer without adding it to the layer, this allows u
 modis_opener = geodata.mask.open_tif(modis_path, show=True)
 modis_opener.close()
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_36_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_36_0.png)
 
 We can use `remove_layer` method to remove a layer to mask `china`. This method will properly close the raster file, because the raster file would remain open after being added to the mask.
 
@@ -361,7 +361,7 @@ The method will automatically trim the all-zero columns/rows. By default, the pa
 china.add_layer(modis_path, 'modis', trim = False)
 show(china.layers['modis'], title = 'China Modis CRS converted (No trimming)')
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_40_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_40_1.png)
 
 We can also crop a raster/layer with user-defined dimensions: method `crop_layer` can take either starting indices of top/left, ending indices of right/bottom, or coordinates values in lat/long to trim the raster.
 
@@ -373,7 +373,7 @@ The method `crop_raster` (`geodata.mask.crop_raster`) is similar to `crop_layer`
 china.crop_layer('modis', bounds = (73, 17, 135, 54))
 show(china.layers['modis'], title = 'China Modis Layer Cropped')
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_42_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_42_0.png)
 
 This performs the same function by passing the layer to `crop_raster`:
 
@@ -413,7 +413,7 @@ china.layers['modis_filtered'] = geodata.mask.filter_raster(
 china.remove_layer('modis')
 show(china.layers['modis_filtered'])
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_50_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_50_0.png)
 
 #### b). Filter elevation layer
 
@@ -429,7 +429,7 @@ china.filter_layer('elevation',
 china.remove_layer('elevation')
 show(china.layers['elevation_filtered'])
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_53_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_53_0.png)
 
 #### c). Filter slope layer
 
@@ -443,7 +443,7 @@ First, add the slope raster to the china mask.
 china.add_layer(slope_path, layer_name = 'slope')
 show(china.layers['slope'])
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_56_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_56_1.png)
 
 Filter the raster, delete the old slope layer.
 
@@ -457,7 +457,7 @@ china.filter_layer('slope',
 china.remove_layer('slope')
 show(china.layers['slope_filtered'])
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_59_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_59_0.png)
 
 ### 3.3 Additional show options
 
@@ -466,7 +466,7 @@ We can plot the provinces on a selected layer by taking `shape` input in the `sh
 ```python
 show(china.layers['modis_filtered'], shape = china_shapes['geometry'])
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_62_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_62_0.png)
 
 ## 4. Opening a shapefile and adding shape features as a layer
 
@@ -493,7 +493,7 @@ show(china.layers['protected'],
      title = 'WDPA Protected area shape features as a new layer',
      grid = True)
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_67_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_67_1.png)
 
 We can also use the parameter `buffer` in `add_shape_layer` method to create an approximate representation of all locations within a given (perpindicular) distance of the shape object. The units for the buffer are given in kilometers.
 
@@ -513,7 +513,7 @@ show(china.layers['protected_with_buffer'],
 
 china.remove_layer('protected_with_buffer')
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_69_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_69_1.png)
 
 ## 5. Merging and flattening layers
 
@@ -540,7 +540,7 @@ By default, the `merge_layer` method will use a binary 'and' method: for each gr
 # merge and plot only, do not save
 china.merge_layer(attribute_save = False, layers = ['slope_filtered', 'modis_filtered'])
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_76_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_76_0.png)
 
 <open DatasetReader name='/vsimem/47a585bd-eec9-4672-8ee7-2e20d120ccda/47a585bd-eec9-4672-8ee7-2e20d120ccda.tif' mode='r'>
   
@@ -581,7 +581,7 @@ For the purpose of this demonstration, we will select the AND method for the fin
 ```python
 china.merge_layer(trim = True)
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_83_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_83_0.png)
 
 
 ### 5.2 sum method
@@ -596,7 +596,7 @@ china.merge_layer(method = 'sum',
                   trim = True)
 ```
 
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_86_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_86_1.png)
   
 
 <open DatasetReader name='/vsimem/1bab6b72-616b-4f7a-995a-9edb7c795457/1bab6b72-616b-4f7a-995a-9edb7c795457.tif' mode='r'>
@@ -615,7 +615,7 @@ customized_merged_layer = china.merge_layer(method = 'sum', weights = {
         'protected': 0.45
     }, attribute_save = False, trim = True)
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_88_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_88_0.png)
 
 If the continuous value created by `merged_mask` represents a suitability metric, we could set a minimum value of 0.8 to be considered "suitable" (or 1). We then apply the `filter_raster` method on the merged layer.
 
@@ -623,7 +623,7 @@ If the continuous value created by `merged_mask` represents a suitability metric
 customized_merged_layer = geodata.mask.filter_raster(customized_merged_layer, min_bound = 0.8, binarize = True)
 show(customized_merged_layer)
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_90_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_90_0.png)
 
 ## 6. Eliminate small contiguous areas
 
@@ -641,7 +641,7 @@ For example, if we focus on Guangdong province in Southern China from the merged
 plt.imshow(china.merged_mask.read(1)[4800:5300, 5700:6600], interpolation = 'none')
 plt.show()
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_94_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_94_0.png)
 
 Call `filter_area` to remove all contiguous suitable region shapes smaller than 100 km$^2$:
 
@@ -655,7 +655,7 @@ There shapes are removed in the new merged_mask.
 plt.imshow(china.merged_mask.read(1)[4800:5300, 5700:6600], interpolation = 'none')
 plt.show()
 ```
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_98_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_98_0.png)
 
 ## 7. Extracting shapes from mask
 
@@ -831,7 +831,7 @@ shape_xr_lst['Zhejiang'].plot()
 
 
 <matplotlib.collections.QuadMesh at 0x26f11e347c0>
-![png](https://github.com/east-winds/geodata/blob/mask/images/mask_creation_workflow/output_112_2.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_112_2.png)
 
 Optional: closing all the files when saving the mask. This can avoid possible write permission error.
 
@@ -856,6 +856,5 @@ Merged_mask merged/flattened.
   
 3 shape_mask: ['Jiangsu', 'Shanghai', 'Zhejiang']. 
   
-Mask has been saved. 
+Mask has been saved.
   
-
