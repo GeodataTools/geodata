@@ -5,12 +5,8 @@ This guide covers how to install and configure the **geodata** package for local
 Make sure that you have the following **required** software set up:
 
 * [Python 3](https://www.python.org/downloads/)
-* [Pip](https://pip.pypa.io/en/stable/installation/) Python package management system. However, we also recommend [Miniconda](https://docs.conda.io/en/latest/miniconda.html#installing) for the [Conda](https://docs.conda.io/projects/conda/en/latest/) environment managemenet system with details below.
+* [Conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda) or [Pip](https://pip.pypa.io/en/stable/installation/) Python package management system.
 
-This guide also **recommends** you to have the following software:
-
-* [Git](https://git-scm.com/downloads)
-* A development environment for writing and running Python scripts or notebooks. A couple good options are: [Visual Studio Code](https://code.visualstudio.com/) with [Jupyter Notebook integration](https://code.visualstudio.com/docs/python/jupyter-support), or [JupyterLab](https://jupyterlab.readthedocs.io/en/stable/).
 
 Table of Contents:
 - [Downloading and Configuring Geodata](#downloading-and-configuring-geodata)
