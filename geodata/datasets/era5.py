@@ -65,8 +65,7 @@ def api_hourly_era5(
 	toDownload,
 	bounds,
 	download_vars,
-	product,
-	product_type
+	product
 	):
 	if not has_cdsapi:
 		raise RuntimeError(

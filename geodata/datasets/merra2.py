@@ -25,11 +25,9 @@ import glob
 import pandas as pd
 import numpy as np
 import xarray as xr
-import shutil
 import requests
 from requests.exceptions import HTTPError
 from six.moves import range
-from contextlib import contextmanager
 from tempfile import mkstemp
 from calendar import monthrange
 
