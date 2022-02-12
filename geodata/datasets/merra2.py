@@ -27,7 +27,7 @@ import numpy as np
 import xarray as xr
 import requests
 from requests.exceptions import HTTPError
-from six.moves import range
+from six.moves import range #type: ignore 
 from tempfile import mkstemp
 from calendar import monthrange
 
