@@ -24,23 +24,14 @@ from __future__ import absolute_import
 
 import xarray as xr
 import numpy as np
-import os, sys, glob, requests, shutil
-from requests.exceptions import HTTPError
+import os, sys, shutil
 from tempfile import mkstemp
-from six import string_types, itervalues, iteritems
 from calendar import monthrange
 
 import logging
 logger = logging.getLogger(__name__)
 
 from . import config, datasets
-
-try:
-	import cdsapi
-	has_cdsapi = True
-except ImportError:
-	has_cdsapi = False
-
 
 class Dataset(object):
 	def __init__(self, **datasetparams):
@@ -389,5 +380,3 @@ class Dataset(object):
 						self.datadir,
 						"Prepared" if self.prepared else "Unprepared"))
 
-	def indicatormatrix(self, shapes, shapes_proj='latlong'):
-		return compute_indicatormatrix(self.grid_cells(), shapes, self.projection, shapes_proj)
