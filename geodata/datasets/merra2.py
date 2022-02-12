@@ -117,6 +117,7 @@ def api_merra2(
 			if multi:
 				fd, target = mkstemp(suffix='.nc4')
 			else:
+				fd = 0
 				target = f[1]
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 			logger.info("Preparing API calls for %s", f[1])
