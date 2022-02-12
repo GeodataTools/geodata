@@ -22,7 +22,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import os
 import glob
-import pandas as pd
 import numpy as np
 import xarray as xr
 import requests
@@ -194,11 +193,6 @@ def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
 		ds = ds.coords.to_dataset()
 		ds = convert_and_subset_lons_lats_merra2(ds, xs, ys)
 		meta = ds.load()
-
-	# Any time adjustments?
-			# t = pd.Timestamp(year=year, month=month, day=1)
-			# ds['time'] = pd.date_range(t, t + pd.DateOffset(months=1),
-			# 						   freq='1h', closed='left')
 
 	return meta
 
