@@ -19,7 +19,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 def SolarPosition(ds):
