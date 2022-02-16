@@ -45,11 +45,29 @@ Importing geodata is necessary to run **geodata**.
 ```
 DS = geodata.Dataset(module="merra2",
 					weather_data_config="surface_flux_monthly",
+                    xs=slice(30, 41.5),
+                    ys=slice(33.5, 35),
 					years=slice(2012, 2012),
 					months=slice(1,3))
 ```
 
 `geodata.Dataset()` creates a dataset object via which you can download data files.  To create objects for MERRA2 hourly, single-level surface flux diagnostics, specify `module="merra2"`.  You must also have configured `merra2_dir` in `config.py` to point to a directory on your local machine  (to set up `config.py`, [see here](https://github.com/east-winds/geodata/blob/master/doc/general/packagesetup.md)).
+
+`xs` and `ys` in combination with the `slice()` function allow us to specify a geographic range based on longitude and latitude.  The above example subsets a portion of Europe.  
+
+Alternatively, you can specify the `bounds` parameter in place of `xs` and `ys`.  `bounds` should be defined as a list with North, West, South, and East coordinates like so.
+
+
+```
+cutout = geodata.Cutout(name="era5-europe-test-2011-01",
+                       module="era5",
+                       weather_data_config="era5_monthly",
+                       bounds=[30, 33.5, 41.5, 35],
+                       years=slice(2011, 2011),
+                       months=slice(1,1))
+```
+
+If you do not specify either `xs` and `ys` or `bounds`, the dataset will default to a global range.
 
 The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for January to March 2012.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 
