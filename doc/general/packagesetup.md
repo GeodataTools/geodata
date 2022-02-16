@@ -82,6 +82,16 @@ python3 setup.py install
 
 **Note II.**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
 
+**Note III.**: If running `python3 setup.py install` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Conda (either Anaconda or miniconda depending on what you went with during setup).  Then run the following commands:
+
+```
+conda update --all
+```
+
+```
+conda install rasterio
+```
+
 ### MAC OS Installation with Pip
 
 In the MAC OS terminal, navigate to the package's root directory, and run the following:
