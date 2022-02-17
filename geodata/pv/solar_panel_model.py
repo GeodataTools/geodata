@@ -23,8 +23,6 @@ from __future__ import absolute_import
 from operator import itemgetter
 
 import numpy as np
-import pandas as pd
-import xarray as xr
 
 # Huld model was copied from gsee -- global solar energy estimator
 # by Stefan Pfenninger

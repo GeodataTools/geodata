@@ -26,7 +26,7 @@ from __future__ import absolute_import
 import xarray as xr
 import numpy as np
 import os, sys
-from six import string_types, itervalues, iteritems
+from six import iteritems
 import pyproj
 import shapely
 from functools import partial
@@ -37,11 +37,10 @@ logger = logging.getLogger(__name__)
 from . import config, datasets
 
 from .convert import (convert_cutout, heat_demand, temperature,
-					  wind, pv, runoff, solar_thermal, soil_temperature)
+					  wind, pv, solar_thermal, soil_temperature)
 from .preparation import (cutout_do_task, cutout_prepare,
 						  cutout_produce_specific_dataseries,
 						  cutout_get_meta, cutout_get_meta_view)
-from .gis import compute_indicatormatrix
 from .mask import load_mask
 
 class Cutout(object):
@@ -231,9 +230,6 @@ class Cutout(object):
 						yearmonths[-1][0], yearmonths[-1][1],
 						"" if self.prepared else "UN"))
 
-	def indicatormatrix(self, shapes, shapes_proj='latlong'):
-		return compute_indicatormatrix(self.grid_cells(), shapes, self.projection, shapes_proj)
-
 	## Masking
 
 	def add_mask(self, name, merged_mask = True, shape_mask = True):
@@ -402,7 +398,7 @@ def _find_intercept(list1, list2, start, threshold = 0):
 	if min_res == init:
 		return 0
 	else:
-		return i
+		return i #type: ignore
 
 def coarsen(ori, tar, threshold = 0, func = 'mean'):
 	'''

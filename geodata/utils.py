@@ -21,10 +21,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 import progressbar as pgb
-import glob
-import xarray as xr
-import itertools
-import numpy as np
 
 def make_optional_progressbar(show, prefix, max_value):
     if show:
