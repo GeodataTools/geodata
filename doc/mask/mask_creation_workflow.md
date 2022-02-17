@@ -317,7 +317,7 @@ Each mask object has several attributes:
 Show the `slope` layer in mask `china`. The `show` method will always try to show the proper latitude and longitude, unless we call it `show(layer, lat_lon = False)`.
 
 ```python
-show(china.layers['elevation'], title = 'Elevator of China in meters')
+show(china.layers['elevation'], title = 'Elevation of China in meters')
 ```
 ![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_30_0.png)
 
