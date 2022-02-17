@@ -139,7 +139,7 @@ Convert downward-shortwave, upward-shortwave radiation flux and
 ```
 ds_pv = geodata.convert.pv(
     cutout, 
-    panel="KANENA", 
+    panel="KANEKA", 
     orientation = "latitude_optimal"
     )
 

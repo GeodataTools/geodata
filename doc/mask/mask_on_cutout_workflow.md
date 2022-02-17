@@ -107,7 +107,7 @@ cutout.add_grid_area()
 The code block below will use the `geodata.convert.pv` method to generate `ds_cutout`, an xarray Dataset that contains the pv variable for the cutout. We will also reset the variables names such as `x` and `y` to `lon` and `lat`.
 
 ```python
-ds_solar = geodata.convert.pv(cutout, panel = "KANENA", orientation = "latitude_optimal")
+ds_solar = geodata.convert.pv(cutout, panel = "KANEKA", orientation = "latitude_optimal")
 ds_solar = ds_solar.reset_coords(['lon', 'lat'], drop = True)
 ds_solar = ds_solar.rename({'x': 'lon', 'y': 'lat'})
 len(ds_solar.time)

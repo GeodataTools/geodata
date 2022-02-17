@@ -98,7 +98,7 @@ geodata.convert.pv(
 ```
 ds_pv = geodata.convert.pv(
     cutout,
-    panel="KANENA",
+    panel="KANEKA",
     orientation = "latitude_optimal"
     )
 
