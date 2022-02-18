@@ -5,7 +5,7 @@ GEODATA
 
 Geodata streamlines the collection and use of geospatial datasets through the creation of shared scripts for “analysis-ready” physical variables. Its purpose is to make it easier for researchers to identify, download, and work with new sources of geospatial data. Additionally, with a minimal amount of data consistency checks and metadata information, when one researcher goes through this exercise, everyone benefits.
 
-**Geodata** builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). Atlite was developed by Gorm Andresen, Jonas Hörsch, Tom Brown, Markus Schlott, and David Schlachtberger.  To learn more about atlite and its usage, see the [atlite readme](https://github.com/PyPSA/atlite/blob/master/README.rst) or its [documentation](https://atlite.readthedocs.io/en/latest/introduction.html). Geodata retains the power systems data functionality of atlite.
+Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). Atlite was developed by Gorm Andresen, Jonas Hörsch, Tom Brown, Markus Schlott, and David Schlachtberger.  To learn more about atlite and its usage, see the [atlite readme](https://github.com/PyPSA/atlite/blob/master/README.rst) or its [documentation](https://atlite.readthedocs.io/en/latest/introduction.html). Geodata retains the power systems data functionality of atlite.
 
 ![png](images/geodata_workflow_chart.png)
 
@@ -19,7 +19,7 @@ Geodata streamlines the collection and use of geospatial datasets through the cr
 
 ## Documentation
 
-Read the [introduction to geodata](doc/general/Introduction.md) to get started. You can also find a [table of content here](doc/general/tableofcontents.md). 
+Read the [Introduction to Geodata] documentation(doc/general/Introduction.md) to get started. You can also find a [Table of Content here](doc/general/tableofcontents.md). 
 
 
 
