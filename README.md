@@ -23,7 +23,7 @@ Read the [Introduction to Geodata](doc/general/Introduction.md) documentation to
 
 Read the [Table of Contents](doc/general/tableofcontents.md) to navigate through the documentation. 
 
-To see example notebooks, see [Example Notebooks](example_notebooks).
+You may also jump directly to [Example Notebooks](example_notebooks).
 
 
 
