@@ -29,7 +29,7 @@ To see example notebooks that uses Geodata, see [Example Notebooks](example_note
 
 ## Contributing
 
-We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://mdavidson.org/about/] of geodata.
+We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://mdavidson.org/about/) of geodata.
 
 
 
