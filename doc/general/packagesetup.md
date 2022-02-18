@@ -64,32 +64,32 @@ This guide includes 3 sections: the Conda environment (for Linux, Window, and Ma
 
 Conda is a powerful package manager and environment manager for Windows, macOS or Linux, and it provides easy installation for all operating systems. It is especially convenient if you are building Geodata on the cloud with potential installation permission issues.
 
-If you already have Conda installed on your machine, jump straight to the `conda activate` step. Otherwise, you have 2 [options](https://conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda): download Anaconda or miniconda. Installing Anaconda requires >3GB disk space and takes minutes to download, so we will choose **miniconda** instead because is a small, bootstrap version of Anaconda that includes only conda, Python, the packages they depend on, and a small number of other useful packages. You can get miniconda following use this [link](https://docs.conda.io/en/latest/miniconda.html#installing).
+**Note**: Creating the environment with conda can be slow. For faster environment creation try [using mamba](https://mamba.readthedocs.io/en/latest/installation.html) instead. All `conda` commands can be modified to use `mamba`. For example, `conda env create -f environment.yaml` would be `mamba env create -f environment.yaml`.
 
-If you have conda 4.6 or later versions, in the terminal/shell, run the following command below to activate the conda [environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments).
+If you already have Conda installed on your machine, jump straight to creating the environment. Otherwise install [miniconda](https://docs.conda.io/en/latest/miniconda.html#installing) or skip directly to installing [mambaforge](https://mamba.readthedocs.io/en/latest/installation.html).
 
-```
-conda activate
-```
-
-To use **geodata** in Python scripts by calling `import geodata`, you'll need to build the package.  To do so, in the terminal/shell window, navigate to the package's root directory (ie, "geodata"), and run the following:
+To create the `geodata` conda environment, navigate to the "geodata" repository folder in your terminal/shell and type the following command:
 
 ```
-python3 setup.py install
+conda env create -f environment.yaml
 ```
 
-**Note I.**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
-
-**Note II.**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
-
-**Note III.**: If running `python3 setup.py install` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Conda (either Anaconda or miniconda depending on what you went with during setup).  Then run the following commands:
+Or, if using mamba:
 
 ```
-conda update --all
+mamba env create -f environment.yaml
 ```
 
+Once you have created the `geodata` environment, activate it.
+
 ```
-conda install rasterio
+conda activate geodata
+```
+
+To use **geodata** in Python scripts by calling `import geodata`, you'll need to build the package. With your `geodata` environment activated, run the following command in your terminal/shell.
+
+```
+pip install -e .
 ```
 
 ### MAC OS Installation with Pip
