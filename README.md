@@ -19,7 +19,11 @@ Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, wh
 
 ## Documentation
 
-Read the [Introduction to Geodata] documentation(doc/general/Introduction.md) to get started. You can also find a [Table of Content here](doc/general/tableofcontents.md). 
+Read the [Introduction to Geodata](doc/general/Introduction.md) documentation to get started. 
+
+You can also use this [Table of Content](doc/general/tableofcontents.md) to navigate through the documentations. 
+
+To see example notebooks that uses Geodata, see [Example Notebooks](example_notebooks).
 
 
 
