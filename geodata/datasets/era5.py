@@ -92,7 +92,7 @@ def api_hourly_era5(
 
 			#2. Full data file
 			full_request = {
-				'product_type':'reanalysis',
+				'product_type': product_type,
 				'format':'netcdf',
 				'year':query_year,
 				'month':query_month,

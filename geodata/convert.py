@@ -26,14 +26,11 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import datetime as dt
-import scipy as sp, scipy.sparse
 from six import string_types
 from operator import itemgetter
 
 import logging
 logger = logging.getLogger(__name__)
-
-from .aggregate import aggregate_sum, aggregate_matrix
 
 from .pv.solar_position import SolarPosition
 from .pv.irradiation import TiltedIrradiation

@@ -22,14 +22,11 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import os
 import glob
-import pandas as pd
 import numpy as np
 import xarray as xr
-import shutil
 import requests
 from requests.exceptions import HTTPError
-from six.moves import range
-from contextlib import contextmanager
+from six.moves import range #type: ignore 
 from tempfile import mkstemp
 from calendar import monthrange
 
@@ -119,6 +116,7 @@ def api_merra2(
 			if multi:
 				fd, target = mkstemp(suffix='.nc4')
 			else:
+				fd = 0
 				target = f[1]
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
 			logger.info("Preparing API calls for %s", f[1])
@@ -195,11 +193,6 @@ def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
 		ds = ds.coords.to_dataset()
 		ds = convert_and_subset_lons_lats_merra2(ds, xs, ys)
 		meta = ds.load()
-
-	# Any time adjustments?
-			# t = pd.Timestamp(year=year, month=month, day=1)
-			# ds['time'] = pd.date_range(t, t + pd.DateOffset(months=1),
-			# 						   freq='1h', closed='left')
 
 	return meta
 

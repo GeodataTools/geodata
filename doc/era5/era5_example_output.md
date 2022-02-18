@@ -27,7 +27,7 @@ To create a pv generation time-series, we can use the following code with our ER
 
 
 ```
-ds = geodata.convert.pv(cutout, panel="KANENA", orientation = "latitude_optimal")
+ds = geodata.convert.pv(cutout, panel="KANEKA", orientation = "latitude_optimal")
 ```
 
 Some information about the parameters:

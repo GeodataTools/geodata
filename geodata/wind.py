@@ -20,8 +20,6 @@ GEODATA
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
-
-import xarray as xr
 import numpy as np
 
 import logging

@@ -22,7 +22,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
-import os
 import yaml
 from six import string_types
 from operator import itemgetter
