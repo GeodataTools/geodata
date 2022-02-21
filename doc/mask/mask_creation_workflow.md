@@ -495,7 +495,7 @@ show(china.layers['protected'],
 ```
 ![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_67_1.png)
 
-We can also use the parameter `buffer` in `add_shape_layer` method to create an approximate representation of all locations within a given (perpindicular) distance of the shape object. The units for the buffer are given in kilometers.
+We can also use the parameter `buffer` in `add_shape_layer` method to create an approximate representation of all locations within a given (perpendicular) distance of the shape object. The units for the buffer are given in kilometers.
 
 Note that since the units of the original shape are in lat-lon coordinates, when we add the buffer, we will need to have a CRS that has meter as unit. The program will convert the shapes to that CRS, add the buffer around shapes, then convert it back to the lat-lon CRS system. By default, we used "EPSG:6933", an equal area projection CRS to add buffer in kilometer.
 
