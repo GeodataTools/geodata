@@ -320,6 +320,14 @@ class Cutout(object):
 		"""
 		axis = ("lat", "lon")
 
+		if "x" in dataset.dims and "y" in dataset.dims:
+			try:
+				dataset = dataset.rename({'x': 'lon', 'y': 'lat'})
+			except:
+				dataset = dataset.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
+
+		dataset = dataset.transpose("time", "lat", "lon")
+
 		if self.merged_mask is None and self.shape_mask is None:
 			raise ValueError(f"No mask found in cutout. Please add masks with self.add_mask()")
 
