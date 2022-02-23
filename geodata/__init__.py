@@ -25,6 +25,7 @@ from __future__ import absolute_import
 from .cutout import Cutout
 from .mask import Mask
 from .dataset import Dataset
+from .plot import *
 
 from ._version import __version__
 
