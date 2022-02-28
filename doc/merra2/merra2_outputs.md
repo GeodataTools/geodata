@@ -1,3 +1,14 @@
+# MERRA2 Ouputs Documentation
+
+This notebook includes these following sections:
+
+- [MERRA2 Configs and Outputs](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#merra2-configs-and-outputs)
+- [Generating Wind Outputs with MERRA2](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#generating-wind-outputs-with-merra2-data)
+- [Generating Solar Outputs with MERRA2](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#generating-solar-outputs-with-merra2-data)
+- [Generating Aerosol Outputs with MERRA2](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#generating-aerosol-outputs-with-merra2-data)
+- [An Example Output](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#example-output)
+
+
 # MERRA2 Configs and Outputs
 
 In this section, we provide a list of currently possible **geodata** configs and outputs for MERRA2 data from NASA's GES DISC.
