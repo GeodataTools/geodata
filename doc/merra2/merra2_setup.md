@@ -1,3 +1,5 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # MERRA2
 
 How to access MERRA2 data from NASA's [GES DISC](https://disc.gsfc.nasa.gov/).

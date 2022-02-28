@@ -1,3 +1,5 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # Downloading MERRA2 Data and creating MERRA2 Cutouts
 
 A short guide to use **geodata** to download MERRA2 data, and create cutouts - subsets of data based on specific time and geographic ranges - for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).

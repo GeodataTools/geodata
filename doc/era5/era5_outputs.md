@@ -1,3 +1,5 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # Generating Outputs with ERA5 Data
 
 **geodata** currently supports the following wind outputs using ERA5 data from the [Copernicus Data Store](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview).

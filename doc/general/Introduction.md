@@ -1,3 +1,5 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # Introduction to Geodata
 
 **Geodata** is a Python library of geospatial data collection and "pre-analysis" tools. Through the creation of shared scripts and documentation for analysis-ready physical variables, geodata streamlines the collection and use of geospatial datasets for natural science, engineering, and social science applications.

@@ -1,3 +1,5 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # Table of Contents
 
 Find documentation about how to use the **geodata** package here.

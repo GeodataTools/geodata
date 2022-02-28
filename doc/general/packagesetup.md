@@ -1,3 +1,5 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # Geodata Package Setup
 
 This guide covers how to install and configure the **geodata** package for local and cloud use.
