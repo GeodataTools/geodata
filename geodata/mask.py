@@ -23,7 +23,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging
 logger = logging.getLogger(__name__)
-import geopandas as gpd
 import shapely
 import pyproj
 
@@ -502,8 +501,11 @@ class Mask(object):
         dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
         
-        if type(shapes) == gpd.geodataframe.GeoDataFrame:
-            shapes = shapes['geometry'].to_dict()
+        if hasattr(shapes, '_geometry_column_name'):
+            shapes = shapes._geometry_column_name.to_dict()
+
+        elif hasattr(shapes, '_name') and shapes._name == "geometry":
+            shapes = shapes.to_dict()
 
         #convert CRS for shapes
         if src_crs != dst_crs:
@@ -1037,16 +1039,14 @@ def filter_area(self, min_area,
     
     res_shapes = [shapely.geometry.shape(i[0]) for i in res_shapes if i[1] == shape_value]
     
-    g_series = gpd.GeoSeries(res_shapes)
-    
     #filter the shapes by area
-    filtered_shape = g_series[g_series.area > min_area * (1000 * 1000)]
+    filtered_shape = [sh for sh in res_shapes if sh.area > min_area * (1000 * 1000)]
 
     #set up transform and shape for shape to raster
     shape_transform = raster.transform
     resolution = raster.shape
 
-    shp = shapely.geometry.multipolygon.MultiPolygon(filtered_shape.values)
+    shp = shapely.geometry.multipolygon.MultiPolygon(filtered_shape)
     
     shp = convert_shape_crs(shp, src_crs = area_calc_crs, dst_crs = 'EPSG:4326')
 
