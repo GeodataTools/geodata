@@ -134,7 +134,7 @@ python3 setup.py install
 
 **Note II.**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
 
-Similar to the MAC OS installation guide, it is likely that we would run into dependency installation error. We can figure out which dependency causes the error in the error message, and download that package seperately. For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires other dependencies.
+Similar to the MAC OS installation guide, it is likely that we would run into dependency installation error. We can figure out which dependency causes the error in the error message, and download that package seperately. For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** and **geopandas** library, which requires other dependencies.
 
 If one of the dependency, such as **GDAL** does not install automatically (we know this through the error message from the command above), we will have to install it seperately in the terminal. There are 2 options to solve this issue. Once we download the required dependency successfully, we can proceed by re-run the install command:
 
@@ -143,11 +143,11 @@ python3 setup.py install
 ```
 #### Option I. Pipwin
 
-This option is recommended. When we download libraries that is built on **GDAL**, we might run into this [issue](https://stackoverflow.com/q/54734667), where a GDAL API version must be specified.
+This option is recommended. When we download libraries that is built on **GDAL**, such as **geopandas**, we might run into this [issue](https://stackoverflow.com/q/54734667), where a GDAL API version must be specified.
 
 **Pipwin** is a complementary tool for **pip** on Windows. **pipwin** installs unofficial python package binaries for windows provided by Christoph Gohlke [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
 
-Run the following commands to download **pipwin** and acquire the dependencies: (This solution is adopted from [stackoverflow](https://stackoverflow.com/a/58943939))
+Run the following commands to download **pipwin** and acquire the **geopandas** dependencies: (This solution is adopted from [stackoverflow](https://stackoverflow.com/a/58943939))
 
 ```
 pip install pipwin
@@ -157,6 +157,7 @@ pipwin install fiona
 pipwin install pyproj 
 pipwin install six 
 pipwin install rtree 
+pipwin install geopandas
 ```
 
 You may need to also install the **wheel** package `pip install wheel` to facilitate building the wheels.
