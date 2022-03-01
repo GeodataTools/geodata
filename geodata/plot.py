@@ -18,9 +18,6 @@ import matplotlib.pyplot as plt
 plt.rcParams["animation.html"] = "jshtml"
 from .mask import show
 
-#packages that requires users to install externally
-import cartopy.crs as ccrs
-
 show = show
 
 def ds_reformat_index(ds):
@@ -28,23 +25,43 @@ def ds_reformat_index(ds):
     return ds.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'}).sortby(['lat', 'lon'])
 
 
-def time_series(ds, lat = None, lon = None, coord_dict = None, time_factor = 1, agg_method = 'mean', 
+def ds_reformat_index(ds):
+    """format the dataArray generated from the convert function"""
+    if 'lat' in ds.dims and 'lat' in ds.dims:
+        return ds.sortby(['lat', 'lon'])
+    return ds.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'}).sortby(['lat', 'lon'])
+
+
+def ds_ts_aggregate(ds, agg_method):
+    if agg_method == 'mean':
+        ds = ds.transpose('time', 'lat', 'lon').mean(axis = 1).mean(axis = 1)
+        return ds
+    elif agg_method == 'sum':
+        ds = ds.transpose('time', 'lat', 'lon').sum(axis = 1).sum(axis = 1)
+        return ds
+
+def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True, 
+                agg_slice_method = 'mean', coord_dict = None, 
+                time_factor = 1, agg_time_method = 'mean',
                 figsize = (10, 5), ds_name = None, loc_name = None, title = None, title_size = 12, 
                 grid = True, legend = True, return_fig = False, **kwargs):
     """
-    Take in the xarray.DataArray, latitude and longitudes, plot the time series for PM25 at the specified coordinates;
-    Lat and lon can both be a number, or list, but they can't both be list.
+    Take in the xarray.DataArray, slice of latitude or longitude,
+    plot the time series for PM25 at the specified coordinates;
+    When users give lat or lon slices, the values can be mean/sum aggregated;
     Users can also provide a dictionary of name-coordinate pairs instead of lat and lon input.
     By default, the method shows the time series aggregated (ds's time unit * time factor)  mean.
     
     ds (xarray.DataArray): the dataArray object
-    lat (int or list): a number of a list of latitude
-    lon (int or list): a number of a list of longitudes
+    lat_slice (tuple): the slice of latitude values
+    lon_slice (tuple): the slice of longitude values
+    agg_slice (bool): whether the program plot the aggregate values from the slices
+    agg_slice_method (str): mean aggregation or sum aggregation for aggregating the spatial slices
     coord_dict (dict): name, coordinate pair of different locations; 
             example: {'Beijing': (40, 116.25), 'Shanghai': (31, 121.25)}
     time_factor (float): the factor to aggregate the value of dataArray on
             example: for daily mean on hourly data, time_factor = 24
-    agg_method (str): mean aggregation or sum aggregation
+    agg_time_method (str): mean aggregation or sum aggregation for aggregate time points
     figsize (tuple): the size of the plot
     ds_name (str): name of the DataArray to be shown on title
     loc_name (str): location of the place to be shown on title
@@ -53,7 +70,7 @@ def time_series(ds, lat = None, lon = None, coord_dict = None, time_factor = 1, 
     grid (bool): add grid lines to the plot, True by default
     legend (bool): add legend to the plot if multiple locations are provided, True by default
     return_fig (bool): return the figure, True by default
-    **kwargs (dict): other argument for xarray.DataArray.plot()
+    **kwargs: other arguments for xarray.DataArray.plot()
     """
 
     ds = ds_reformat_index(ds)
@@ -61,49 +78,72 @@ def time_series(ds, lat = None, lon = None, coord_dict = None, time_factor = 1, 
 
     fig = plt.figure(figsize = figsize)
     ax = fig.add_subplot()
-
-    if agg_method == 'mean':
-        ds = ds.coarsen(time = time_factor, boundary="trim").mean() 
-    elif agg_method == 'sum':
-        ds = ds.coarsen(time = time_factor, boundary="trim").sum() 
-
-    if lon is None and lat is None and coord_dict is None:
-        if agg_method == 'mean':
-            ds = ds.transpose('time', 'lat', 'lon').mean(axis = 1).mean(axis = 1)
-        elif agg_method == 'sum':
-            ds = ds.transpose('time', 'lat', 'lon').sum(axis = 1).sum(axis = 1)
-
-        ds.plot(ax = ax, **kwargs)
-
-    else:
-        if coord_dict == None:
-            assert (lat != None and lon != None)
-            assert not (isinstance(lat, list) and isinstance(lon, list))
-        else:
-            assert (lat == None and lon == None)
-
-        if coord_dict:
-            if not loc_name: loc_name = ', '.join(coord_dict.keys())
-            for key, value in coord_dict.items():
-                ds.sel(lat = value[0], lon = value[1]).plot(ax = ax, label = key, **kwargs)
-            if not title: 
-                title = '{} time series at {}'.format(ds_name, loc_name, lat, lon)
-        else:
-            if not loc_name: 
-                loc_name = 'location'
-            ds.sel(lat = lat, lon = lon).plot.line(ax = ax, x="time", **kwargs)
-            if not title: 
-                title = '{} time series at {} - lat {}, lon {}'.format(ds_name, loc_name, lat, lon)
     
-    if legend and coord_dict: ax.legend()
+    create_title = f"{ds.name} time series - "
+
+    if agg_time_method == 'mean':
+        ds = ds.coarsen(time = time_factor, boundary="trim").mean() 
+    elif agg_time_method == 'sum':
+        ds = ds.coarsen(time = time_factor, boundary="trim").sum() 
+        
+    if lat_slice: 
+        assert lat_slice[1] > lat_slice[0], "Please give correct latitude slice"
+        ds = ds.where(ds.lat >= lat_slice[0], drop = True).where(ds.lat <= lat_slice[1], drop = True)
+        create_title += f"lat slice {lat_slice} "
+        
+    if lon_slice: 
+        assert lon_slice[1] > lon_slice[0], "Please give correct longitude slice"
+        ds = ds.where(ds.lon >= lon_slice[0], drop = True).where(ds.lon <= lon_slice[1], drop = True)
+        create_title += f"lon slice {lon_slice} "
+    
+    if coord_dict:
+        if not loc_name: loc_name = ', '.join(coord_dict.keys())
+        for key, value in coord_dict.items():
+            ds.sel(lat = value[0], lon = value[1]).plot(ax = ax, label = key, **kwargs)
+            create_title += f"{loc_name} "
+
+    if agg_slice == True or (lat_slice == None and lon_slice == None):
+        ds = ds_ts_aggregate(ds, agg_slice_method)
+        ds.plot(ax = ax, **kwargs)
+        create_title += f"spatially {agg_slice_method} aggregated "
+        
+    if agg_slice == False and (lat_slice != None or lon_slice != None):
+        if lat_slice and not lon_slice:
+            if agg_slice_method == 'mean':
+                ds = ds.mean(axis = 2)
+            elif agg_slice_method == 'sum':
+                ds = ds.sum(axis = 2)
+            create_title += f"with longitude {agg_slice_method} aggregated "
+            for la in ds.lat.values:
+                ds.sel(lat = la).plot(ax = ax, label = f"lat {la}", **kwargs)
+                
+        elif lon_slice and not lat_slice:
+            if agg_slice_method == 'mean':
+                ds = ds.mean(axis = 1)
+            elif agg_slice_method == 'sum':
+                ds = ds.sum(axis = 1)
+            create_title += f"with latitude {agg_slice_method} aggregated "
+            for lo in ds.lon.values:
+                ds.sel(lon = lo).plot(ax = ax, label = f"lon {lo}", **kwargs)
+
+        elif lat_slice and lon_slice:
+            for la in ds.lat.values:
+                for lo in ds.lon.values:
+                    ds.sel(lat = la, lon = lo).plot(ax = ax, label = f"lat {la}, lon {lo}", **kwargs)
+    
+    if legend and (agg_slice == False or coord_dict): ax.legend()
     if grid: ax.grid()
         
+    if time_factor > 1:
+        create_title += f"- time aggregated by factor of {time_factor}."
+    if not title: title = create_title
     ax.set_title(title, size=title_size)
     
     if return_fig: return fig
 
-def heatmap(ds, t, map_type = 'colormesh', color = None, figsize = (10, 6), title = None, title_size = 12, 
-                coastlines = True, grid = True, return_fig = False, **kwargs):
+def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5, shape_color = 'black', 
+            map_type = 'colormesh', cmap = 'bone_r', figsize = (10, 6), title = None, title_size = 12, 
+            grid = True, return_fig = False, **kwargs):
     """
     Take the xrray dataArray, and a time index or string, plot contour/colormesh map for its values; 
 
@@ -114,52 +154,73 @@ def heatmap(ds, t, map_type = 'colormesh', color = None, figsize = (10, 6), titl
     ds (xarray.DataArray): the dataArray object
     t (int or str): timepoint to show the map. It can be either a numeric time index, 
         or a time string from the xarray.DataArray time dimension
+    agg_method (str): if t not provided, perform mean aggregation or sum aggregation
+    shape (geopandas.geoseries): shapes to be plotted over the raster.
+    shape_width (float): the line width for plotting shapes. 0.5 by default.
+    shape_color (str): color of the shape line. Black by default.
     map_type (str): map type, either 'contour' or 'colormesh'
-    color (str): the color of the heat map, select one from matplotlib.pyplot.colormaps()
+    cmap (str): the color of the heat map, select one from matplotlib.pyplot.colormaps()
     figsize (tuple): the size of the plot
     title (str): the title of the result plot
     title_size (float): the size of the title of the result plolt
     coastlines (bool): add coast lines to the plot, True by default
     grid (bool): add grid lines to the plot, True by default
     return_fig (bool): return the figure, True by default
-    **kwargs (dict): other argument for xarray.DataArray.plot.pcolormesh() or 
+    **kwargs: other argument for xarray.DataArray.plot.pcolormesh() or 
         xarray.DataArray.plot.contourf()
     """
     
     assert map_type == 'contour' or map_type == 'colormesh', "map_type should either be 'contour' or 'colormesh'"
-    assert color is not None, ("Please see available colormaps through: matplotlib.pyplot.colormaps() or" + 
+    assert cmap in plt.colormaps(), ("Please see available colormaps through: matplotlib.pyplot.colormaps() or" + 
                                " https://matplotlib.org/stable/gallery/color/colormap_reference.html")
 
+    ds = ds_reformat_index(ds)
+    
     fig = plt.figure(figsize = figsize)
+    ax = fig.add_subplot()
+    
+    if t != None:
+        if isinstance(t, int):
+            ds = ds.isel(time = t)
+        else:
+            ds = ds.sel(time = t)
+    else:
+        if agg_method == 'mean':
+            ds = ds.mean(axis = 0)
+        elif agg_method == 'sum':
+            ds = ds.sum(axis = 0)
+        
     if map_type == 'contour':
-        ax = fig.add_subplot(projection=ccrs.Miller(11625))
-        ax.set_extent([ds.lon.min(), ds.lon.max(), ds.lat.min(), ds.lat.max()], ccrs.PlateCarree())
-        if isinstance(t, int):
-            ds.isel(time = t).plot.contourf(ax=ax, transform=ccrs.PlateCarree(), cmap = color, **kwargs)
-        else:
-            ds.sel(time = t).plot.contourf(ax=ax, transform=ccrs.PlateCarree(), cmap = color, **kwargs)
+        ds.plot.contourf('lon', 'lat', ax=ax, cmap = cmap, **kwargs)
     elif map_type == 'colormesh':
-        ax = fig.add_subplot(projection=ccrs.PlateCarree())
-        ax.set_extent([ds.lon.min(), ds.lon.max(), ds.lat.min(), ds.lat.max()], ccrs.PlateCarree())
-        if isinstance(t, int):
-            ds.isel(time = t).plot.pcolormesh('lon', 'lat', ax=ax, cmap = color, **kwargs)
-        else:
-            ds.sel(time = t).plot.pcolormesh('lon', 'lat', ax=ax, cmap = color, **kwargs)
+        ds.plot.pcolormesh('lon', 'lat', ax=ax, cmap = cmap, **kwargs)
+            
+    if shape is not None:
+        shape.boundary.plot(ax=ax, linewidth = shape_width, color = shape_color,)
 
-    if coastlines:
-        ax.coastlines() 
+    #ax.set_ylim(ds.lat.min(), ds.lat.max())
+    ax.set_xlim(ds.lon.min(), ds.lon.max())
+    ax.set_ylim(ds.lat.min(), ds.lat.max())
+        
     if not title:
-        title = "{} Amount at time: {}".format(ds.name, t)
+        if t == None:
+            title = f"{ds.name} aggregated {agg_method}"
+        else:
+            title = f"{ds.name} Amount at time: {t}"
+            
     ax.set_title(title, size = title_size)
+    
     if grid: 
-        ax.gridlines(draw_labels=True)
+        ax.grid()
     
     if return_fig:
         return fig
 
-def heatmap_animation(ds, time_factor = 1, agg_method ='mean', color = None, v_max = None, ds_name = None, 
+def heatmap_animation(ds, time_factor = 1, agg_method ='mean', 
+                        shape = None,  shape_width = 0.5, shape_color = 'black', 
+                        cmap = 'bone_r', v_max = None, ds_name = None, 
                         figsize = (10, 5), title = None, title_size = 12, 
-                        coastlines = True, grid = True, **kwargs):
+                        grid = True, **kwargs):
     """
     Created animated version of colormesh() so users can see the value change over time
     at default, each frame is the average or sum of value per time_unit * time_factor.
@@ -168,7 +229,10 @@ def heatmap_animation(ds, time_factor = 1, agg_method ='mean', color = None, v_m
     time_factor (float): the factor to aggregate the value of dataArray on
             example: for daily mean on hourly data, time_factor = 24
     agg_method (str): mean aggregation or sum aggregation
-    color (str): the color of the heat map, select one from matplotlib.pyplot.colormaps()
+    shape (geopandas.geoseries): shapes to be plotted over the raster.
+    shape_width (float): the line width for plotting shapes. 0.5 by default.
+    shape_color (str): color of the shape line. Black by default.
+    cmap (str): the color of the heat map, select one from matplotlib.pyplot.colormaps()
     v_max (float): the maximum value in the heatmap
     ds_name (str): name of the DataArray to be shown on title
     figsize (tuple): the size of the plot
@@ -180,7 +244,7 @@ def heatmap_animation(ds, time_factor = 1, agg_method ='mean', color = None, v_m
       
     """
     assert 'time' in ds.dims, "The dataArray must contain the time dimension"
-    assert color is not None, ("Please see available colormaps through: matplotlib.pyplot.colormaps() or" + 
+    assert cmap in plt.colormaps(), ("Please see available colormaps through: matplotlib.pyplot.colormaps() or" + 
                                " https://matplotlib.org/stable/gallery/color/colormap_reference.html")
     
     ds = ds_reformat_index(ds)
@@ -196,16 +260,15 @@ def heatmap_animation(ds, time_factor = 1, agg_method ='mean', color = None, v_m
     if v_max == None: v_max = ds.max()
     
     fig = plt.figure(figsize= figsize)
-    ax = plt.axes(projection=ccrs.PlateCarree())
+    ax = fig.add_subplot()
+    
+    if shape is not None:
+        shape.boundary.plot(ax=ax, linewidth = shape_width, color = shape_color)
     
     #initial frame
-    image = ds.isel(time = 0).plot.imshow(ax=ax, vmin = 0, vmax = v_max, 
-                                          transform=ccrs.PlateCarree(), cmap = color,
-                                          **kwargs)
-    if coastlines:
-        ax.coastlines()
+    image = ds.isel(time = 0).plot.imshow(ax=ax, vmin = 0, vmax = v_max, cmap = cmap, **kwargs)
     if grid:
-        ax.gridlines(draw_labels=True)
+        ax.grid()
     
     def update(t):
         """function to update each frame"""
@@ -219,6 +282,7 @@ def heatmap_animation(ds, time_factor = 1, agg_method ='mean', color = None, v_m
     animation = anim.FuncAnimation(fig, update, frames=ds.time.values, blit=False)
 
     return animation
+
 
 def save_animation(file_name):
     '''
