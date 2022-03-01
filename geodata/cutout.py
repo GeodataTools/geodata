@@ -29,6 +29,7 @@ import os, sys
 from six import iteritems
 import pyproj
 import shapely
+import shapely.geometry
 from functools import partial
 
 import logging
