@@ -102,7 +102,7 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
             ds.sel(lat = value[0], lon = value[1]).plot(ax = ax, label = key, **kwargs)
             create_title += f"{loc_name} "
 
-    if agg_slice == True or (lat_slice == None and lon_slice == None):
+    if not coord_dict and (agg_slice == True or (lat_slice == None and lon_slice == None)):
         ds = ds_ts_aggregate(ds, agg_slice_method)
         ds.plot(ax = ax, **kwargs)
         create_title += f"spatially {agg_slice_method} aggregated "
