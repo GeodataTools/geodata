@@ -13,8 +13,24 @@ Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, wh
 
 ## Installation
 
-**Geodata** has been tested to run with python3 (>= 3.6.9). It requires a number of libraries to work with netCDF files including `xarray`, `netcdf4` and `dask`. Read the [package setup instructions](doc/general/packagesetup.md) to configure and install the package.
-
+**Geodata** has been tested to run with python3 (>= 3.6.9). Read the [package setup instructions](doc/general/packagesetup.md) to configure and install the package.
+Installation will also install the following dependencies:
+* `numpy`
+* `scipy`
+* `pandas`
+* `bottleneck`
+* `numexpr`
+* `xarray`
+* `netcdf4`
+* `dask`
+* `boto3`
+* `toolz`
+* `pyproj`
+* `requests`
+* `matplotlib`
+* `rasterio`
+* `shapely`
+* `progressbar2`
 
 
 ## Documentation
