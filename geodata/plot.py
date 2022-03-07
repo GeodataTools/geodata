@@ -15,15 +15,12 @@
 
 import matplotlib.animation as anim
 import matplotlib.pyplot as plt
+import logging
+logger = logging.getLogger(__name__)
 plt.rcParams["animation.html"] = "jshtml"
 from .mask import show
 
 show = show
-
-def ds_reformat_index(ds):
-    """format the dataArray generated from the convert function"""
-    return ds.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'}).sortby(['lat', 'lon'])
-
 
 def ds_reformat_index(ds):
     """format the dataArray generated from the convert function"""
@@ -86,6 +83,9 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
     elif agg_time_method == 'sum':
         ds = ds.coarsen(time = time_factor, boundary="trim").sum() 
         
+    if agg_slice == False and (lat_slice is None and lon_slice is None):
+        assert agg_slice == False, "agg_slice cannot be set to False without lat_slice or lon_slice."
+    
     if lat_slice: 
         assert lat_slice[1] > lat_slice[0], "Please give correct latitude slice"
         ds = ds.where(ds.lat >= lat_slice[0], drop = True).where(ds.lat <= lat_slice[1], drop = True)
@@ -99,7 +99,27 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
     if coord_dict:
         if not loc_name: loc_name = ', '.join(coord_dict.keys())
         for key, value in coord_dict.items():
-            ds.sel(lat = value[0], lon = value[1]).plot(ax = ax, label = key, **kwargs)
+            all_lat = ds.lat.data
+            all_lon = ds.lon.data
+            la, lo = value[0], value[1]
+            log_new_coord = False
+            if la not in all_lat:
+                if la > all_lat.min() and la < all_lat.max():
+                    log_new_coord = True
+                    la = all_lat[all_lat < la][-1]
+                else:
+                    raise ValueError(f"Latitude for {key} out of bound.")
+
+            if lo not in all_lon:
+                if lo > all_lon.min() and lo < all_lon.max():
+                    log_new_coord = True
+                    lo = all_lon[all_lon < lo][-1]
+                else:
+                    raise ValueError(f"Longitude for {key} out of bound.")
+
+            if log_new_coord:
+                logger.info(f"Find grid cell containing coordinate for {key} at lat = {la}, lon = {lo}.")
+            ds.sel(lat = la, lon = lo).plot(ax = ax, label = key, **kwargs)
             create_title += f"{loc_name} "
 
     if not coord_dict and (agg_slice == True or (lat_slice == None and lon_slice == None)):
@@ -181,6 +201,7 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
     
     if t != None:
         if isinstance(t, int):
+            time_idx = ds.time.data[t]
             ds = ds.isel(time = t)
         else:
             ds = ds.sel(time = t)
@@ -196,17 +217,18 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
         ds.plot.pcolormesh('lon', 'lat', ax=ax, cmap = cmap, **kwargs)
             
     if shape is not None:
-        shape.boundary.plot(ax=ax, linewidth = shape_width, color = shape_color,)
+        shape.boundary.plot(ax=ax, linewidth = shape_width, color = shape_color)
 
-    #ax.set_ylim(ds.lat.min(), ds.lat.max())
     ax.set_xlim(ds.lon.min(), ds.lon.max())
     ax.set_ylim(ds.lat.min(), ds.lat.max())
         
     if not title:
         if t == None:
             title = f"{ds.name} aggregated {agg_method}"
-        else:
-            title = f"{ds.name} Amount at time: {t}"
+        elif isinstance(t, int):
+            title = f"{ds.name} Amount at time index t = {time_idx}"
+        elif isinstance(t, str):
+            title = f"{ds.name} Amount at {t}"
             
     ax.set_title(title, size = title_size)
     

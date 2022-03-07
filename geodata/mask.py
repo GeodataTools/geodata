@@ -1101,7 +1101,7 @@ def show(raster, shape = None, shape_width = 0.5, shape_color = 'black',
 
     if shape is not None:
         
-        shape.boundary.plot(ax=ax, linewidth = shape_width, colod = shape_color)
+        shape.boundary.plot(ax=ax, linewidth = shape_width, color = shape_color)
 
     if lat_lon:
         ax.imshow(raster.read(1), interpolation = 'none',
