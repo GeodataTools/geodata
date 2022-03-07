@@ -85,7 +85,7 @@ geodata.plot.time_series(ds_solar)
 ```
 
 
-![png](output_12_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_12_0.png)
 
 
 ### Spatial and temporal aggregation
@@ -104,7 +104,7 @@ geodata.plot.time_series(ds_pm25,
 ```
 
 
-![png](output_16_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_16_0.png)
 
 
 If we have `lat_slice` or `lon_slice` inputs, and want to plot the time series for every single grid cell without aggregating them, they can specify `agg_slice = False`. This will generate one line for each grid cell.
@@ -120,7 +120,7 @@ geodata.plot.time_series(ds_pm25, lat_slice = (35, 36), lon_slice = (110, 111),
 ```
 
 
-![png](output_18_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_18_0.png)
 
 
 ### Multiple coordinate points
@@ -142,7 +142,7 @@ geodata.plot.time_series(ds_pm25, coord_dict = coord_d, time_factor = 24 * 7)
     
 
 
-![png](output_21_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_21_1.png)
 
 
 ## Heatmap Visualization
@@ -157,7 +157,7 @@ geodata.plot.heatmap(ds_pm25)
 ```
 
 
-![png](output_25_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_25_0.png)
 
 
 ### Add shapefiles to the plot
@@ -177,7 +177,7 @@ geodata.plot.heatmap(ds_pm25, shape = shapes)
 ```
 
 
-![png](output_29_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_29_0.png)
 
 
 ### Selecting timepoint
@@ -190,7 +190,7 @@ geodata.plot.heatmap(ds_pm25, t = 0, shape = shapes)
 ```
 
 
-![png](output_32_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_32_0.png)
 
 
 We can also take in the exact time point from `ds_pm25` as a string. We can also change the map type from the default `colormesh` to `contour`, and customize the title text like the following:
@@ -204,7 +204,7 @@ geodata.plot.heatmap(ds_pm25, t = '2019-01-01T00:30:00',
 ```
 
 
-![png](output_34_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_34_0.png)
 
 
 Let's use the `heatmap` method on the solar PV output xarray `ds_solar`. Below we select the 7th time point for the `ds_solar` dataArray with the provincial shapes on the same plot.
@@ -219,7 +219,7 @@ geodata.plot.heatmap(ds_solar, t = 6, shape = shapes, shape_width = 0.25, shape_
 ```
 
 
-![png](output_36_0.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_36_0.png)
 
 
 ### Animation
@@ -234,6 +234,8 @@ geodata.plot.heatmap_animation(ds_solar, cmap = 'Wistia',
                                time_factor = 2, 
                                shape = shapes, shape_width = 0.25, shape_color = 'navy')
 ```
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/pv_animation.gif)
+
 
 The users can save the animation to a file, which requires the `HTML` method from the `IPython` package we imported earlier. It also requires the users to use the Jupyter Notebook in a browser, and have already generated the heatmap animation in the notebook, because `geodata.plot.save_animation` will extract the javascript content string from the animation in the Jupyter Notebook, and use HTML() method to enable the browser to download the file.
 
@@ -244,44 +246,6 @@ Save the animation above as a file named `solar_pv_2011_01_01_animation.html`.
 HTML(geodata.plot.save_animation("solar_pv_2011_01_01_animation.html"))
 ```
 
-
-
-
-
-<script type="text/Javascript">
-    function set_value(){
-        elements = document.getElementsByClassName('output_subarea output_html rendered_html output_result')
-        var var_values = ''
-        for (i = 0; i < elements.length; i++){
-            if (elements[i].getElementsByClassName('animation').length != 0){
-            var_values += elements[i].innerHTML;
-        }}
-
-        (function(console){
-        /* credit of the console.save function: stackoverflow.com/questions/11849562/*/
-        console.save = function(data, filename){
-            if(!data) {
-                console.error('Console.save: No data')
-                return;
-            }
-            if(!filename) filename = 'console.json'
-            if(typeof data === "object"){
-                data = JSON.stringify(data, undefined, 4)
-            }
-            var blob = new Blob([data], {type: 'text/json'}),
-                e    = document.createEvent('MouseEvents'),
-                a    = document.createElement('a')
-            a.download = filename
-            a.href = window.URL.createObjectURL(blob)
-            a.dataset.downloadurl =  ['text/json', a.download, a.href].join(':')
-            e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
-            a.dispatchEvent(e)
-         }
-        })(console)
-        console.save(var_values, 'solar_pv_2011_01_01_animation.html')
-    }
-    set_value()
-</script>
 
 
 
