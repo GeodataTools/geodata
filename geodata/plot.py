@@ -226,7 +226,7 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
         if t == None:
             title = f"{ds.name} aggregated {agg_method}"
         elif isinstance(t, int):
-            title = f"{ds.name} Amount at time index t = {time_idx}"
+            title = f"{ds.name} Amount at time index {t} - {time_idx}"
         elif isinstance(t, str):
             title = f"{ds.name} Amount at {t}"
             
