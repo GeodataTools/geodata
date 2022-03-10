@@ -1,2 +1,5 @@
 [MESSAGES CONTROL]
 disable=C0103
+
+[FORMAT]
+indent-string='\t'
