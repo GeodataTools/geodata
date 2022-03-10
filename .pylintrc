@@ -1,5 +1,6 @@
 [MESSAGES CONTROL]
 disable=C0103
+disable=C0116 #disable Missing-function-docstring warning
 
 [FORMAT]
 indent-string='\t'
