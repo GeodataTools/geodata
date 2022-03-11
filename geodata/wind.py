@@ -19,10 +19,9 @@ GEODATA
 
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
-
+import logging
 import numpy as np
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -72,7 +71,7 @@ def psi_linear(z, ds):
 	ds['psim'] = ds['a']*0  # create zeroes same length as dataset
 	ds['psim'].values[0 < ds['a']] = - beta * ds['a'].values[0 < ds['a']]
 	ds['psim'].values[ds['a']<=0] = 0
-	return(ds['psim'])
+	return ds['psim']
 
 def psi_linearexp(z, ds):
 	""" Linear-exponential piecewise stability correction [1] (repeated in [2])
@@ -80,7 +79,8 @@ def psi_linearexp(z, ds):
 			ds = dataset with variables: L
 
 		[1] Emeis, S. (2013). Wind Energy Meteorology. Retrieved from http://link.springer.com/10.1007/978-3-642-30523-8 (Note: error in eq 3.21)
-		[2] Rose, S., & Apt, J. (2016). Quantifying sources of uncertainty in reanalysis derived wind speed. Renewable Energy, 94, 157–165. https://doi.org/10.1016/j.renene.2016.03.028
+		[2] Rose, S., & Apt, J. (2016). Quantifying sources of uncertainty in reanalysis derived wind speed. Renewable Energy, 94, 157–165.
+			https://doi.org/10.1016/j.renene.2016.03.028
 	"""
 	aconst = 5
 	A = 1
@@ -94,7 +94,7 @@ def psi_linearexp(z, ds):
 										B * (ds['a'].values[0.5 < ds['a']] - C/D) * np.exp(-D * ds['a'].values[0.5 < ds['a']])
 										+ B*C/D )
 	ds['psim'].values[ds['a']<=0] = 0
-	return(ds['psim'])
+	return ds['psim']
 
 def psi_linearexpconst(z, ds, const=7):
 	""" Linear-exponential piecewise stability correction [1] (repeated in [2]) with constant plateau
@@ -103,7 +103,8 @@ def psi_linearexpconst(z, ds, const=7):
 			const = upper bound of z/L, after which = constant
 
 		[1] Emeis, S. (2013). Wind Energy Meteorology. Retrieved from http://link.springer.com/10.1007/978-3-642-30523-8 (Note: error in eq 3.21)
-		[2] Rose, S., & Apt, J. (2016). Quantifying sources of uncertainty in reanalysis derived wind speed. Renewable Energy, 94, 157–165. https://doi.org/10.1016/j.renene.2016.03.028
+		[2] Rose, S., & Apt, J. (2016). Quantifying sources of uncertainty in reanalysis derived wind speed. Renewable Energy, 94, 157–165.
+			https://doi.org/10.1016/j.renene.2016.03.028
 	"""
 	aconst = 5
 	A = 1
@@ -118,14 +119,15 @@ def psi_linearexpconst(z, ds, const=7):
 										+ B*C/D )
 	ds['psim'].values[ds['a']>const] = -A * (const + B * (const - C/D) * np.exp(-D * const) + B*C/D)
 	ds['psim'].values[ds['a']<=0] = 0
-	return(ds['psim'])
+	return ds['psim']
 
 
 def L_vph(ds):
 	""" Obuhkov length using virtual potential heat flux term [1] (described in detail in SI [2])
 
 		[1] Emeis, S. (2013). Wind Energy Meteorology. Retrieved from http://link.springer.com/10.1007/978-3-642-30523-8 (Note: error in eq 3.21)
-		[2] Rose, S., & Apt, J. (2016). Quantifying sources of uncertainty in reanalysis derived wind speed. Renewable Energy, 94, 157–165. https://doi.org/10.1016/j.renene.2016.03.028
+		[2] Rose, S., & Apt, J. (2016). Quantifying sources of uncertainty in reanalysis derived wind speed. Renewable Energy, 94, 157–165.
+			https://doi.org/10.1016/j.renene.2016.03.028
 	"""
 	vonk = 0.4  # Von Karman constant
 	grav = 9.81  # gravitational acceleration in kg m s-2
@@ -138,7 +140,7 @@ def L_vph(ds):
 	ds['p'] = ds['rhoa'] * Rd * ds['tlml']
 	ds['vphflux'] = ds['hflux'] + 0.61 * CPD/Le * ds['tlml'] * (p0 / ds['p']) ** kp * ds['eflux']
 	ds['L'] =  - (ds['tlml'] * ds['ustar'] ** 3 * CPD * ds['rhoa']) / ( vonk * grav * ds['vphflux'])
-	return(ds['L'])
+	return ds['L']
 
 def winddir(ds):
 	""" Wind direction using lowest model layer """
@@ -146,13 +148,16 @@ def winddir(ds):
 	ds['winddir'] = np.degrees(np.arctan(ds['ulml'] / ds['vlml']))
 	ds['winddir'].values[ds['vlml']<0] +=  180
 	ds['winddir'].values[(ds['vlml']>0)&(ds['ulml']<0)] +=  360
-	return(ds['winddir'])
+	return ds['winddir']
 
-def _log_law_flux(ds, to_height, from_height, from_name, psifn, Lfn = L_vph):
+def _log_law_flux(ds, to_height, from_height, from_name, psifn, Lfn = L_vph): #pylint: disable=unused-argument
 	""" Compute logarithmic (integration) law given stability correction fn in terms of Obukhov length (derived from heat flux) [1]
 		Called by: log_law_flux_**
 
-		[1] Sharan, M., & Aditi. (2009). Performance of various similarity functions for nondimensional wind and temperature profiles in the surface layer in stable conditions. Atmospheric Research, 94(2), 246–253. https://doi.org/10.1016/j.atmosres.2009.05.014
+		[1] Sharan, M., & Aditi. (2009).
+			Performance of various similarity functions for nondimensional wind and temperature profiles in the surface layer in stable conditions.
+			Atmospheric Research, 94(2), 246–253.
+			https://doi.org/10.1016/j.atmosres.2009.05.014
 	"""
 	vonk = 0.4  # Von Karman constant
 	ds['L'] =  L_vph(ds)
