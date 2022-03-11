@@ -22,19 +22,20 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
-import xarray as xr
-import dask
-import pandas as pd
-import numpy as np
-import os, shutil
+import os
 import logging
 import tempfile
 import shutil
 import subprocess
 import calendar
 from glob import glob
-from six.moves import map #type: ignore
 from multiprocessing import Pool
+import pandas as pd
+import numpy as np
+import xarray as xr
+from six.moves import map #type: ignore
+import dask
+
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +56,6 @@ def cutout_do_task(task, write_to_file=True):
 				for yearmonth, ds in data:
 					if ds is None:
 						continue
-					## TODO : rewrite using plain netcdf4 to add variables
-					## to the same file one by one
 					fn = datasetfns[yearmonth] #type: ignore
 					logger.debug("Writing to %s", os.path.basename(fn))
 					ds.to_netcdf(fn)
@@ -79,7 +78,7 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		logger.info("The cutout is already prepared. If you want to recalculate it, supply an `overwrite=True` argument.")
 		return True
 
-	if cutout.empty == True:
+	if cutout.empty is True:
 		logger.warning("Cutout dimensions are empty. One or more of xs, ys, or time are not available in Dataset.")
 		return False
 
@@ -90,7 +89,6 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 	xs = cutout.meta.indexes['x']
 	ys = cutout.meta.indexes['y']
 
-	# TODO: IF WANT TO APPEND NOT RECREATE CUTOUT
 	#	1. (here) uncomment and change yearmonths to only new ones. delete yearmonths line above
 	#	2. (elsewhere) uncomment meta_append / append lines
 
@@ -141,7 +139,7 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 		def datasetfn_with_id(ym):
 			# returns a filename with incrementing id at end eg `201101-01.nc`
 			base, ext = os.path.splitext(cutout.datasetfn(ym))
-			return base + "-{}".format(i) + ext
+			return base + "-{}".format(i) + ext #pylint: disable=cell-var-from-loop
 		t['datasetfns'] = {ym: datasetfn_with_id(ym) for ym in yearmonths.tolist()}
 
 	logger.info("%d tasks have been collected. Starting running them on %s.",
@@ -212,7 +210,8 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 	meta_kwds.update(dataset_params)
 
 	# Assign task function here?
-	tasks_func = meta_kwds['tasks_func']
+	tasks_func = meta_kwds['tasks_func'] #pylint: disable=unused-variable
+	# test before removing
 
 	# Get metadata
 	prepare_func = meta_kwds.pop('prepare_func')
@@ -227,7 +226,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 
 	# with metadata, load various parameters
-	meta_file_granularity = meta_kwds['file_granularity'];
+	meta_file_granularity = meta_kwds['file_granularity']
 	month_start = pd.Timestamp("{}-{}".format(years.stop, months.stop))
 	ds.coords["year"] = range(years.start, years.stop+1)
 	ds.coords["month"] = range(months.start, months.stop+1)
@@ -266,7 +265,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 	return ds
 
-def cutout_get_meta_view(cutout, xs=None, ys=None, years=slice(None), months=slice(None), **dataset_params):
+def cutout_get_meta_view(cutout, xs=None, ys=None, years=slice(None), months=slice(None), **dataset_params): # pylint: disable=unused-argument
 	# called in cutout as `get_meta_view()`
 	#	Create subset of metadata based on xs, ys, years, months
 	#	Returns None if any of the dimensions of the subset are empty
@@ -300,7 +299,7 @@ def cutout_get_meta_view(cutout, xs=None, ys=None, years=slice(None), months=sli
 def _prepare_gebco_height(xs, ys, gebco_fn=None):
 	# gebco bathymetry heights for underwater
 	if gebco_fn is None:
-		from .config import gebco_path
+		from .config import gebco_path # pylint: disable=import-outside-toplevel
 		gebco_fn = gebco_path
 
 	tmpdir = tempfile.mkdtemp()
@@ -322,7 +321,7 @@ def _prepare_gebco_height(xs, ys, gebco_fn=None):
 	except OSError:
 		logger.warning("gdalwarp was not found for resampling gebco. "
 					   "Next-neighbour interpolation will be used instead!")
-		tmpfn = gebco_path
+		tmpfn = gebco_path #type: ignore
 
 	with xr.open_dataset(tmpfn) as ds_gebco:
 		height = (ds_gebco.rename({'lon': 'x', 'lat': 'y', 'Band1': 'height'})
