@@ -22,15 +22,12 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
+import datetime as dt
+import logging
+from operator import itemgetter
+from six import string_types
 import xarray as xr
 import numpy as np
-import pandas as pd
-import datetime as dt
-from six import string_types
-from operator import itemgetter
-
-import logging
-logger = logging.getLogger(__name__)
 
 from .pv.solar_position import SolarPosition
 from .pv.irradiation import TiltedIrradiation
@@ -39,12 +36,15 @@ from .pv.orientation import get_orientation, SurfaceOrientation
 
 from . import wind as windm
 
-from .resource import (get_windturbineconfig, get_solarpanelconfig,
-					   windturbine_rated_capacity_per_unit,
-					   solarpanel_rated_capacity_per_unit,
-					   windturbine_smooth)
+from .resource import (
+	get_windturbineconfig,
+	get_solarpanelconfig,
+	windturbine_smooth
+	)
 
 from .utils import make_optional_progressbar
+
+logger = logging.getLogger(__name__)
 
 def convert_cutout(cutout, convert_func, show_progress=True, **convert_kwds):
 	"""
@@ -93,7 +93,7 @@ def convert_cutout(cutout, convert_func, show_progress=True, **convert_kwds):
 		with xr.open_dataset(cutout.datasetfn(ym)) as ds:
 
 			if 'view' in cutout.meta.attrs:
-				if type(cutout.meta.attrs['view']) == str:
+				if isinstance(cutout.meta.attrs['view'], str):
 					cutout.meta.attrs['view'] = {}
 					cutout.meta.attrs.setdefault('view', {})['x'] = slice(
 						min(cutout.meta.coords['x']).values.tolist(),
@@ -158,11 +158,11 @@ def convert_heat_demand(ds, threshold, a, constant, hour_shift):
 
 	T = ds['temperature'].resample(time="1D").mean(dim='time')
 	threshold += 273.15
-	heat_demand = a*(threshold - T)
+	heat_demand_value = a*(threshold - T)
 
-	heat_demand.values[heat_demand.values < 0.] = 0.
+	heat_demand_value.values[heat_demand_value.values < 0.] = 0.
 
-	return constant + heat_demand
+	return constant + heat_demand_value
 
 def heat_demand(cutout, threshold=15., a=1., constant=0., hour_shift=0., **params):
 	"""
@@ -234,7 +234,7 @@ def convert_solar_thermal(ds, orientation, trigon_model, clearsky_model, c0, c1,
 	return (output).where(output > 0.).fillna(0.)
 
 
-def solar_thermal(cutout, orientation={'slope': 45., 'azimuth': 180.},
+def solar_thermal(cutout, orientation=None,
 				  trigon_model="simple",
 				  clearsky_model="simple",
 				  c0=0.8, c1=3., t_store=80.,
@@ -271,6 +271,8 @@ def solar_thermal(cutout, orientation={'slope': 45., 'azimuth': 180.},
 	[1] Henning and Palzer, Renewable and Sustainable Energy Reviews 30
 		(2014) 1003-1018
 	"""
+	if orientation is None:
+		orientation = {'slope': 45., 'azimuth': 180.}
 
 	if not callable(orientation):
 		orientation = get_orientation(orientation)
@@ -474,7 +476,7 @@ def windwpd(cutout, **params):
 	elif 'to_height' in params:
 		hub_height = params.pop('to_height')
 	else:
-		raise ValueError(f"Either a turbine or hub_height must be specified.")
+		raise ValueError("Either a turbine or hub_height must be specified.")
 
 	params['hub_height'] = hub_height
 
@@ -549,7 +551,7 @@ def pv(cutout, panel, orientation, clearsky_model=None, **params):
 
 ## Air pollution
 
-def convert_pm25(ds, **params):
+def convert_pm25(ds):
 	"""
 	Generate PM2.5 time series according to [1]:
 
@@ -561,7 +563,9 @@ def convert_pm25(ds, **params):
 
 	References
 	-------
-	[1] Buchard, V., da Silva, A. M., Randles, C. A., Colarco, P., Ferrare, R., Hair, J., … Winker, D. (2016). Evaluation of the surface PM2.5 in Version 1 of the NASA MERRA Aerosol Reanalysis over the United States. Atmospheric Environment, 125, 100–111. https://doi.org/10.1016/j.atmosenv.2015.11.004
+	[1] Buchard, V., da Silva, A. M., Randles, C. A., Colarco, P., Ferrare, R., Hair, J., … Winker, D. (2016).
+	Evaluation of the surface PM2.5 in Version 1 of the NASA MERRA Aerosol Reanalysis over the United States. Atmospheric Environment, 125, 100–111.
+	https://doi.org/10.1016/j.atmosenv.2015.11.004
 	"""
 
 	ds['pm25'] = ds['dusmass25'] + ds['sssmass25'] + ds['bcsmass'] + 1.4*ds['ocsmass'] + 1.375*ds['so4smass']
@@ -589,7 +593,7 @@ def pm25(cutout, **params):
 
 ## Manipulate arbitrary variables
 
-def _get_var(ds, var, **params):
+def _get_var(ds, var):
 	"""
 	(Internal) Extract a specific variable from cutout
 	See: get_var
@@ -607,12 +611,12 @@ def get_var(cutout, var, **params):
 
 	Returns: dataarray
 	"""
-	logger.info("Getting variable: " + str(var))
+	logger.info("Getting variable: %s", str(var))
 	return cutout.convert_cutout(convert_func=_get_var,
 										var=var,
 										**params)
 
-def _compute_var(ds, fn, **params):
+def _compute_var(ds, fn):
 	"""
 	(Internal) Compute a specific function from cutout
 	See: compute_var
@@ -630,7 +634,9 @@ def compute_var(cutout, fn, **params):
 
 	Returns: dataarray
 	"""
-	logger.info("Computing variable: " + str(fn))
-	return cutout.convert_cutout(convert_func=_compute_var,
-										fn=fn,
-										**params)
+	logger.info("Computing variable: %s", str(fn))
+	return cutout.convert_cutout(
+		convert_func=_compute_var,
+		fn=fn,
+		**params
+		)
