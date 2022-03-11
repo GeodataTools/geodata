@@ -4,3 +4,4 @@ disable=C0103,C0116,C0115,C0209,W0105 #disable Missing-function-docstring warnin
 [FORMAT]
 indent-string='\t'
 max-line-length=160
+max-module-lines=1500
