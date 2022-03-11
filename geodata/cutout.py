@@ -1,4 +1,4 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi. 
+## Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi.
 ## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
 ## This program is free software; you can redistribute it and/or
@@ -23,25 +23,39 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
-import xarray as xr
-import numpy as np
-import os, sys
-from six import iteritems
+
+import os
+import sys
+import logging
+from functools import partial
 import pyproj
 import shapely
-from functools import partial
+import xarray as xr
+import numpy as np
+from shapely.geometry import box
+from six import iteritems
+from . import config
 
-import logging
-logger = logging.getLogger(__name__)
+from .convert import (
+	convert_cutout,
+	heat_demand,
+	temperature,
+	wind,
+	pv,
+	solar_thermal,
+	soil_temperature
+	)
 
-from . import config, datasets
+from .preparation import (
+	cutout_prepare,
+	cutout_produce_specific_dataseries,
+	cutout_get_meta,
+	cutout_get_meta_view
+	)
 
-from .convert import (convert_cutout, heat_demand, temperature,
-					  wind, pv, solar_thermal, soil_temperature)
-from .preparation import (cutout_do_task, cutout_prepare,
-						  cutout_produce_specific_dataseries,
-						  cutout_get_meta, cutout_get_meta_view)
 from .mask import load_mask
+
+logger = logging.getLogger(__name__)
 
 class Cutout(object):
 	def __init__(self, name=None, cutout_dir=config.cutout_dir, **cutoutparams):
@@ -63,7 +77,7 @@ class Cutout(object):
 			cutoutparams.update(xs=slice(x1, x2),
 								ys=slice(y1, y2))
 
-		if not 'years' in cutoutparams:
+		if 'years' not in cutoutparams:
 			raise ValueError("`years` need to be specified")
 		if not isinstance(cutoutparams['years'], slice):
 			years = cutoutparams.pop('years')
@@ -72,7 +86,7 @@ class Cutout(object):
 			else:
 				raise TypeError('Unrecognized years parameter given. Only slice or array accepted.')
 
-		if not 'months' in cutoutparams:
+		if 'months' not in cutoutparams:
 			logger.info("No months specified, defaulting to 1-12")
 			cutoutparams.update(months=slice(1, 12))
 
@@ -81,9 +95,11 @@ class Cutout(object):
 			if os.path.isfile(self.datasetfn()):  # open existing meta file
 				self.meta = meta = xr.open_dataset(self.datasetfn()).stack(**{'year-month': ('year', 'month')})
 
-			if not meta is None and 'years' in cutoutparams and\
+			if meta is not None and 'years' in cutoutparams and\
 									'months' in cutoutparams and\
-									all(os.path.isfile(self.datasetfn([y, m])) for y in range(cutoutparams['years'].start, cutoutparams['years'].stop+1) for m in range(cutoutparams['months'].start, cutoutparams['months'].stop+1) ):
+									all(os.path.isfile(self.datasetfn([y, m]))
+									for y in range(cutoutparams['years'].start, cutoutparams['years'].stop+1)
+									for m in range(cutoutparams['months'].start, cutoutparams['months'].stop+1)):
 				# All files are accounted for. Checking basic data and coverage
 
 				if 'module' not in meta.attrs:
@@ -215,7 +231,6 @@ class Cutout(object):
 		return np.asarray((np.ravel(xs), np.ravel(ys))).T
 
 	def grid_cells(self):
-		from shapely.geometry import box
 		coords = self.grid_coordinates()
 		span = (coords[self.shape[1]+1] - coords[0]) / 2
 		return [box(*c) for c in np.hstack((coords - span, coords + span))]
@@ -238,9 +253,9 @@ class Cutout(object):
 		The masks will be coarsened to the same dimension with the cutout metadata in Xarray.
 
 		name (str): name of the previously saved mask
-		merged_mask (bool): if true, the program will try to 
+		merged_mask (bool): if true, the program will try to
 			include the merged_mask from the mask object. Defaults to True.
-		shape_mask (bool): if true, the program will try to 
+		shape_mask (bool): if true, the program will try to
 			include the extracted dictionary of shape_mask from the mask object. Defaults to True.
 
 		"""
@@ -262,12 +277,12 @@ class Cutout(object):
 
 	def add_grid_area(self, axis = ("lat", "lon"), adjust_coord = True):
 		"""
-		Add attribute 'area' to the cutout containing area for each grid cell 
+		Add attribute 'area' to the cutout containing area for each grid cell
 		in the cutout metedata Xarray.
 
-		axis (tuple): axis to include in the result xarray dataset. 
+		axis (tuple): axis to include in the result xarray dataset.
 			Defaults to ("lat", "lon").
-		adjust_coord (bool): sort the data by latitude and longitude values if true. 
+		adjust_coord (bool): sort the data by latitude and longitude values if true.
 			Defaults to True.
 
 		"""
@@ -279,9 +294,9 @@ class Cutout(object):
 			lat_top = lat + lat_diff/ 2
 			#calculate the area for grid cells with same latitude
 			area_arr[i] = np.round(calc_grid_area([
-							(xr_ds.lon.values[0], lat_top), 
+							(xr_ds.lon.values[0], lat_top),
 							(xr_ds.lon.values[0], lat_bottom),
-							(xr_ds.lon.values[1], lat_bottom), 
+							(xr_ds.lon.values[1], lat_bottom),
 							(xr_ds.lon.values[1], lat_top)]), 2)
 		if axis == ("lat", "lon"):
 			xr_ds = xr_ds.assign({"area": (axis, area_arr)})
@@ -295,47 +310,45 @@ class Cutout(object):
 			xr_ds = xr_ds.sortby(['lat', 'lon'])
 
 		self.area = xr_ds
-	
-	def mask(self, dataset, true_area = True, 
+
+	def mask(self, dataset, true_area = True,
 					merged_mask = True, shape_mask = True):
 		"""
 		Mask a converted Xarray dataSet from cutout with previously added mask attribute
 		with optional area inclusion, and return a dictionary of xarray Dataset.
 
-		The program will search for 'merged_mask' and 'shape_mask' attributes in the 
-		cutout object, these Xarray data can be generate through 'add_mask', unless the user 
-		specify 'merged_mask = False' or 'shape_mask = False', the masks in shape_mask 
-		will have the same key in the dictionary returned, and the mask for merged_mask will 
+		The program will search for 'merged_mask' and 'shape_mask' attributes in the
+		cutout object, these Xarray data can be generate through 'add_mask', unless the user
+		specify 'merged_mask = False' or 'shape_mask = False', the masks in shape_mask
+		will have the same key in the dictionary returned, and the mask for merged_mask will
 		have the key name "merged_mask".
 
-		dataset (Xarray.DataSet): 
+		dataset (Xarray.DataSet):
 		true_area (bool): if the returned masks will have the area variable. Defaults to True.
-		merged_mask (bool): if true, the program will try to 
+		merged_mask (bool): if true, the program will try to
 			include the merged_mask from the cutout object. Defaults to True.
-		shape_mask (bool): if true, the program will try to 
+		shape_mask (bool): if true, the program will try to
 			include the extracted dictionary of shape_mask from the cutout object. Defaults to True.
 
 		Returns: (dict): a dictionary with name keys and xarray DataSet with mask variable as values.
-		
 		"""
 		axis = ("lat", "lon")
 
 		if "x" in dataset.dims and "y" in dataset.dims:
-			try:
-				dataset = dataset.rename({'x': 'lon', 'y': 'lat'})
-			except:
-				dataset = dataset.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
+			dataset = dataset.rename({'x': 'lon', 'y': 'lat'})
+		else:
+			dataset = dataset.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
 
 		dataset = dataset.transpose("time", "lat", "lon")
 
 		if self.merged_mask is None and self.shape_mask is None:
-			raise ValueError(f"No mask found in cutout. Please add masks with self.add_mask()")
+			raise ValueError("No mask found in cutout. Please add masks with self.add_mask()")
 
-		if self.area is None and true_area == True:
+		if self.area is None and true_area is True:
 			raise ValueError("No area data found. Please call self.add_grid_area() or set true_area to False.")
 
 		res = {}
-		
+
 		if self.merged_mask is not None and merged_mask:
 			ds = dataset.assign({"mask": (axis, self.merged_mask.data[0])})
 			if true_area:
@@ -352,8 +365,6 @@ class Cutout(object):
 		logger.info("shape_mask combined with dataset. ")
 
 		return res
-		
-	
 
 	## Preparation functions
 
@@ -385,10 +396,10 @@ class Cutout(object):
 
 def _find_intercept(list1, list2, start, threshold = 0):
 	'''
-	find_intercept is a helper function to find the best start point for doing coarsening 
+	find_intercept is a helper function to find the best start point for doing coarsening
 	in order to make the coordinates of the coarsen as close to the target as possible.
 	'''
-	min_pos = 0
+	min_pos = 0 #pylint: disable=unused-variable
 	min_res = 0
 	init = 0
 	for i in range(len(list1)-start):
@@ -408,33 +419,30 @@ def _find_intercept(list1, list2, start, threshold = 0):
 	else:
 		return i #type: ignore
 
-def coarsen(ori, tar, threshold = 0, func = 'mean'):
+def coarsen(ori, tar, func = 'mean'):
 	'''
 	This function will reindex the original xarray dataset according to the coordiantes of the target.
-	
-	There might be a bias for lattitudes and longitudes. The bias are normally within 0.01 degrees. 
-	In order to not lose too much data, a threshold for bias in degree could be given. 
+	There might be a bias for lattitudes and longitudes. The bias are normally within 0.01 degrees.
+	In order to not lose too much data, a threshold for bias in degree could be given.
 	When threshold = 0, it means that the function is going to find the best place with smallest bias.
-	
 	'''
 	lat_multiple = round(((tar.lat[1] - tar.lat[0]) / (ori.lat[1] - ori.lat[0])).values.tolist())
 	lon_multiple = round(((tar.lon[1] - tar.lon[0]) / (ori.lon[1] - ori.lon[0])).values.tolist())
-	
-	lat_start = _find_intercept(ori.lat, tar.lat, (lat_multiple - 1) //  2) 
+	lat_start = _find_intercept(ori.lat, tar.lat, (lat_multiple - 1) //  2)
 	lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) //  2)
-	
+
 	if func == 'mean':
-		coarsen = ori.isel(lat = slice(lat_start, None), lon = slice(lon_start, None)).coarsen(
-			dim = {'lat': lat_multiple, 'lon' : lon_multiple}, 
-			side = {'lat': 'left', 'lon': 'left'}, 
+		coarsen = ori.isel(lat = slice(lat_start, None), lon = slice(lon_start, None)).coarsen( #pylint: disable=redefined-outer-name
+			dim = {'lat': lat_multiple, 'lon' : lon_multiple},
+			side = {'lat': 'left', 'lon': 'left'},
 			boundary = 'pad', ).mean()
 	elif func == 'sum':
 		coarsen = ori.isel(lat = slice(lat_start, None), lon = slice(lon_start, None)).coarsen(
-			dim = {'lat': lat_multiple, 'lon' : lon_multiple}, 
-			side = {'lat': 'left', 'lon': 'left'}, 
+			dim = {'lat': lat_multiple, 'lon' : lon_multiple},
+			side = {'lat': 'left', 'lon': 'left'},
 			boundary = 'pad', ).sum()
 	out = coarsen.reindex_like(tar, method = 'nearest')
-	return out	
+	return out
 
 def calc_grid_area(lis_lats_lons):
 	"""
