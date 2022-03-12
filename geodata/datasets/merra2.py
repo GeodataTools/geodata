@@ -22,18 +22,17 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import os
 import glob
-import numpy as np
-import xarray as xr
-import requests
-from requests.exceptions import HTTPError
-from six.moves import range #type: ignore 
+import logging
 from tempfile import mkstemp
 from calendar import monthrange
-
-import logging
-logger = logging.getLogger(__name__)
+import requests
+from requests.exceptions import HTTPError
+import numpy as np
+import xarray as xr
+from six.moves import range #type: ignore
 
 from ..config import merra2_dir
+logger = logging.getLogger(__name__)
 
 datadir = merra2_dir
 
@@ -84,11 +83,6 @@ def subset_x_y_merra2(ds, xs, ys):
 
 	return ds
 
-def _area(xs, ys):
-	# Return array with bounding coordinates
-	# North, West, South, East.
-	return [ys.start, xs.start, ys.stop, xs.stop]
-
 def _rename_and_clean_coords(ds, add_lon_lat=True):
 	"""Rename 'longitude' and 'latitude' columns to 'x' and 'y'
 
@@ -127,10 +121,10 @@ def api_merra2(
 				with open(target,'wb') as fout:
 					fout.write(result.content)
 			except HTTPError as http_err:
-				logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+				logger.warning('HTTP error occurred: %s', http_err)  # Python 3.6
 				error_files.append(f[1])
-			except Exception as err:
-				logger.warn(f'Other error occurred: {err}')
+			except Exception as err: #pylint: disable=broad-except
+				logger.warning('Other error occurred: %s', err)
 				error_files.append(f[1])
 
 			if multi:
@@ -147,10 +141,10 @@ def api_merra2(
 						with open(target_temp,'wb') as fout:
 							fout.write(result.content)
 					except HTTPError as http_err:
-						logger.warn(f'HTTP error occurred: {http_err}')  # Python 3.6
+						logger.warning('HTTP error occurred: %s', http_err)  # Python 3.6
 						error_files.append(f[k])
-					except Exception as err:
-						logger.warn(f'Other error occurred: {err}')
+					except Exception as err: #pylint: disable=broad-except
+						logger.warning('Other error occurred: %s', err)
 						error_files.append(f[k])
 					# ds_toadd = xr.open_dataset(target_temp)
 					# ds_main = xr.merge([ds_main, ds_toadd])
@@ -168,15 +162,15 @@ def api_merra2(
 				for tf in temp_files:
 					os.close(tf[0])
 					os.unlink(tf[1])
-			
+
 			if len(error_files) > 0:
-				logger.warn("Unsuccessful download for %s", error_files)
+				logger.warning("Unsuccessful download for %s", error_files)
 			else:
 				logger.info("Successfully downloaded data for %s", f[1])
 				downloadedFiles.append((f[0], f[1]))
 
 
-def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
+def prepare_meta_merra2(xs, ys, year, month, template):
 	#	Load dataset into metadata
 
 	# fn = next(glob.iglob(template.format(year=year, month=month)))
@@ -201,7 +195,7 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
 	if not os.path.isfile(fn):
 		return None
 	with xr.open_dataset(fn) as ds:
-		logger.info(f'Opening `{fn}`')
+		logger.info('Opening %s', fn)
 		# logger.info("Cutout dims: %s", ds.dims)
 		# logger.info("Cutout coords: %s", ds.coords)
 
@@ -221,8 +215,8 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
 		#	z0m=roughness
 		#	wind variables not in wndXXm format
 			ds = ds.rename({'z0m': 'roughness'})
-		except Exception as e:
-			logger.warn(f'Unable to rename variables in `{fn}`. Exception: {e}')
+		except Exception as e: #pylint: disable=broad-except
+			logger.warning('Unable to rename variables in %s. Exception: %s', fn, e)
 
 		ds['wndlml'] = (np.sqrt(ds['ulml']**2 + ds['vlml']**2)
 						.assign_attrs(units=ds['ulml'].attrs['units'],
@@ -236,7 +230,7 @@ def prepare_month_aerosol(fn, year, month, xs, ys):
 	if not os.path.isfile(fn):
 		return None
 	with xr.open_dataset(fn) as ds:
-		logger.info(f'Opening `{fn}`')
+		logger.info('Opening %s', fn)
 		ds = _rename_and_clean_coords(ds)
 		ds = subset_x_y_merra2(ds, xs, ys)
 		yield (year, month), ds
@@ -245,7 +239,7 @@ def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
 	if not os.path.isfile(fn):
 		return None
 	with xr.open_dataset(fn) as ds:
-		logger.info(f'Opening `{fn}`')
+		logger.info('Opening %s', fn)
 		# logger.info("Cutout dims: %s", ds.dims)
 		# logger.info("Cutout coords: %s", ds.coords)
 
@@ -259,7 +253,7 @@ def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
 		# logger.info("Cutout dims: %s", ds.dims)
 		# logger.info("Cutout coords: %s", ds.coords)
 
-				# some variable renaming
+		# some variable renaming
 		try:
 		#	z0m=roughness
 		#	wind variables not in wndXXm format
@@ -267,8 +261,8 @@ def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
 				't2mmean': 'temperature',
 				'tprecmax': 'precipitation'
 				})
-		except Exception as e:
-			logger.warn(f'Unable to rename variables in `{fn}`. Exception: {e}')
+		except Exception as e: #pylint: disable=broad-except
+			logger.warning('Unable to rename variables in %s. Exception: %s', fn, e)
 
 		#['HOURNORAIN', 'T2MMAX', 'T2MMEAN', 'T2MMIN', 'TPRECMAX']
 
@@ -278,7 +272,7 @@ def prepare_slv_radiation(fn, year, month, xs, ys):
 	if not os.path.isfile(fn):
 		return None
 	with xr.open_dataset(fn) as ds:
-		logger.info(f'Opening `{fn}`')
+		logger.info('Opening %s', fn)
 		# logger.info("Cutout dims: %s", ds.dims)
 		# logger.info("Cutout coords: %s", ds.coords)
 
@@ -298,8 +292,8 @@ def prepare_slv_radiation(fn, year, month, xs, ys):
 				'swtdn': 'influx_toa',
 				't2m': 'temperature'
 				})
-		except Exception as e:
-			logger.warn(f'Unable to rename variables in `{fn}`. Exception: {e}')
+		except Exception as e: #pylint: disable=broad-except
+			logger.warning('Unable to rename variables in %s. Exception: %s', fn, e)
 		yield (year, month), ds
 
 
