@@ -34,7 +34,7 @@ import xarray as xr
 import numpy as np
 from shapely.geometry import box
 from six import iteritems
-from . import config
+from . import config #pylint: disable=E0611
 
 from .convert import (
 	convert_cutout,

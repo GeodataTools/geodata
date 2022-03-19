@@ -532,7 +532,7 @@ class Mask(object):
 
 		if combine_shape:
 			if not combine_name:
-    			raise ValueError("Please specify combined shape name.")
+				raise ValueError("Please specify combined shape name.")
 
 			shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
 

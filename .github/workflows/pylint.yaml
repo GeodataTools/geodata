@@ -25,6 +25,8 @@ jobs:
         pip install dask
         pip install numpy
         pip install requests
+        pip install pyproj
+        pip install shapely
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
