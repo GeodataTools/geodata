@@ -36,7 +36,7 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
-class Mask(object):
+class Mask:
 	"""
 	A class to create, manipulate, and load geodata mask object that takes geo tif
 	or shp files as input.

@@ -1,5 +1,5 @@
 [MESSAGES CONTROL]
-disable=C0103,C0116,C0115,C0209,W0105,W0511,C0114 #disable Missing-function-docstring warning
+disable=C0103,C0116,C0115,C0209,W0105,W0511,C0114,R1705,R1710
 
 [FORMAT]
 indent-string='\t'
@@ -9,6 +9,13 @@ max-module-lines=1500
 
 [DESIGN]
 # Maximum number of arguments for function / method
-max-args=7
+max-args=10
 # Maximum number of attributes for a class (see R0902).
 max-attributes=15
+max-locals=25
+max-branches=25
+max-statements=75
+
+[ELIF]
+# Maximum number of nested blocks for function / method body
+max-nested-blocks=10

@@ -34,7 +34,7 @@ from shapely.geometry import box
 
 logger = logging.getLogger(__name__)
 
-class Dataset(object):
+class Dataset:
 	def __init__(self, **datasetparams):
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
