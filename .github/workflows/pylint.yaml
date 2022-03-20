@@ -27,6 +27,10 @@ jobs:
         pip install requests
         pip install pyproj
         pip install shapely
+        sudo add-apt-repository ppa:ubuntugis/ppa
+        sudo apt-get update
+        sudo apt-get install python-numpy gdal-bin libgdal-dev
+        pip install rasterio
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
