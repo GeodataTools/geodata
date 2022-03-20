@@ -27,7 +27,6 @@ jobs:
         pip install requests
         pip install pyproj
         pip install shapely
-        pip install rasterio
     - name: Analysing the code with pylint
       run: |
         pylint $(git ls-files '*.py')
