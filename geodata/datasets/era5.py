@@ -284,7 +284,7 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	fn = meta_attrs['fn']
 
 	logger.info(yearmonths)
-	logger.info([(year, month) for year, month in yearmonths])
+	logger.info(list(yearmonths))
 
 	return [
 		dict(

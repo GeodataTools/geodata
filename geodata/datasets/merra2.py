@@ -103,7 +103,7 @@ def api_merra2(
 	if len(toDownload) == 0:
 		logger.info("All MERRA2 files for this dataset have been downloaded.")
 	else:
-		multi = True if fileGranularity == 'daily_multiple' or fileGranularity == 'monthly_multiple' else False
+		multi = bool(fileGranularity in ('daily_multiple', 'monthly_multiple'))
 
 		for f in toDownload:
 			error_files = []

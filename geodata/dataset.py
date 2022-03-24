@@ -35,7 +35,7 @@ from shapely.geometry import box
 logger = logging.getLogger(__name__)
 
 class Dataset:
-	def __init__(self, **datasetparams):
+	def __init__(self, **datasetparams): #pylint: disable=too-many-branches,too-many-statements
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
 		if 'weather_data_config' not in datasetparams:
@@ -347,7 +347,7 @@ class Dataset:
 
 	@property
 	def coords(self):
-		return self.meta.coords
+		return self.meta.coords #pylint: disable=no-member
 
 	@property
 	def shape(self):

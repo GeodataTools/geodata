@@ -57,7 +57,7 @@ from .mask import load_mask
 
 logger = logging.getLogger(__name__)
 
-class Cutout(object):
+class Cutout:
 	def __init__(self, name=None, cutout_dir=config.cutout_dir, **cutoutparams):
 		self.name = name
 		self.cutout_dir = os.path.join(cutout_dir, name)
@@ -462,7 +462,7 @@ def calc_grid_area(lis_lats_lons):
 	tx = "+proj=aea +" + st
 	pa = pyproj.Proj(tx)
 
-	x, y = pa(lons, lats)
+	x, y = pa(lons, lats) #pylint: disable=unpacking-non-sequence
 	cop = {"type": "Polygon", "coordinates": [zip(x, y)]}
 
 	return shapely.geometry.shape(cop).area/1000000
