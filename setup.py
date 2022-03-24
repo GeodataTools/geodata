@@ -1,4 +1,4 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker. 
+## Copyright 2020 Michael Davidson (UCSD), William Honaker.
 
 ## This program is free software; you can redistribute it and/or
 ## modify it under the terms of the GNU General Public License as
@@ -20,12 +20,9 @@ GEODATA
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
-from __future__ import absolute_import
-
+from codecs import open #pylint: disable=redefined-builtin
+from __future__ import absolute_import #pylint: disable=misplaced-future
 from setuptools import setup, find_packages
-from codecs import open
-import six
-import argparse
 
 requirement_list = ['numpy',
 				  'scipy',
@@ -48,11 +45,11 @@ requirement_list = ['numpy',
 with open('README.md', encoding='utf-8') as f:
 	long_description = f.read()
 
-exec(open('geodata/_version.py').read())
+exec(open('geodata/_version.py').read()) #pylint: disable=exec-used
 
 setup(
 	name='geodata',
-	version=__version__,
+	version=__version__, #pylint: disable=undefined-variable
 	author='Michael Davidson (UCSD), William Honaker',
 	author_email='mrdavidson@ucsd.edu',
 	description='Geospatial Data Collection and Pre-Analysis Tools',
