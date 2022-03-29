@@ -170,7 +170,7 @@ def api_merra2(
 				downloadedFiles.append((f[0], f[1]))
 
 
-def prepare_meta_merra2(xs, ys, year, month, template):
+def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
 	#	Load dataset into metadata
 
 	# fn = next(glob.iglob(template.format(year=year, month=month)))

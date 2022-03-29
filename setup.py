@@ -20,8 +20,8 @@ GEODATA
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
-from codecs import open #pylint: disable=redefined-builtin
 from __future__ import absolute_import #pylint: disable=misplaced-future
+from codecs import open #pylint: disable=redefined-builtin
 from setuptools import setup, find_packages
 
 requirement_list = ['numpy',

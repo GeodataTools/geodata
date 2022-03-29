@@ -204,7 +204,7 @@ def subset_x_y_era5(ds, xs, ys):
 
 	return ds
 
-def prepare_meta_era5(xs, ys, year, month, template):
+def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 	# Reference of the quantities
 	# https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
 	# Geopotential is aka Orography in the CDS:

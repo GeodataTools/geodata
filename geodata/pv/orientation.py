@@ -57,7 +57,7 @@ def make_latitude_optimal():
 		Latitude in degrees.
 	"""
 
-	def latitude_optimal(lat):
+	def latitude_optimal(lon, lat, solar_position):
 		if (lat < 0).any():
 			raise NotImplementedError('Not implemented for negative latitudes')
 
@@ -78,7 +78,7 @@ def make_constant(slope, azimuth):
 	slope = np.deg2rad(slope)
 	azimuth = np.deg2rad(azimuth)
 
-	def constant():
+	def constant(lon, lat, solar_position):
 		return dict(slope=slope, azimuth=azimuth)
 	return constant
 

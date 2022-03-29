@@ -31,6 +31,7 @@ import logging
 import xarray as xr
 import numpy as np
 from shapely.geometry import box
+from . import config, datasets #pylint: disable=unused-import
 
 logger = logging.getLogger(__name__)
 
