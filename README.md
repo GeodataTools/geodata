@@ -37,4 +37,9 @@ We welcome suggestions for feature enhancements and the identification of bugs. 
 
 Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](/LICENSE.txt) for more details.
 
+## Zenodo Sandbox
+
+
+[![DOI](https://sandbox.zenodo.org/badge/218690319.svg)](https://sandbox.zenodo.org/badge/latestdoi/218690319)
+
 
