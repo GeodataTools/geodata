@@ -272,7 +272,7 @@ class Mask:
 		self.saved = False
 
 
-	def _sum_method(self, merged_data, new_data):
+	def _sum_method(self, merged_data, new_data, merged_mask, new_mask, **kwargs):
 		"""The sum method will add up the values from all the layers. We can also
 		customize the weights. The behind scene of this method is that it multiplys
 		each layers with the corresponding weight, and add the in-memory temporary
@@ -285,7 +285,7 @@ class Mask:
 		else:
 			np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
 
-	def _and_method(self, merged_data, new_data):
+	def _and_method(self, merged_data, new_data, merged_mask, new_mask, **kwargs):
 		"""By default, the merge_layer method will use a binary 'and' method:
 		if any of the n grid cells of the n layers at the same location have 0,
 		then the returned self.merged_layer will also have 0 at that location.
@@ -507,8 +507,11 @@ class Mask:
 		dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
 		"""
 
-		if isinstance(shapes, gpd.geodataframe.GeoDataFrame):
-			shapes = shapes['geometry'].to_dict()
+		if hasattr(shapes, '_geometry_column_name'):
+			shapes = shapes._geometry_column_name.to_dict() #pylint: disable=protected-access
+
+		elif hasattr(shapes, '_name') and shapes._name == "geometry": #pylint: disable=protected-access
+			shapes = shapes.to_dict()
 
 		#convert CRS for shapes
 		if src_crs != dst_crs:
@@ -773,7 +776,7 @@ def ras_to_xarr(raster, band_name = None, adjust_coord = True):
 		xarr = xarr.rename({'band': band_name})
 	return xarr
 
-def create_temp_tif(arr, transform, open_raster = True):
+def create_temp_tif(arr, transform, open_raster = True, **kwargs):
 	"""
 	Create a ras.DatasetReader object openning a temporary rasterio file
 
@@ -810,7 +813,7 @@ def save_opened_raster(raster, path):
 	raster.close()
 	save_raster(arr, transform, path)
 
-def save_raster(arr, transform, path):
+def save_raster(arr, transform, path, **kwargs):
 	"""
 	Given np.array and Affine transform, save the raster as tif file to the path
 	https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -1099,25 +1102,30 @@ def convert_shape_crs(shape, src_crs, dst_crs):
 
 ## VISUALIZATION METHOD
 
-def show(raster, shape = None, shape_line_with = 0.5,
-	title = None, lat_lon = True, colorbar = True, grid = False, **kwargs):
+def show(raster, shape = None, shape_width = 0.5, shape_color = 'black',
+	figsize = (10, 6), title = None, title_size = 12,
+	lat_lon = True, colorbar = True, grid = False, return_fig = False, **kwargs):
 	"""
 	Plot a rasterio file given ras.DatasetReader
 
 	raster (ras.DatasetReader): rasterio file opener, the value in the layers, shape_mask, and merged_mask attribute.
 	shape (geopandas.geoseries): shapes to be plotted over the raster.
 	shape_width (float): the line width for plotting shapes. 0.5 by default.
+	shape_color (str): color of the shape line. Black by default.
 	title (str): the title of the plot
 	lat_lon (bool): whether the program will show the appropriate lat-lon in the plot. True by default.
 	colorbar (bool): whether the program shows the legend for the values of the plot. True by default.
 	grid (bool): whether the program shows the grid. False by default.
+	return_fig (bool): return the figure, False by default
+	**kwargs: other argument for plt.imshow() on the raster
 	"""
 
-	f, ax = plt.subplots() #pylint: disable=unused-variable
+	fig = plt.figure(figsize = figsize)
+	ax = fig.add_subplot()
 
 	if shape is not None:
 
-		shape.boundary.plot(ax=ax, linewidth = shape_line_with)
+		shape.boundary.plot(ax=ax, linewidth = shape_width, color = shape_color)
 
 	if lat_lon:
 		ax.imshow(raster.read(1), interpolation = 'none',
@@ -1128,7 +1136,7 @@ def show(raster, shape = None, shape_line_with = 0.5,
 
 	if title is True:
 		title = raster.name
-	plt.title(title)
+	ax.set_title(title, size = title_size)
 	if colorbar:
 		uniques = np.unique(raster.read(1))
 		if len(uniques) < 3:
@@ -1136,8 +1144,9 @@ def show(raster, shape = None, shape_line_with = 0.5,
 		else:
 			plt.colorbar(ax.get_children()[-2], ax = ax)
 	if grid:
-		plt.grid()
-	plt.show()
+		ax.grid()
+	if return_fig:
+		return fig
 
 raster_show = show
 
