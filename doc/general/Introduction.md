@@ -54,25 +54,25 @@ ds_solar.to_dataframe(name = 'pv')
 ```
 ![png](https://github.com/east-winds/geodata/blob/master/images/example_output_dataframe.png)
 
-We also can visualize the solar PV mean for a day:
+
+We can plot a time series of average PV values for all grid cells on that day with geodata's visualization method:
 
 ```
-import matplotlib.pyplot as plt
-geodata.convert.pv(cutout, panel = "KANEKA", orientation = "latitude_optimal").coarsen(time = 24, boundary = 'exact').mean().plot()
-plt.title('Solar PV Daily Mean 2011-01-01')
+geodata.plot.time_series(ds_solar)
 ```
-![png](https://github.com/east-winds/geodata/blob/master/images/mask_on_cutout_workflow/output_37_1.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/output_12_0.png)
 
 
-Let us take another example. Below we plot a time series of weekly average PM2.5 in Beijing over 2020 from [MERRA2](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary) aerosols data.
+We can also visualize the average solar PV for every two hours on this day through an animation:
 
 ```
-ds_pm25 = geodata.convert.pm25(Cutout_aerosol)
-ds_pm25.coarsen(time = 24 * 7, boundary="trim").mean().sel(y = 40, x = 116.25).plot.line(x="time", figsize = (10, 5))
-
-plt.title("PM2.5 (µg/m³) weekly mean over time at Beijing (40°N, 116.25°E)", size=12)
+prov_shapes = gpd.read_file(prov_shapes_path)
+geodata.plot.heatmap_animation(ds_solar, cmap = 'Wistia', 
+                               time_factor = 2, 
+                               shape = prov_shapes, shape_width = 0.25, shape_color = 'navy')
 ```
-![png](https://github.com/east-winds/geodata/blob/master/images/example_pm25_time_series.png)
+![png](https://github.com/east-winds/geodata/blob/master/images/visualization/pv_animation.gif)
+
 
 
 ### Masking
