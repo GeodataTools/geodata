@@ -39,7 +39,7 @@ Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This 
 
 ## Zenodo Sandbox
 
+[![DOI](https://zenodo.org/badge/218690319.svg)](https://zenodo.org/badge/latestdoi/218690319)
 
-[![DOI](https://sandbox.zenodo.org/badge/218690319.svg)](https://sandbox.zenodo.org/badge/latestdoi/218690319)
 
 
