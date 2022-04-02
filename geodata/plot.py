@@ -99,7 +99,7 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
 
 	if coord_dict:
 		if not loc_name:
-    		loc_name = ', '.join(coord_dict.keys())
+			loc_name = ', '.join(coord_dict.keys())
 		for key, value in coord_dict.items():
 			all_lat = ds.lat.data
 			all_lon = ds.lon.data
