@@ -13,14 +13,14 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import matplotlib.animation as anim
-import matplotlib.pyplot as plt
 import logging
-logger = logging.getLogger(__name__)
-plt.rcParams["animation.html"] = "jshtml"
+import matplotlib.pyplot as plt
+import matplotlib.animation as anim
 from .mask import show
+plt.rcParams["animation.html"] = "jshtml"
 
-show = show
+logger = logging.getLogger(__name__)
+show = show #pylint: disable=self-assigning-variable
 
 def ds_reformat_index(ds):
 	"""format the dataArray generated from the convert function"""
@@ -80,19 +80,19 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
 	create_title = f"{ds.name} time series - "
 
 	if agg_time_method == 'mean':
-		ds = ds.coarsen(time = time_factor, boundary="trim").mean() 
+		ds = ds.coarsen(time = time_factor, boundary="trim").mean()
 	elif agg_time_method == 'sum':
-		ds = ds.coarsen(time = time_factor, boundary="trim").sum() 
+		ds = ds.coarsen(time = time_factor, boundary="trim").sum()
 
 	if agg_slice is False and (lat_slice is None and lon_slice is None):
-		assert agg_slice == False, "agg_slice cannot be set to False without lat_slice or lon_slice."
+		assert not agg_slice, "agg_slice cannot be set to False without lat_slice or lon_slice."
 
-	if lat_slice: 
+	if lat_slice:
 		assert lat_slice[1] > lat_slice[0], "Please give correct latitude slice"
 		ds = ds.where(ds.lat >= lat_slice[0], drop = True).where(ds.lat <= lat_slice[1], drop = True)
 		create_title += f"lat slice {lat_slice} "
 
-	if lon_slice: 
+	if lon_slice:
 		assert lon_slice[1] > lon_slice[0], "Please give correct longitude slice"
 		ds = ds.where(ds.lon >= lon_slice[0], drop = True).where(ds.lon <= lon_slice[1], drop = True)
 		create_title += f"lon slice {lon_slice} "
@@ -154,18 +154,18 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
 					ds.sel(lat = la, lon = lo).plot(ax = ax, label = f"lat {la}, lon {lo}", **kwargs)
 
 	if legend and (agg_slice is False or coord_dict):
-    	ax.legend()
+		ax.legend()
 	if grid:
-    	ax.grid()
+		ax.grid()
 
 	if time_factor > 1:
 		create_title += f"- time aggregated by factor of {time_factor}."
 	if not title:
-    	title = create_title
+		title = create_title
 	ax.set_title(title, size=title_size)
 
 	if return_fig:
-    	return fig
+		return fig
 
 def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5, shape_color = 'black',
 			map_type = 'colormesh', cmap = 'bone_r', figsize = (10, 6), title = None, title_size = 12,
@@ -176,7 +176,7 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
 	ds: dataArray object
 	t: time, either a numeric time index, or the string with the same time format from the dataArray
 	m_type: must be either 'contour' or 'colormesh'
-	
+
 	ds (xarray.DataArray): the dataArray object
 	t (int or str): timepoint to show the map. It can be either a numeric time index,
 		or a time string from the xarray.DataArray time dimension
@@ -195,7 +195,7 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
 	**kwargs: other argument for xarray.DataArray.plot.pcolormesh() or
 		xarray.DataArray.plot.contourf()
 	"""
-	
+
 	assert map_type == 'contour' or map_type == 'colormesh', "map_type should either be 'contour' or 'colormesh'"
 	assert cmap in plt.colormaps(), ("Please see available colormaps through: matplotlib.pyplot.colormaps() or" +
 							   " https://matplotlib.org/stable/gallery/color/colormap_reference.html")
@@ -229,7 +229,7 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
 	ax.set_ylim(ds.lat.min(), ds.lat.max())
 
 	if not title:
-		if t == None:
+		if t is None:
 			title = f"{ds.name} aggregated {agg_method}"
 		elif isinstance(t, int):
 			title = f"{ds.name} Amount at time index {t} - {time_idx}"
@@ -247,7 +247,7 @@ def heatmap(ds, t = None, agg_method = 'mean', shape = None,  shape_width = 0.5,
 def heatmap_animation(ds, time_factor = 1, agg_method ='mean',
 						shape = None,  shape_width = 0.5, shape_color = 'black',
 						cmap = 'bone_r', v_max = None, ds_name = None,
-						figsize = (10, 5), title = None, title_size = 12 
+						figsize = (10, 5), title = None, title_size = 12,
 						grid = True, **kwargs):
 	"""
 	Created animated version of colormesh() so users can see the value change over time
@@ -284,7 +284,7 @@ def heatmap_animation(ds, time_factor = 1, agg_method ='mean',
 	elif agg_method == 'sum':
 		ds = ds.coarsen(time = time_factor, boundary="trim").sum()
 
-	if v_max is None: 
+	if v_max is None:
 		v_max = ds.max()
 
 	fig = plt.figure(figsize= figsize)
