@@ -19,7 +19,9 @@ disable=
 	E1101,
 	R1732,
 	R0201,
-	W0613
+	W0613,
+	R1716,
+	R1714
 
 
 
@@ -35,11 +37,11 @@ max-module-lines=1500
 
 [DESIGN]
 # Maximum number of arguments for function / method
-max-args=15
+max-args=116
 # Maximum number of attributes for a class (see R0902).
 max-attributes=15
-max-locals=25
-max-branches=25
+max-locals=27
+max-branches=35
 max-statements=75
 
 [ELIF]
