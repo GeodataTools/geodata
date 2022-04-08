@@ -271,34 +271,6 @@ class Mask:
 												values, min_bound, max_bound, binarize)
 		self.saved = False
 
-
-	def _sum_method(self, merged_data, new_data, merged_mask, new_mask, **kwargs):
-		"""The sum method will add up the values from all the layers. We can also
-		customize the weights. The behind scene of this method is that it multiplys
-		each layers with the corresponding weight, and add the in-memory temporary
-		layers together"""
-
-		if len(np.unique(merged_data)) == 1:
-			mask = np.ones(merged_data.shape, dtype=bool)
-			np.add(np.zeros(merged_data.shape), new_data.data, out=merged_data,
-				where = mask, casting="unsafe")
-		else:
-			np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
-
-	def _and_method(self, merged_data, new_data, merged_mask, new_mask, **kwargs):
-		"""By default, the merge_layer method will use a binary 'and' method:
-		if any of the n grid cells of the n layers at the same location have 0,
-		then the returned self.merged_layer will also have 0 at that location.
-		In other words, if all the layers indicate that a land is not unavailable (!=0),
-		the merged result will have value 1. """
-
-		if len(np.unique(merged_data)) == 1:
-			mask = np.ones(merged_data.shape, dtype=bool)
-		else:
-			mask = merged_data != 0
-
-		np.copyto(merged_data, new_data.data, where=mask, casting="unsafe")
-
 	def merge_layer(self, method = 'and', weights = None,
 					layers = None, trim = False, show_raster = True, reference_layer = None,
 					attribute_save = True, **kwargs):
@@ -322,7 +294,7 @@ class Mask:
 			automatically perform merging on all the layers contained in the same mask object.
 		trim (bool): if the method will trim the area where all the layers must contain,
 			false by default.
-		show (bool): whether the merged_mask output will be plotted,
+		show_raster (bool): whether the merged_mask output will be plotted,
 			true by default.
 		reference_layer (str): the name of the layer which we use as the output bounds/resolution.
 		attribute_save (bool): whether the method save the output to self.merged_mask
@@ -359,7 +331,7 @@ class Mask:
 			layers.pop(reference_layer)
 			merged_lst += list(layers.values())
 
-			arr, aff = merge(merged_lst, method = Mask._and_method, **kwargs)
+			arr, aff = merge(merged_lst, method = _and_method, **kwargs)
 
 		elif method == 'sum':
 			if not weights:
@@ -379,7 +351,7 @@ class Mask:
 			merged_lst = [temp_layers[reference_layer]]
 			temp_layers.pop(reference_layer)
 			merged_lst += list(temp_layers.values())
-			arr, aff = merge(merged_lst, method = Mask._sum_method, **kwargs)
+			arr, aff = merge(merged_lst, method = _sum_method, **kwargs)
 			[r.close() for r in merged_lst] #pylint: disable=expression-not-assigned
 
 		return_ras = create_temp_tif(arr[0], aff)
@@ -500,7 +472,7 @@ class Mask:
 		combine_shape (bool): if the user want to combine the shapes as one shape, and only
 			one layer will be added as a result. False by default.
 		combine_name (str)： the name of the combined shape if combine_shape is True
-		show (bool): if the program will plot the result shapes. True by default.
+		show_raster (bool): if the program will plot the result shapes. True by default.
 		attribute_save (bool): if the program will want to save the shapes to the shape_mask attributes.
 			True by default.
 		src_crs (str): the source tif CRS, by default it is 'EPSG:4326' lat lon coordinate system
@@ -749,7 +721,7 @@ def open_tif(layer_path, show_raster = True, close = False):
 	This method does not add the layer to the mask object.
 
 	layer_path (str): the path to the tif file
-	show (bool): if the method will plot the raster, true by default
+	show_raster (bool): if the method will plot the raster, true by default
 	close (bool): if the method will close the raster afterward, prevent possible permission errors.
 		False by default.
 
@@ -1098,6 +1070,35 @@ def convert_shape_crs(shape, src_crs, dst_crs):
 												always_xy=True).transform
 
 	return shapely.ops.transform(buffer_project, shape)
+
+## MERGE HELPER METHOD
+
+def _sum_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
+	"""The sum method will add up the values from all the layers. We can also
+	customize the weights. The behind scene of this method is that it multiplys
+	each layers with the corresponding weight, and add the in-memory temporary
+	layers together"""
+
+	if len(np.unique(merged_data)) == 1:
+		mask = np.ones(merged_data.shape, dtype=bool)
+		np.add(np.zeros(merged_data.shape), new_data.data, out=merged_data,
+			where = mask, casting="unsafe")
+	else:
+		np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
+
+def _and_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
+	"""By default, the merge_layer method will use a binary 'and' method:
+	if any of the n grid cells of the n layers at the same location have 0,
+	then the returned self.merged_layer will also have 0 at that location.
+	In other words, if all the layers indicate that a land is not unavailable (!=0),
+	the merged result will have value 1. """
+
+	if len(np.unique(merged_data)) == 1:
+		mask = np.ones(merged_data.shape, dtype=bool)
+	else:
+		mask = merged_data != 0
+
+	np.copyto(merged_data, new_data.data, where=mask, casting="unsafe")
 
 
 ## VISUALIZATION METHOD
