@@ -2,6 +2,8 @@ Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/maste
 
 # Incorporating Mask into Cutout Workflow
 
+You can try an executable script of this documentation with its [Example IPython Notebook](https://github.com/GeodataTools/geodata/blob/master/example_notebooks/mask_on_cutout.ipynb). 
+
 ## 1. Introduction
 
 Geodata is able to process geospatial data to extract cutouts over specified geographies. Built off the [rasterio library](https://rasterio.readthedocs.io/en/latest/quickstart.html), the **mask** module imports rasters and shapefiles, merges and flattens multiple layers together, and extracts subsetted cutout data from merged masks and shapefiles.
