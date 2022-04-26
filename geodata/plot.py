@@ -17,16 +17,12 @@ import logging
 import matplotlib.pyplot as plt
 import matplotlib.animation as anim
 from .mask import show
+from .cutout import ds_reformat_index
 plt.rcParams["animation.html"] = "jshtml"
 
 logger = logging.getLogger(__name__)
 show = show #pylint: disable=self-assigning-variable
 
-def ds_reformat_index(ds):
-	"""format the dataArray generated from the convert function"""
-	if 'lat' in ds.dims and 'lat' in ds.dims:
-		return ds.sortby(['lat', 'lon'])
-	return ds.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'}).sortby(['lat', 'lon'])
 
 
 def ds_ts_aggregate(ds, agg_method):
@@ -120,7 +116,7 @@ def time_series(ds, lat_slice = None, lon_slice = None, agg_slice = True,
 					raise ValueError(f"Longitude for {key} out of bound.")
 
 			if log_new_coord:
-				logger.info("Find grid cell containing coordinate for %s at lat = %la, lon = %lo.", key, la, lo)
+				logger.info("Find grid cell containing coordinate for %s at lat = %f, lon = %f.", key, la, lo)
 			ds.sel(lat = la, lon = lo).plot(ax = ax, label = key, **kwargs)
 			create_title += f"{loc_name} "
 

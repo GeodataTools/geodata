@@ -260,8 +260,7 @@ class Cutout:
 
 		"""
 		#make sure data is in correct format for coarsening
-		xr_ds = self.meta.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
-		xr_ds = xr_ds.sortby(['lat', 'lon'])
+		xr_ds = ds_reformat_index(self.meta)
 		mask = load_mask(name, mask_dir = config.mask_dir)
 
 		if not mask.merged_mask and not mask.shape_mask:
@@ -286,7 +285,7 @@ class Cutout:
 			Defaults to True.
 
 		"""
-		xr_ds = self.meta.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
+		xr_ds = ds_reformat_index(self.meta)
 		area_arr = np.zeros((xr_ds.lat.shape[0], xr_ds.lon.shape[0]))
 		lat_diff = np.abs((xr_ds.lat[1].values - xr_ds.lat[0].values))
 		for i, lat in enumerate(xr_ds.lat.values):
@@ -334,11 +333,8 @@ class Cutout:
 		"""
 		axis = ("lat", "lon")
 
-		if "x" in dataset.dims and "y" in dataset.dims:
-			dataset = dataset.rename({'x': 'lon', 'y': 'lat'})
-		else:
-			dataset = dataset.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'})
-
+		dataset = ds_reformat_index(dataset)
+		
 		dataset = dataset.transpose("time", "lat", "lon")
 
 		if self.merged_mask is None and self.shape_mask is None:
@@ -392,7 +388,14 @@ class Cutout:
 
 	pv = pv
 
-
+def ds_reformat_index(ds):
+	"""format the dataArray generated from the convert function"""
+	if 'lat' in ds.dims and 'lon' in ds.dims:
+		return ds.sortby(['lat', 'lon'])
+	elif 'lat' in ds.coords and 'lon' in ds.coords:
+		return ds.reset_coords(['lon', 'lat'], drop = True).rename({'x': 'lon', 'y': 'lat'}).sortby(['lat', 'lon'])
+	else:
+		return ds.rename({'x': 'lon', 'y': 'lat'}).sortby(['lat', 'lon'])
 
 def _find_intercept(list1, list2, start, threshold = 0):
 	'''
