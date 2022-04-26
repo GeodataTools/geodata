@@ -1,6 +1,9 @@
 Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
 
+
 # Mask Workflow Example
+
+You can try an executable script of this documentation with its [Example IPython Notebook](https://github.com/GeodataTools/geodata/blob/master/example_notebooks/mask_creation_workflow.ipynb). 
 
 ## 1. Introduction
 
