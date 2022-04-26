@@ -2,7 +2,7 @@ Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/maste
 
 # Downloading MERRA2 Data and creating MERRA2 Cutouts
 
-A short guide to use **geodata** to download MERRA2 data, and create cutouts - subsets of data based on specific time and geographic ranges - for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
+A short guide to using **geodata** to download MERRA2 data, and create cutouts - subsets of data based on specific time and geographic ranges - for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
 **Geodata** is currently optimized to work with the following MERRA2 datasets:
 * [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
@@ -66,7 +66,7 @@ Running the above code does not actually download the data yet.  Instead, it che
 and returns a `dataset` object indicating whether the data is "prepared."
 
 ```
-<Dataset merra2 years=2012-2012 months=2-2 datadir=/Users/williamhonaker/desktop/davidson/data_for_geodata/merra2 Prepared>
+<Dataset merra2 years=2012-2012 months=2-2 datadir=/Users/johndoe/desktop/geodata/data/merra2 Prepared>
 ```
 
 A "prepared" dataset indicates that the directories for storing the data - which take the form `/merra2/{years}` (or `/merra2/{years}/{months}` for hourly data) for every unique time period in the data - have been created and are populated with downloaded data.  
@@ -81,7 +81,7 @@ Files for the MERRA2 hourly, single-level surface flux diagnostics will be downl
 
 Each daily file is about 400mb in size, and contains all 46 variables detailed under the "Subset/Get Data" tab here: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
-Files for the MERRA2 monthly, single-level surface flux diagnostics will be downloaded at the monthly level, meaning that if you download data fo January 2011 to June 2011, 6 monthly files will download to the directory `/merra2/2011`.  These files contain the same variables as the hourly dataset described above.
+Files for the MERRA2 monthly, single-level surface flux diagnostics will be downloaded at the monthly level, meaning that if you download data for January 2011 to June 2011, 6 monthly files will download to the directory `/merra2/2011`.  These files contain the same variables as the hourly dataset described above.
 
 
 
