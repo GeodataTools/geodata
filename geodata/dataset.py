@@ -22,19 +22,21 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
-import xarray as xr
-import numpy as np
-import os, sys, shutil
 from tempfile import mkstemp
 from calendar import monthrange
-
+import os
+import sys
+import shutil
 import logging
+import xarray as xr
+import numpy as np
+from shapely.geometry import box
+from . import config, datasets #pylint: disable=unused-import
+
 logger = logging.getLogger(__name__)
 
-from . import config, datasets
-
-class Dataset(object):
-	def __init__(self, **datasetparams):
+class Dataset:
+	def __init__(self, **datasetparams): #pylint: disable=too-many-branches,too-many-statements
 		if 'module' not in datasetparams:
 			raise ValueError("`module` needs to be specified")
 		if 'weather_data_config' not in datasetparams:
@@ -51,11 +53,11 @@ class Dataset(object):
 		# else:
 		self.datadir = self.dataset_module.datadir
 
-		if not "years" in datasetparams:
+		if "years" not in datasetparams:
 			raise ValueError("`years` need to be specified")
 		self.years = years = datasetparams['years']
 
-		if not "months" in datasetparams:
+		if "months" not in datasetparams:
 			logger.info("No months specified, defaulting to 1-12")
 			self.months = months = slice(1,12)
 		else:
@@ -63,15 +65,9 @@ class Dataset(object):
 
 		if "opendap" in datasetparams:
 			self.opendap = opendap = datasetparams["opendap"]
-			logger.info("OpenDap download: {}".format(self.opendap))
+			logger.info("OpenDap download: %s", self.opendap)
 		else:
 			self.opendap = opendap = False
-
-		#TODO Better date handling that should require just input date string and output date string.
-		#if self.weatherconfig['file_granularity'] != 'daily' and "days" in datasetparams:
-		#	raise ValueError("Indicated data source is not daily.")
-		#else:
-		#	self.days = days = datasetparams['days'] ## need to indicate a better check here
 
 		self.prepared = False
 		self.toDownload = []
@@ -81,7 +77,7 @@ class Dataset(object):
 
 		if 'bounds' in datasetparams:
 			self.bounds = datasetparams['bounds']
-			if type(self.bounds) is list and len(self.bounds) == 4:
+			if isinstance(self.bounds, list) and len(self.bounds) == 4:
 				x1, y1, x2, y2 = datasetparams['bounds']
 				datasetparams.update(xs=slice(x1, x2),
 									ys=slice(y2, y1))
@@ -127,7 +123,7 @@ class Dataset(object):
 									self.datasetfn_opendap(self.weatherconfig['url_opendap'], self.weatherconfig['variables'], yr, mo, day)))
 						else:
 							if opendap:
-								logger.warn("OpenDAP URL not specified for given dataset. Defaulting to standard download.")
+								logger.warning("OpenDAP URL not specified for given dataset. Defaulting to standard download.")
 
 							self.toDownload.append((self.config, filename, self.datasetfn(self.weatherconfig['url'], yr, mo, day)))
 					else:
@@ -158,7 +154,7 @@ class Dataset(object):
 								))
 						else:
 							if opendap:
-								logger.warn("OpenDAP URL not specified for given dataset. Defaulting to standard download.")
+								logger.warning("OpenDAP URL not specified for given dataset. Defaulting to standard download.")
 
 							self.toDownload.append((
 								self.config,
@@ -211,9 +207,9 @@ class Dataset(object):
 		if not self.prepared:
 
 			if {"xs", "ys"}.difference(datasetparams):
-				logger.warn("Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global.")
+				logger.warning("Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global.")
 
-			logger.info(f'{incomplete_count} files not completed.')
+			logger.info('%s files not completed.', incomplete_count)
 			## Main preparation call for metadata
 			#	preparation.cutout_get_meta
 			#	cutout.meta_data_config
@@ -248,8 +244,8 @@ class Dataset(object):
 
 		# TODO: Add lat lon subsetting based on self.bounds
 		# opendap URL format requires knowing the indexes in MERRA2 -- not just lat, lon bounds --
-		# e.g., https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]
-		if self.bounds != None:
+		# e.g., ~/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]
+		if self.bounds is not None:
 			logger.info('Bounds not used in OpenDAP call. Defaulting to global.')
 
 		fn = fn + '?' + ",".join(variables) + ",time,lat,lon"
@@ -268,14 +264,14 @@ class Dataset(object):
 		#		If true, download only first file in download list (e.g., first day of month)
 		"""
 
-		if testing == True:
+		if testing is True:
 			if len(self.downloadedFiles) > 0:
 				logger.info('First file for testing has already been downloaded.')
 				return
 			else:
 				self.toDownload = [self.toDownload[0]]
 				self.totalFiles = [self.totalFiles[0]]
-				self.testDataset = True
+				self.testDataset = True #pylint: disable=attribute-defined-outside-init
 
 		api_func = self.weatherconfig['api_func']
 
@@ -301,10 +297,10 @@ class Dataset(object):
 		if self.downloadedFiles == self.totalFiles:
 			self.prepared = True
 
-		if trim == True:
+		if trim is True:
 			self.trim_variables()
 
-	def trim_variables(self, fn = None):
+	def trim_variables(self):
 		""" Reduce size of file by trimming variables in file
 		#
 		#	Parameters
@@ -318,19 +314,20 @@ class Dataset(object):
 		# TODO: create options for non NetCDF4 files (eg pynio)
 		"""
 
-		for d, f in self.downloadedFiles:
-			vars = self.weatherconfig['variables']
+		for f in self.downloadedFiles:
+			file_path = f[1]
+			variables = self.weatherconfig['variables']
 
-			with xr.open_dataset(f) as ds:
+			with xr.open_dataset(file_path) as ds:
 				var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
 				ds = ds.rename(var_rename)
-				ds = ds[vars]
+				ds = ds[variables]
 
 				fd, target = mkstemp(suffix='.nc4')
 				os.close(fd)
 				ds.to_netcdf(target)
 
-			shutil.move(target,f)
+			shutil.move(target,file_path)
 
 	@property
 	def meta_data_config(self):
@@ -351,7 +348,7 @@ class Dataset(object):
 
 	@property
 	def coords(self):
-		return self.meta.coords
+		return self.meta.coords #pylint: disable=no-member
 
 	@property
 	def shape(self):
@@ -367,7 +364,6 @@ class Dataset(object):
 		return np.asarray((np.ravel(xs), np.ravel(ys))).T
 
 	def grid_cells(self):
-		from shapely.geometry import box
 		coords = self.grid_coordinates()
 		span = (coords[self.shape[1]+1] - coords[0]) / 2
 		return [box(*c) for c in np.hstack((coords - span, coords + span))]
@@ -379,4 +375,3 @@ class Dataset(object):
 						self.months.start, self.months.stop,
 						self.datadir,
 						"Prepared" if self.prepared else "Unprepared"))
-
