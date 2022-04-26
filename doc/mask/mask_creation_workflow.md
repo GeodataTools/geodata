@@ -345,7 +345,7 @@ Note that the modis layer has a very different bounding box then the slope layer
 Method `open_tif` can open a layer without adding it to the layer, this allows us to visualize it before-hand. It is a good practice to close the raster after opening it to avoid writing permission conflict issues. Closing the raster below does not involve any layer operation associated with the mask object.
 
 ```python
-modis_opener = geodata.mask.open_tif(modis_path, show=True)
+modis_opener = geodata.mask.open_tif(modis_path, show_raster=True)
 modis_opener.close()
 ```
 ![png](https://github.com/east-winds/geodata/blob/master/images/mask_creation_workflow/output_36_0.png)
@@ -529,7 +529,7 @@ china.get_res()
  'slope_filtered': (0.008983152841195215, 0.008983152841195215),
  'protected': (0.008983152841195215, 0.008983152841195215)}
 ```python
-china.merge_layer(attribute_save = False, show = False).res
+china.merge_layer(attribute_save = False, show_raster = False).res
 ```
 (0.006363926718366056, 0.006364039220827179)
 ### 5.1 binary AND method
@@ -567,7 +567,7 @@ Try again with the `reference_layer` parameter:
   
 
 ```python
-china.merge_layer(layers = ['elevation_filtered', 'modis_filtered'], reference_layer = 'elevation_filtered', show = False)
+china.merge_layer(layers = ['elevation_filtered', 'modis_filtered'], reference_layer = 'elevation_filtered', show_raster = False)
 ```
 
 The result of the `merged_mask` method is saved to `china.merged_mask` with the same resolution as the reference layer, in this case `elevation_filtered`.

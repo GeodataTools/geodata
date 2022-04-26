@@ -1,0 +1,49 @@
+[MESSAGES CONTROL]
+disable=
+	C0103,
+	C0116,
+	C0115,
+	C0209,
+	W0105,
+	W0511,
+	C0114,
+	R1705,
+	R1710,
+	R0801,
+	E0401,
+	E0611,
+	R1721,
+	R1720,
+	R0401,
+	R1704,
+	E1101,
+	R1732,
+	R0201,
+	W0613,
+	R1716,
+	R1714
+
+
+
+
+
+
+
+[FORMAT]
+indent-string='\t'
+max-line-length=180
+max-module-lines=1500
+
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=116
+# Maximum number of attributes for a class (see R0902).
+max-attributes=15
+max-locals=27
+max-branches=35
+max-statements=75
+
+[ELIF]
+# Maximum number of nested blocks for function / method body
+max-nested-blocks=10

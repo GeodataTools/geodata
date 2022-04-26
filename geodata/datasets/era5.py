@@ -23,14 +23,13 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import os
 import glob
+import logging
 import numpy as np
 import xarray as xr
-from tempfile import mkstemp
-import logging
-logger = logging.getLogger(__name__)
 
 from ..config import era5_dir
 
+logger = logging.getLogger(__name__)
 datadir = era5_dir
 
 try:
@@ -77,14 +76,11 @@ def api_hourly_era5(
 	if len(toDownload) == 0:
 		logger.info("All ERA5 files for this dataset have been downloaded.")
 	else:
-		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
+		logger.info("Preparing to download %s files.", str(len(toDownload)))
 
 		for f in toDownload:
 			print(f)
 			os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-
-			fd, target = mkstemp(suffix='.nc4')
-			fd2, target2 = mkstemp(suffix='.nc4')
 
 			## for each file in self.todownload - need to then reextract year month in order to make query
 			query_year = str(f[2])
@@ -110,7 +106,7 @@ def api_hourly_era5(
 				'variable': download_vars
 			}
 
-			if bounds != None:
+			if bounds is not None:
 				full_request['area'] = bounds
 
 			full_result = cdsapi.Client().retrieve(
@@ -118,9 +114,9 @@ def api_hourly_era5(
 				full_request
 			)
 
-			logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+			logger.info("Downloading metadata request for %s variables to %s", len(full_request['variable']), f)
 			full_result.download(f[1])
-			logger.info("Successfully downloaded to {}".format(f[1]))
+			logger.info("Successfully downloaded to %s", f[1])
 
 def api_monthly_era5(
 	toDownload,
@@ -138,7 +134,7 @@ def api_monthly_era5(
 	if len(toDownload) == 0:
 		logger.info("All ERA5 files for this dataset have been downloaded.")
 	else:
-		logger.info("Preparing to download " + str(len(toDownload)) + " files.")
+		logger.info("Preparing to download %s files.", str(len(toDownload)))
 
 		for f in toDownload:
 			print(f)
@@ -158,7 +154,7 @@ def api_monthly_era5(
 				'variable': download_vars
 			}
 
-			if bounds != None:
+			if bounds is not None:
 				full_request['area'] = bounds
 
 			full_result = cdsapi.Client().retrieve(
@@ -166,9 +162,9 @@ def api_monthly_era5(
 				full_request
 			)
 
-			logger.info("Downloading metadata request for {} variables to {}".format(len(full_request['variable']), f))
+			logger.info("Downloading metadata request for %s variables to %s", len(full_request['variable']), f)
 			full_result.download(f[1])
-			logger.info("Successfully downloaded to {}".format(f[1]))
+			logger.info("Successfully downloaded to %s", f[1])
 
 
 
@@ -244,7 +240,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
 	if not os.path.isfile(fn):
 		return None
 	with xr.open_dataset(fn) as ds:
-		logger.info(f'Opening `{fn}`')
+		logger.info('Opening %s', fn)
 		ds = _rename_and_clean_coords(ds)
 		# ds = _add_height(ds)
 		ds = subset_x_y_era5(ds, xs, ys)
@@ -288,7 +284,7 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
 	fn = meta_attrs['fn']
 
 	logger.info(yearmonths)
-	logger.info([(year, month) for year, month in yearmonths])
+	logger.info(list(yearmonths))
 
 	return [
 		dict(

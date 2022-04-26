@@ -32,7 +32,6 @@ Installation will also install the following dependencies:
 * `shapely`
 * `progressbar2`
 
-
 ## Documentation
 
 Read the [Introduction to Geodata](doc/general/Introduction.md) documentation to get started. 
@@ -48,9 +47,17 @@ You may also jump directly to [Example Notebooks](example_notebooks).
 We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://mdavidson.org/about/) of geodata.
 
 
-
 ## License
 
 Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](/LICENSE.txt) for more details.
+
+## Support
+
+The Geodata team would like to thank the Center for Global Transformation at UC San Diego for providing financial support to the project.
+
+## Zenodo Sandbox
+
+[![DOI](https://zenodo.org/badge/218690319.svg)](https://zenodo.org/badge/latestdoi/218690319)
+
 
 
