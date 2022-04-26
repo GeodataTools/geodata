@@ -1,4 +1,10 @@
+Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+
 # Visualization Examples
+
+You can try an executable script of this documentation with its [Example IPython Notebook](https://github.com/GeodataTools/geodata/blob/master/example_notebooks/visualization.ipynb). 
+
+## Introduction
 
 Geodata also provides the users with different methods to visualize outputs. 
 
