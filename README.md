@@ -13,7 +13,7 @@ Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, wh
 
 ## Installation
 
-**Geodata** has been tested to run with python3 (>= 3.6.9). It requires a number of libraries to work with netCDF files including `xarray`, `netcdf4` and `dask`. Read the [package setup instructions](doc/general/packagesetup.md) to configure and install the package.
+**Geodata** has been tested to run with python3 (>= 3.6.9). It requires a number of libraries to work with netCDF files including `xarray`, `netcdf4` and `dask`, and a number of open-source binary libraries (`GDAL`, `GEOS`, and `PROJ`) and python libraries (`rasterio` and `shapely`) to work with geospatial files. Read the [package setup instructions](doc/general/packagesetup.md) to configure and install the package.
 
 
 
@@ -32,9 +32,17 @@ You may also jump directly to [Example Notebooks](example_notebooks).
 We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://mdavidson.org/about/) of geodata.
 
 
-
 ## License
 
 Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](/LICENSE.txt) for more details.
+
+## Support
+
+The Geodata team would like to thank the Center for Global Transformation at UC San Diego for providing financial support to the project.
+
+## Zenodo Sandbox
+
+[![DOI](https://zenodo.org/badge/218690319.svg)](https://zenodo.org/badge/latestdoi/218690319)
+
 
 

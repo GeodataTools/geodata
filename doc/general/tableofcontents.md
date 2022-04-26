@@ -14,11 +14,11 @@ Find documentation about how to use the **geodata** package here.
      - [Downloading MERRA2 Data](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_download.md#downloading-merra2-data-and-creating-merra2-cutouts)
      - [Creating Cutouts](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_download.md#preparing-the-cutout)
   - [Outputting Data with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md)
-     - [Data Configs and Outputs](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#merra2-configs-and-outputs)
-     - [Generating Wind Outputs with MERRA2](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#generating-wind-outputs-with-merra2-data)
-     - [Generating Solar Outputs with MERRA2](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#generating-solar-outputs-with-merra2-data)
-     - [Generating Aerosol Outputs with MERRA2](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#generating-aerosol-outputs-with-merra2-data)
-     - [Example Output](https://github.com/east-winds/geodata/edit/master/doc/merra2/merra2_outputs.md#example-output)
+     - [Data Configs and Outputs](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#merra2-configs-and-outputs)
+     - [Generating Wind Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-wind-outputs-with-merra2-data)
+     - [Generating Solar Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-solar-outputs-with-merra2-data)
+     - [Generating Aerosol Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-aerosol-outputs-with-merra2-data)
+     - [Example Output](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#example-output)
 
 
 - Using ERA5 Data
