@@ -334,7 +334,7 @@ class Cutout:
 		axis = ("lat", "lon")
 
 		dataset = ds_reformat_index(dataset)
-		
+
 		dataset = dataset.transpose("time", "lat", "lon")
 
 		if self.merged_mask is None and self.shape_mask is None:
