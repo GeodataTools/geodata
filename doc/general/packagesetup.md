@@ -1,4 +1,4 @@
-Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+Back to the [Table of Contents](https://github.com/GeodataTools/geodata/blob/master/doc/general/tableofcontents.md).
 
 # Geodata Package Setup
 
@@ -21,10 +21,10 @@ Table of Contents:
 
 ## Downloading and Configuring Geodata
 
-To download **geodata**, open a terminal/shell window navigate to your preferred working directory, and run the following: (If you do not have Git installed, you may also directly download it with this [link](https://github.com/east-winds/geodata/archive/refs/heads/master.zip).
+To download **geodata**, open a terminal/shell window navigate to your preferred working directory, and run the following: (If you do not have Git installed, you may also directly download it with this [link](https://github.com/GeodataTools/geodata/archive/refs/heads/master.zip).
 
 ```
-git clone https://github.com/east-winds/geodata.git
+git clone https://github.com/GeodataTools/geodata.git
 cd geodata
 ```
 
