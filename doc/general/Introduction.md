@@ -85,9 +85,6 @@ Geodata automatically reprojects GIS data in different coordinate reference syst
 
 For example, Geodata can create a binary mask of wind energy suitability in China based on the above GIS inputs.
 
-![png](https://github.com/east-winds/geodata/blob/master/images/mask_workflow.png)
-
-
 ```
 china = geodata.Mask("China")
 china.add_layer(layer_path = {'modis': modis_path, 'elevation': elevation_path})
@@ -105,9 +102,10 @@ geodata.mask.show(china.merged_mask, shape = china_prov_shapes['geometry'], titl
 china.save_mask()
 ```
 
-In the final step, we apply the Mask object to the Cutout. Geodata automatically coarsens the (typically) high-resolution Mask into the same resolution as the Cutout, adding fractions of the coarse cells covered by the Mask and areas calculated via an equal-area projection.
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_workflow.png)
 
-![png](https://github.com/east-winds/geodata/blob/master/images/mask_cutout_workflow.png)
+
+In the final step, we apply the Mask object to the Cutout. Geodata automatically coarsens the (typically) high-resolution Mask into the same resolution as the Cutout, adding fractions of the coarse cells covered by the Mask and areas calculated via an equal-area projection.
 
 
 ```
@@ -121,9 +119,8 @@ weighted_mean_pv_series = (((ds_mask['solar'] * ds_mask['mask'] * ds_mask['area'
               (ds_mask['mask'] * ds_mask['area']).sum())
 
 plt.plot(weighted_mean_pv_series)
-plt.title("Solar series weighted by area for Cutout region (China).")
-plt.grid()
-plt.xlabel("2011-01-01 (GMT)")
-plt.ylabel("Weighted mean PV value for suitable area")
-plt.show()
 ```
+
+![png](https://github.com/east-winds/geodata/blob/master/images/mask_cutout_workflow.png)
+
+
