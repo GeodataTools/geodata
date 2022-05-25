@@ -455,7 +455,7 @@ class Mask:
 			shape_raster = create_temp_tif(arr.astype(np.int8), shape_transform)
 
 			self.layers[key] = shape_raster
-			logger.info(f"Layer {key} added to the mask {self.name}.")
+			logger.info("Layer %s added to the mask %s.", key, self.name)
 
 	def extract_shapes(self, shapes, layer = None,
 					   combine_shape = False, combine_name = None,
