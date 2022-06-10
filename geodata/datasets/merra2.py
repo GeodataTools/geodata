@@ -449,15 +449,15 @@ lat_direction = True
 # Spinup variable
 spinup_var = True
 def spinup_year(year, month):
-	if 1980 >= year < 1992:
+	if (year>=1980 and year<1992):
 		spinup = '100'
-	elif 1992 >= year < 2001:
+	elif (year>=1992 and year<2001):
 		spinup = '200'
-	elif 2001 >= year < 2011:
+	elif (year>=2001 and year<2011):
 		spinup = '300'
-	elif 2011 >= year < 2020:
+	elif (year>=2011 and year<2020):
 		spinup = '400'
-	elif (year == 2020 and month == 9):
+	elif (year==2020 and month==9):
 		spinup = '401'
 	else:
 		spinup = '400'
