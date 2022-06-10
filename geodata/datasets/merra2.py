@@ -463,3 +463,4 @@ def spinup_year(year, month):
 		spinup = '400'
 
 	return spinup
+	
