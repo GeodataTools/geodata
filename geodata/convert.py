@@ -46,7 +46,7 @@ from .utils import make_optional_progressbar
 
 logger = logging.getLogger(__name__)
 
-def convert_cutout(cutout, convert_func, show_progress=True, **convert_kwds):
+def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
 	"""
 	Convert and aggregate a weather-based renewable generation time-series.
 
