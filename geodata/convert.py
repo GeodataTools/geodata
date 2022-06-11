@@ -87,7 +87,7 @@ def convert_cutout(cutout, convert_func, show_progress=True, **convert_kwds):
 						else convert_func.__name__)
 		prefix = 'Convert `{}`: '.format(func_name)
 
-	maybe_progressbar = make_optional_progressbar(False, prefix, len(yearmonths))
+	maybe_progressbar = make_optional_progressbar(show_progress, prefix, len(yearmonths))
 
 	for ym in maybe_progressbar(yearmonths):
 		with xr.open_dataset(cutout.datasetfn(ym)) as ds:
