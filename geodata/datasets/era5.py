@@ -321,7 +321,7 @@ weather_data_config = {
 					   'toa_incident_solar_radiation',
 					   'total_sky_direct_solar_radiation_at_surface',
 					   'forecast_surface_roughness',
-					   'orography'
+					   'geopotential'
 				   ]
 		),
 	'wind_solar_monthly': dict(
@@ -346,7 +346,7 @@ weather_data_config = {
 					   'toa_incident_solar_radiation',
 					   'total_sky_direct_solar_radiation_at_surface',
 					   'forecast_surface_roughness',
-					   'orography'
+					   'geopotential'
 				   ]
 		)
 }
