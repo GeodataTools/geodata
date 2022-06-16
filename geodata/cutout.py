@@ -70,7 +70,6 @@ class Cutout:
 		self.shape_mask = None
 		self.area = None
 
-
 		if 'bounds' in cutoutparams:
 			# if passed bounds array instead of xs, ys slices
 			x1, y1, x2, y2 = cutoutparams.pop('bounds')
@@ -196,6 +195,26 @@ class Cutout:
 	@property
 	def weather_data_config(self):
 		return self.dataset_module.weather_data_config
+	
+	@property
+	def variables(self):
+		return self.dataset_module.weather_data_config[self.config]['variables']
+
+	@property
+	def info(self):
+		return dict(
+			name = self.name,
+			config = self.config,
+			prepared = self.prepared,
+			projection = self.dataset_module.projection,
+			shape = [len(self.coords["y"]), len(self.coords["x"])],
+			extent = (list(self.coords["x"].values[[0, -1]]) + list(self.coords["y"].values[[-1, 0]])),
+			dimensions = self.meta.dims,
+			coordinates = self.meta.coords,
+			variables = self.dataset_module.weather_data_config[self.config]['variables'],
+			dataset_module = self.dataset_module,
+			cutout_dir = self.cutout_dir
+		)
 
 	@property
 	def projection(self):
