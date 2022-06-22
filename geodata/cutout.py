@@ -195,7 +195,7 @@ class Cutout:
 	@property
 	def weather_data_config(self):
 		return self.dataset_module.weather_data_config
-	
+
 	@property
 	def variables(self):
 		return self.dataset_module.weather_data_config[self.config]['variables']
