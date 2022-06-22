@@ -241,8 +241,8 @@ class Mask:
 		"""Find the coords that bound region that all layers contain"""
 
 		layer_bound = self.get_bounds(layers = layers)
-		min_left, min_bottom = (max([layer_bound[b][num] for b in layer_bound]) for num in [0, 1]) #pylint: disable=consider-using-dict-items
-		min_right, min_top = (min([layer_bound[b][num] for b in layer_bound]) for num in [2, 3]) #pylint: disable=consider-using-dict-items
+		min_left, min_bottom = (max([layer_bound[b][num] for b in layer_bound]) for num in [0, 1]) #pylint: disable=consider-using-dict-items,consider-using-generator
+		min_right, min_top = (min([layer_bound[b][num] for b in layer_bound]) for num in [2, 3]) #pylint: disable=consider-using-dict-items,consider-using-generator
 
 		return (min_left, min_bottom, min_right, min_top)
 
