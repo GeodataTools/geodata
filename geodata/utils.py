@@ -35,6 +35,6 @@ def make_optional_progressbar(show, prefix, max_value):
 			prefix = prefix.strip() + ": "
 		maybe_progressbar = pgb.ProgressBar(prefix=prefix, widgets=widgets, max_value=max_value)
 	else:
-		maybe_progressbar = lambda x: x
+		maybe_progressbar = lambda x: x #pylint: disable=unnecessary-lambda-assignment
 
 	return maybe_progressbar
