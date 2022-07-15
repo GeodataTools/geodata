@@ -166,7 +166,22 @@ def api_monthly_era5(
 			full_result.download(f[1])
 			logger.info("Successfully downloaded to %s", f[1])
 
+def _add_height(ds):
+	"""Convert geopotential 'z' to geopotential height following [1]
 
+	References
+	----------
+	[1] ERA5: surface elevation and orography, retrieved: 10.02.2019
+	https://confluence.ecmwf.int/display/CKB/ERA5%3A+surface+elevation+and+orography
+
+	"""
+	g0 = 9.80665
+	z = ds['z']
+	if 'time' in z.coords:
+		z = z.isel(time=0, drop=True)
+	ds['height'] = z/g0
+	ds = ds.drop('z')
+	return ds
 
 def convert_and_subset_lons_lats_era5(ds, xs, ys):
 	# Rename geographic dimensions to x,y
@@ -242,7 +257,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
 	with xr.open_dataset(fn) as ds:
 		logger.info('Opening %s', fn)
 		ds = _rename_and_clean_coords(ds)
-		# ds = _add_height(ds)
+		ds = _add_height(ds)
 		ds = subset_x_y_era5(ds, xs, ys)
 
 		ds = ds.rename({'fdir': 'influx_direct', 'tisr': 'influx_toa'})
@@ -321,7 +336,7 @@ weather_data_config = {
 					   'toa_incident_solar_radiation',
 					   'total_sky_direct_solar_radiation_at_surface',
 					   'forecast_surface_roughness',
-					   'orography'
+					   'geopotential'
 				   ]
 		),
 	'wind_solar_monthly': dict(
@@ -346,7 +361,7 @@ weather_data_config = {
 					   'toa_incident_solar_radiation',
 					   'total_sky_direct_solar_radiation_at_surface',
 					   'forecast_surface_roughness',
-					   'orography'
+					   'geopotential'
 				   ]
 		)
 }
