@@ -22,14 +22,7 @@ disable=
 	R1716,
 	R1714
 
-
-
-
-
-
-
 [FORMAT]
-indent-string='\t'
 max-line-length=180
 max-module-lines=1500
 
