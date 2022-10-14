@@ -19,7 +19,7 @@ Table of Contents:
     - [pipwin instruction](#option-i-pipwin)
     - [wheel file instruction](#option-ii-wheel-files)
 
-## Downloading and Configuring Geodata
+## Downloading Geodata
 
 To download **geodata**, open a terminal/shell window navigate to your preferred working directory, and run the following: (If you do not have Git installed, you may also directly download it with this [link](https://github.com/GeodataTools/geodata/archive/refs/heads/master.zip).
 
@@ -28,9 +28,16 @@ git clone https://github.com/GeodataTools/geodata.git
 cd geodata
 ```
 
-* To configure where to store cutouts and masks, you can define a environment variable called `GEODATA_ROOT` and save in your shell configuration files, such as `.bashrc` or `.zshrc`:
+## Configuring Dataset and Cutout Storage Location
+
+To configure where to store cutouts and masks, you can define a environment variable called `GEODATA_ROOT` and save in your shell configuration files, such as `.bashrc` or `.zshrc`:
 ```bash
 export GEODATA_ROOT=<YOUR_PATH_HERE>
+```
+
+If you are running geodata in a Jupyter Notebook, you could define the variable by adding and running the following cell:
+```
+%setenv GEODATA_ROOT <YOUR PATH HERE>
 ```
 
 If you do not define this variable, all datasets and cutouts will be stored under installation directory of this package by default. 
