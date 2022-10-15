@@ -11,7 +11,8 @@ Make sure that you have the following **required** software set up:
 
 
 Table of Contents:
-- [Downloading and Configuring Geodata](#downloading-and-configuring-geodata)
+- [Downloading Geodata](#downloading-geodata)
+- [Configuring File Storage](#configuring-file-storage)
 - [Building Geodata](#building-geodata)
   - [Recommended Conda Installation Guide](#the-recommended-way-installation-in-conda-environment)
   - [MAC OS Pip Guide](#mac-os-installation-with-pip)
@@ -28,9 +29,9 @@ git clone https://github.com/GeodataTools/geodata.git
 cd geodata
 ```
 
-## Configuring Dataset and Cutout Storage Location
+## Configuring File Storage
 
-To configure where to store cutouts and masks, you can define a environment variable called `GEODATA_ROOT` and save in your shell configuration files, such as `.bashrc` or `.zshrc`:
+To configure where to store downloaded and processed files, define an environment variable called `GEODATA_ROOT` and save in your shell configuration files, such as `.bashrc` or `.zshrc`:
 ```bash
 export GEODATA_ROOT=<YOUR_PATH_HERE>
 ```
@@ -40,7 +41,7 @@ If you are running geodata in a Jupyter Notebook, you could define the variable 
 %setenv GEODATA_ROOT <YOUR PATH HERE>
 ```
 
-If you do not define this variable, all datasets and cutouts will be stored under installation directory of this package by default. 
+If you do not define this variable, all datasets and cutouts will be stored under the installation directory in `datasets/` by default. 
 
 ## Building Geodata
 
