@@ -20,48 +20,55 @@ GEODATA
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
-from __future__ import absolute_import #pylint: disable=misplaced-future
-from codecs import open #pylint: disable=redefined-builtin
-from setuptools import setup, find_packages
+from __future__ import absolute_import  # pylint: disable=misplaced-future
 
-requirement_list = ['numpy',
-				  'scipy',
-				  'pandas>=0.22',
-				  'bottleneck',
-				  'numexpr',
-				  'xarray>=0.11.2',
-				  'netcdf4',
-				  'dask[complete]>=0.18.0',
-				  'boto3',
-				  'toolz',
-				  'pyproj',
-				  'requests',
-				  'matplotlib',
-				  'rasterio',
-				  'shapely',
-		   	          'progressbar2']
+from codecs import open  # pylint: disable=redefined-builtin
 
-with open('README.md', encoding='utf-8') as f:
-	long_description = f.read()
+from setuptools import find_packages, setup
 
-exec(open('geodata/_version.py').read()) #pylint: disable=exec-used
+requirement_list = [
+    "numpy",
+    "scipy",
+    "pandas>=0.22",
+    "bottleneck",
+    "numexpr",
+    "xarray>=0.11.2",
+    "netcdf4",
+    "dask[complete]>=0.18.0",
+    "boto3",
+    "toolz",
+    "pyproj",
+    "requests",
+    "matplotlib",
+    "rasterio",
+    "shapely",
+    "progressbar2",
+]
+
+with open("README.md", encoding="utf-8") as f:
+    long_description = f.read()
+
+_version_raw = {}
+exec(open("geodata/_version.py").read(), _version_raw)  # pylint: disable=exec-used
+__version__ = _version_raw["__version__"]
 
 setup(
-	name='geodata',
-	version=__version__, #pylint: disable=undefined-variable
-	author='Michael Davidson (UCSD), William Honaker',
-	author_email='mrdavidson@ucsd.edu',
-	description='Geospatial Data Collection and Pre-Analysis Tools',
-	long_description=long_description,
-	license='GPLv3',
-	packages=find_packages(exclude=['doc', 'test']),
-	include_package_data=True,
-	install_requires=requirement_list,
-	classifiers=[
-		'Development Status :: 3 - Alpha',
-		'Environment :: Console',
-		'Intended Audience :: Science/Research',
-		'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-		'Natural Language :: English',
-		'Operating System :: OS Independent',
-	])
+    name="geodata",
+    version=__version__,  # pylint: disable=undefined-variable
+    author="Michael Davidson (UCSD), William Honaker",
+    author_email="mrdavidson@ucsd.edu",
+    description="Geospatial Data Collection and Pre-Analysis Tools",
+    long_description=long_description,
+    license="GPLv3",
+    packages=find_packages(exclude=["doc", "test"]),
+    include_package_data=True,
+    install_requires=requirement_list,
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+    ],
+)

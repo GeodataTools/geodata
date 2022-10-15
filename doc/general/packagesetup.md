@@ -11,7 +11,8 @@ Make sure that you have the following **required** software set up:
 
 
 Table of Contents:
-- [Downloading and Configuring Geodata](#downloading-and-configuring-geodata)
+- [Downloading Geodata](#downloading-geodata)
+- [Configuring File Storage](#configuring-file-storage)
 - [Building Geodata](#building-geodata)
   - [Recommended Conda Installation Guide](#the-recommended-way-installation-in-conda-environment)
   - [MAC OS Pip Guide](#mac-os-installation-with-pip)
@@ -19,44 +20,28 @@ Table of Contents:
     - [pipwin instruction](#option-i-pipwin)
     - [wheel file instruction](#option-ii-wheel-files)
 
-## Downloading and Configuring Geodata
+## Downloading Geodata
 
 To download **geodata**, open a terminal/shell window navigate to your preferred working directory, and run the following: (If you do not have Git installed, you may also directly download it with this [link](https://github.com/GeodataTools/geodata/archive/refs/heads/master.zip).
 
-```
+```bash
 git clone https://github.com/GeodataTools/geodata.git
 cd geodata
 ```
 
-Before building the package, you'll first need to tell it two things: where to put/look for downloaded data, and where to store _cutouts_ - subsets of downloaded data needed to generate output variables, and _masks_ - geospatial raster files for suitability analysis.  To do so, copy `geodata/config-default.py` to a new file `geodata/config.py`.
+## Configuring File Storage
 
-* To configure where to store cutouts and masks, change the value of `cutout_dir` so that it points to a folder in your working directory.  You'll need to follow a format that fits your operating system:
-
-```
-## Mac OS
-cutout_dir = '/Users/johndoe/desktop/geodata/data/cutouts'
-mask_dir = '/Users/johndoe/desktop/geodata/data/masks'
-
-## Windows
-cutout_dir = 'C:/Users/johndoe/Desktop/geodata/data/cutouts'
-mask_dir = 'C:/Users/johndoe/Desktop/geodata/data/masks'
+To configure where to store downloaded and processed files, define an environment variable called `GEODATA_ROOT` and save in your shell configuration files, such as `.bashrc` or `.zshrc`:
+```bash
+export GEODATA_ROOT=<YOUR_PATH_HERE>
 ```
 
-**Note**: Make sure you are referencing a folder and path that already exist - the package currently does not create it for you.
-
-* To configure where downloaded earth system data will be stored, change each datasets respective directory variable like so:
-
+If you are running geodata in a Jupyter Notebook, you could define the variable by adding and running the following cell:
 ```
-## Mac OS
-merra2_dir = '/Users/johndoe/desktop/geodata/data/merra2'
-era5_dir = '/Users/johndoe/desktop/geodata/data/era5'
-
-## Windows
-merra2_dir = 'C:/Users/johndoe/desktop/geodata/data/merra2'
-era5_dir = 'C:/Users/johndoe/desktop/geodata/data/era5'
+%setenv GEODATA_ROOT <YOUR PATH HERE>
 ```
 
-**Note**: Again, make sure you are referencing folders and paths that you've created beforehand - the package currently does not create them for you.
+If you do not define this variable, all datasets and cutouts will be stored under the installation directory in `datasets/` by default. 
 
 ## Building Geodata
 
@@ -70,27 +55,25 @@ If you already have Conda installed on your machine, jump straight to the `conda
 
 If you have conda 4.6 or later versions, in the terminal/shell, run the following command below to activate the conda [environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments).
 
-```
+```bash
 conda activate
 ```
 
 To use **geodata** in Python scripts by calling `import geodata`, you'll need to build the package.  To do so, in the terminal/shell window, navigate to the package's root directory (ie, "geodata"), and run the following:
 
-```
+```bash
 python3 setup.py install
 ```
 
 **Note I.**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
 
-**Note II.**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
+**Note II.**: If running `python3 setup.py install` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Conda (either Anaconda or miniconda depending on what you went with during setup).  Then run the following commands:
 
-**Note III.**: If running `python3 setup.py install` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Conda (either Anaconda or miniconda depending on what you went with during setup).  Then run the following commands:
-
-```
+```bash
 conda update --all
 ```
 
-```
+```bash
 conda install rasterio
 ```
 
@@ -98,25 +81,23 @@ conda install rasterio
 
 In the MAC OS terminal, navigate to the package's root directory, and run the following:
 
-```
+```bash
 python3 setup.py install
 ```
 
-**Note I.**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
-
-**Note II.**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
+**Note**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
 
 The downside of not using a package management environment like conda is that we might run into dependency installation errors and have to fix it manuelly. (For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.) All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires Cython and GDAL. For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
 
 If one of the dependency, such as **rasterio** does not install automatically (we know this through the error message from the command above), we will have to install it seperately in the terminal:
 
-```
+```bash
 pip install rasterio
 ```
 
 Once the library above is successfully installed, re-run the installation command above to build Geodata:
 
-```
+```bash
 python3 setup.py install
 ```
 
@@ -130,9 +111,7 @@ In the Windows command prompt, navigate to the package's root directory, and run
 python3 setup.py install
 ```
 
-**Note I.**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
-
-**Note II.**: You will need to rebuild the package after making any changes to `config.py` in order for your changes to take effect.
+**Note**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
 
 Similar to the MAC OS installation guide, it is likely that we would run into dependency installation error. We can figure out which dependency causes the error in the error message, and download that package seperately. For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio**  library, which requires other dependencies.
 
@@ -167,7 +146,7 @@ Similarly, if you run into installation errors regarding the **rasterio** or **b
 
 To install **rasterio** and the necessary GDAL library, we can download the appropriate binaries for your system by hand ([rasterio](https://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) and [GDAL](https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal)) , place them into the current working directory, and run the following command in the downloads folder:
 
-```
+```bash
 pip install -U pip
 pip install {GDAL binary name here}.whl
 pip install {rasterio binary name here}.whl

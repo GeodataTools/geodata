@@ -22,11 +22,15 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
-from .cutout import Cutout
-from .mask import Mask
-from .dataset import Dataset
-from .plot import *
+from pathlib import Path
+
 from ._version import __version__
+from .cutout import Cutout
+from .dataset import Dataset
+from .mask import Mask
+from .plot import *
 
 __author__ = "Michael Davidson (UCSD), William Honaker"
 __copyright__ = "GNU GPL 3 license"
+
+ROOT_PATH = Path(__file__).parent.resolve()
