@@ -24,13 +24,16 @@ from __future__ import absolute_import
 
 from pathlib import Path
 
+ROOT_PATH = Path(__file__).parent.resolve()
+
+# pylint: disable=wrong-import-position
 from ._version import __version__
 from .cutout import Cutout
 from .dataset import Dataset
 from .mask import Mask
 from .plot import *
 
+# pylint: enable=wrong-import-position
+
 __author__ = "Michael Davidson (UCSD), William Honaker"
 __copyright__ = "GNU GPL 3 license"
-
-ROOT_PATH = Path(__file__).parent.resolve()

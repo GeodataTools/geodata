@@ -1,0 +1,25 @@
+[tool.distutils.bdist_wheel]
+universal = true
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint]
+    [tool.pylint.'DESIGN']
+    # Maximum number of arguments for function / method
+    max-args=116
+    # Maximum number of attributes for a class (see R0902).
+    max-attributes=15
+    max-locals=27
+    max-branches=35
+    max-statements=75
+
+    [tool.pylint.'ELIF']
+    # Maximum number of nested blocks for function / method body
+    max-nested-blocks=10
+
+    [tool.pylint.'MESSAGES CONTROL']
+        disable=
+            C0114,
+            C0115,
+            C0116,
