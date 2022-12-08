@@ -41,7 +41,7 @@ If you are running geodata in a Jupyter Notebook, you could define the variable 
 %setenv GEODATA_ROOT <YOUR PATH HERE>
 ```
 
-If you do not define this variable, all datasets and cutouts will be stored under the installation directory in `datasets/` by default. 
+If you do not define this variable, all datasets and cutouts will be stored under `~/.local/geodata` by default. 
 
 ## Building Geodata
 
