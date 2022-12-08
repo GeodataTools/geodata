@@ -1,3 +1,57 @@
+[project]
+name = "geodata"
+version = "0.1.0"
+authors = [
+  { name="Michael Davidson", email="mrdavidson@ucsd.edu" },
+  { name="William Honaker" },
+  { name="Xiqiang Liu", email="xil073@ucsd.edu" }
+]
+description = "Geospatial Data Collection and Pre-Analysis Tools"
+readme = "README.md"
+license = {text = "GPLv3"}
+requires-python = ">=3.6.9"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas>=0.22",
+    "bottleneck",
+    "numexpr",
+    "xarray>=0.11.2",
+    "netcdf4",
+    "dask[complete]>=0.18.0",
+    "boto3",
+    "toolz",
+    "pyproj",
+    "requests",
+    "matplotlib",
+    "rasterio",
+    "shapely",
+    "progressbar2",
+    "geopandas"
+]
+
+[project.optional-dependencies]
+notebook = [ "ipykernel", "notebook", "ipywidgets" ]
+dev = [ "black", "isort", "pytest" ]
+download = [ "cdsapi" ]
+
+
+[project.urls]
+"Homepage" = "https://github.com/GeodataTools/geodata"
+"Bug Tracker" = "https://github.com/GeodataTools/geodata/issues"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [tool.distutils.bdist_wheel]
 universal = true
 
@@ -5,6 +59,9 @@ universal = true
 profile = "black"
 
 [tool.pylint]
+    [tool.pylint.master]
+    fail-under = 9.5
+
     [tool.pylint.'DESIGN']
     # Maximum number of arguments for function / method
     max-args=116
