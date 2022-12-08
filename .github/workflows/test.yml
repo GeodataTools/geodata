@@ -1,0 +1,41 @@
+name: test
+
+on: [push]
+
+jobs:
+  pytest-posix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 3
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.10.8, 3.9.12]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Add conda to system path
+        run: |
+          # $CONDA is an environment variable pointing to the root of the miniconda directory
+          echo $CONDA/bin >> $GITHUB_PATH
+      - name: Install dependencies
+        run: |
+          conda env update --file environment.yaml --name base
+      - name: Get GDAL for Mac OS
+        run: |
+          brew install gdal
+          pip uninstall -y rasterio
+          pip install rasterio
+        if: ${{ matrix.os == 'macos-latest' }}
+      - name: Configure CDS API Key
+        run: |
+          echo "${{ secrets.CDS_API_KEY }}" | base64 -d > ~/.cdsapirc
+          echo "${{ secrets.NETRC_INFO }}" > ~/.netrc
+      - name: Test with pytest
+        run: |
+          pip install pytest
+          pip install -e .
+          pytest
