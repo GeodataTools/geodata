@@ -128,29 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Data
-data/
-
-# Logs
-wandb/
-
-# Checkpoint
-checkpoints/
-
 # Geodata Specific
-output/
-outputs
 .ipynb_checkpoints/
-
-geodata/merra_starter.ipynb
-era5_starter.ipynb
-trim/
-
-hidden_tests/
 example_notebooks/*.csv
-
-./datasets/
-
-merra_starter.ipynb
-merra_wind_test.csv
-cutout_test2.ipynb
