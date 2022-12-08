@@ -17,8 +17,7 @@ import logging
 import os
 from pathlib import Path
 
-logger = logging.getLogger("geodata.config")
-
+logger = logging.getLogger(__name__)
 DATASET_ROOT_PATH = Path(
     os.environ.get("GETDATA_ROOT", Path.home() / ".local" / "geodata")
 ).resolve()
@@ -34,9 +33,7 @@ merra2_dir = DATASET_ROOT_PATH / "merra2"
 for path in [gebco_path, cutout_dir, mask_dir, era5_dir, merra2_dir]:
     if not path.is_dir():
         path.mkdir(exist_ok=True, parents=True)
-        logging.info(
-            f"Dataset storage location {DATASET_ROOT_PATH} does not exists, creating."
-        )
+        logger.info(f"Dataset storage location {path} does not exists, creating.")
 
 gebco_path = str(gebco_path)
 cutout_dir = str(cutout_dir)
