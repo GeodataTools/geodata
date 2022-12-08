@@ -197,7 +197,9 @@ def api_monthly_era5(toDownload, bounds, download_vars, product, product_type):
             }
 
             if bounds is not None:
-                full_request["area"] = bounds
+                # cdsapi uses (long2, lat2, long1, lat1) format
+                x1, y1, x2, y2 = bounds
+                full_request["area"] = (y2, x2, y1, x1)
 
             full_result = cdsapi.Client().retrieve(product, full_request)
 
