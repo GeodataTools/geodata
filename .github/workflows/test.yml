@@ -3,13 +3,13 @@ name: test
 on: [push]
 
 jobs:
-  pytest-posix:
+  pytest:
     runs-on: ${{ matrix.os }}
     strategy:
-      max-parallel: 3
+      max-parallel: 10
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: [3.10.8, 3.9.12]
     steps:
       - uses: actions/checkout@v3
@@ -23,10 +23,17 @@ jobs:
           pip uninstall -y rasterio
           pip install rasterio
         if: ${{ matrix.os == 'macos-latest' }}
-      - name: Configure CDS API Key
+      - name: Configure CDS API Key (Linux/Mac OS)
         run: |
           echo "${{ secrets.CDS_API_KEY }}" | base64 -d > ~/.cdsapirc
           echo "${{ secrets.NETRC_INFO }}" > ~/.netrc
+        if: ${{ matrix.os == 'macos-latest' || matrix.os == 'ubuntu-latest' }}
+      - name: Configure CDS API Key (Windows)
+        run: |
+          echo "${{ secrets.CDS_API_KEY }}" > $env:USERPROFILE\cdsapi.b64
+          certutil -decode $env:USERPROFILE\cdsapi.b64 $env:USERPROFILE\.cdsapirc 
+          echo "${{ secrets.NETRC_INFO }}" > $env:USERPROFILE\.netrc
+        if: ${{ matrix.os == 'windows-latest' }}
       - name: Test with pytest
         run: |
           pip install pytest
