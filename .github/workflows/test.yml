@@ -1,3 +1,16 @@
+# A note on CDS API Key for the ERA5 dataset
+# Since CDS API key's format utilizes two lines, it is tricky to write the API key
+# secret into the CI runtime.
+#
+# Thus, we uses a encoding that encodes multi-line strings
+# into a single-line string and decodes this encoded string inside the CI runtime.
+#
+# To replace existing API key secret, encode the CDS API information with base64
+# encoding services, such as https://www.base64encode.org/. Use default settings
+# when encoding.
+#
+# Finally, set the secret CDS_API_KEY to the encoded string to complete the process.
+
 name: test
 
 on: [push]
