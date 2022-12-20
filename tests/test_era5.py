@@ -79,8 +79,7 @@ def test_download():
 
     for config, year, month, bound in zip(configs, years, months, bounds):
         dataset = get_era5(config, bound, year, month)
-        print(dataset)
-        assert dataset
+        assert dataset.prepared
 
 
 def test_cutout():
