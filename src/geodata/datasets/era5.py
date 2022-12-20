@@ -64,7 +64,9 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
     return ds
 
 
-def api_hourly_era5(toDownload, bounds, download_vars, product, product_type):
+def api_hourly_era5(
+    toDownload, bounds, download_vars, product, product_type, downloadedFiles
+):
     if not has_cdsapi:
         raise RuntimeError(
             "Need installed cdsapi python package available from "
@@ -164,9 +166,12 @@ def api_hourly_era5(toDownload, bounds, download_vars, product, product_type):
             )
             full_result.download(f[1])
             logger.info("Successfully downloaded to %s", f[1])
+            downloadedFiles.append((f[0], f[1]))
 
 
-def api_monthly_era5(toDownload, bounds, download_vars, product, product_type):
+def api_monthly_era5(
+    toDownload, bounds, download_vars, product, product_type, downloadedFiles
+):
     if not has_cdsapi:
         raise RuntimeError(
             "Need installed cdsapi python package available from "
@@ -210,6 +215,7 @@ def api_monthly_era5(toDownload, bounds, download_vars, product, product_type):
             )
             full_result.download(f[1])
             logger.info("Successfully downloaded to %s", f[1])
+            downloadedFiles.append((f[0], f[1]))
 
 
 def _add_height(ds):

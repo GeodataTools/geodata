@@ -348,6 +348,7 @@ class Dataset:
                 self.weatherconfig["variables"],
                 self.weatherconfig["product"],
                 self.weatherconfig["product_type"],
+                self.downloadedFiles,
             )
 
         elif self.module == "merra2":
