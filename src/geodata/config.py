@@ -43,3 +43,4 @@ merra2_dir = str(merra2_dir)
 
 # weather_dataset = {'module': 'cordex', 'model': 'MPI-M-MPI-ESM-LR'}
 weather_dataset = {"module": "era5"}
+untrimmable_datasets = {"era5"}

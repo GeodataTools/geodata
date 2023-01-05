@@ -22,7 +22,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 from __future__ import absolute_import
 
-from pathlib import Path
 
 # pylint: disable=wrong-import-position
 from ._version import __version__

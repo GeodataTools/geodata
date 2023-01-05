@@ -362,7 +362,7 @@ class Dataset:
         if self.downloadedFiles == self.totalFiles:
             self.prepared = True
 
-        if trim is True:
+        if trim is True and self.module not in config.untrimmable_datasets:
             self.trim_variables()
 
     def trim_variables(self):
