@@ -13,12 +13,15 @@
 ## You should have received a copy of the GNU General Public License
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import os
 from pathlib import Path
 
-from geodata import ROOT_PATH
+logger = logging.getLogger(__name__)
+DATASET_ROOT_PATH = Path(
+    os.environ.get("GETDATA_ROOT", Path.home() / ".local" / "geodata")
+).resolve()
 
-DATASET_ROOT_PATH = Path(os.environ.get("GETDATA_ROOT", ROOT_PATH)) / "datasets"
 
 gebco_path = DATASET_ROOT_PATH / "gebco"
 cutout_dir = DATASET_ROOT_PATH / "cutouts"
@@ -30,6 +33,7 @@ merra2_dir = DATASET_ROOT_PATH / "merra2"
 for path in [gebco_path, cutout_dir, mask_dir, era5_dir, merra2_dir]:
     if not path.is_dir():
         path.mkdir(exist_ok=True, parents=True)
+        logger.info(f"Dataset storage location {path} does not exists, creating.")
 
 gebco_path = str(gebco_path)
 cutout_dir = str(cutout_dir)
@@ -39,3 +43,4 @@ merra2_dir = str(merra2_dir)
 
 # weather_dataset = {'module': 'cordex', 'model': 'MPI-M-MPI-ESM-LR'}
 weather_dataset = {"module": "era5"}
+untrimmable_datasets = {"era5"}

@@ -22,19 +22,26 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import progressbar as pgb
 
-def make_optional_progressbar(show, prefix, max_value):
-	if show:
-		widgets = [
-			pgb.widgets.Percentage(),
-			' ', pgb.widgets.SimpleProgress(),
-			' ', pgb.widgets.Bar(),
-			' ', pgb.widgets.Timer(),
-			' ', pgb.widgets.ETA()
-		]
-		if not prefix.endswith(": "):
-			prefix = prefix.strip() + ": "
-		maybe_progressbar = pgb.ProgressBar(prefix=prefix, widgets=widgets, max_value=max_value)
-	else:
-		maybe_progressbar = lambda x: x #pylint: disable=unnecessary-lambda-assignment
 
-	return maybe_progressbar
+def make_optional_progressbar(show, prefix, max_value):
+    if show:
+        widgets = [
+            pgb.widgets.Percentage(),
+            " ",
+            pgb.widgets.SimpleProgress(),
+            " ",
+            pgb.widgets.Bar(),
+            " ",
+            pgb.widgets.Timer(),
+            " ",
+            pgb.widgets.ETA(),
+        ]
+        if not prefix.endswith(": "):
+            prefix = prefix.strip() + ": "
+        maybe_progressbar = pgb.ProgressBar(
+            prefix=prefix, widgets=widgets, max_value=max_value
+        )
+    else:
+        maybe_progressbar = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
+
+    return maybe_progressbar
