@@ -19,7 +19,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 DATASET_ROOT_PATH = Path(
-    os.environ.get("GETDATA_ROOT", Path.home() / ".local" / "geodata")
+    os.environ.get("GEODATA_ROOT", Path.home() / ".local" / "geodata")
 ).resolve()
 
 
