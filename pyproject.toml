@@ -45,6 +45,7 @@ notebook = {version = "^6.5.2", optional = true}
 black = "^22.12.0"
 isort = "^5.11.4"
 pytest = "^7.2.0"
+pylint = "^2.15.10"
 
 [tool.poetry.extras]
 download = ["cdsapi"]
