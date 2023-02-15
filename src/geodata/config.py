@@ -29,6 +29,7 @@ cutout_dir = DATASET_ROOT_PATH / "cutouts"
 era5_dir = DATASET_ROOT_PATH / "era5"
 merra2_dir = DATASET_ROOT_PATH / "merra2"
 MASK_DIR = DATASET_ROOT_PATH / "masks"
+model_dir = DATASET_ROOT_PATH / "models"
 
 # Check if these paths exists
 for path in [gebco_path, cutout_dir, era5_dir, merra2_dir, MASK_DIR]:
@@ -41,6 +42,7 @@ cutout_dir = str(cutout_dir)
 era5_dir = str(era5_dir)
 merra2_dir = str(merra2_dir)
 MASK_DIR = str(MASK_DIR)
+model_dir = str(model_dir)
 
 # weather_dataset = {'module': 'cordex', 'model': 'MPI-M-MPI-ESM-LR'}
 weather_dataset = {"module": "era5"}
