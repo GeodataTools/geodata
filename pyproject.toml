@@ -1,6 +1,5 @@
 [project]
 name = "geodata"
-version = "0.1.0"
 description = "Geospatial Data Collection and Pre-Analysis Tools"
 authors = [
     {name = "Michael Davidson", email = "mrdavidson@ucsd.edu"},
