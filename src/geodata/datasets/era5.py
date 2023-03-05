@@ -41,11 +41,19 @@ projection = "latlong"
 L137_LEVELS = range(131, 138)
 
 
-def _rename_and_clean_coords(ds, add_lon_lat=True):
+def _rename_and_clean_coords(ds: xr.Dataset, add_lon_lat: bool = True):
     """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
 
     Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
+
+    Args:
+        ds (xarray.Dataset): Dataset to rename
+        add_lon_lat (bool, optional): Add lon/lat columns. Defaults to True.
+
+    Returns:
+        xarray.Dataset: Dataset with renamed coordinates
     """
+
     # Rename latitude / lat -> y, longitude / lon -> x
     if "latitude" in list(ds.coords):
         ds = ds.rename({"latitude": "y"})
@@ -58,6 +66,7 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 
     if add_lon_lat:
         ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
+
     return ds
 
 
@@ -130,7 +139,7 @@ def api_complete(
 
 
 def api_hourly_era5(
-    toDownload, bounds, download_vars, product, product_type, downloadedFiles
+    toDownload: list, bounds, download_vars, product, product_type, downloadedFiles
 ):
     if not has_cdsapi:
         raise RuntimeError(
