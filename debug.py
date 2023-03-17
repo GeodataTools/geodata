@@ -21,9 +21,15 @@ def main():
     speeds = alpha * log_heights + beta
 
     c2m = (ds["u2m"].values[2, 30, 30] ** 2 + ds["v2m"].values[2, 30, 30] ** 2) ** 0.5
-    c10m = (ds["u10m"].values[2, 30, 30] ** 2 + ds["v10m"].values[2, 30, 30] ** 2) ** 0.5
-    c50m = (ds["u50m"].values[2, 30, 30] ** 2 + ds["v50m"].values[2, 30, 30] ** 2) ** 0.5
-    clml = (ds["ulml"].values[2, 30, 30] ** 2 + ds["vlml"].values[2, 30, 30] ** 2) ** 0.5
+    c10m = (
+        ds["u10m"].values[2, 30, 30] ** 2 + ds["v10m"].values[2, 30, 30] ** 2
+    ) ** 0.5
+    c50m = (
+        ds["u50m"].values[2, 30, 30] ** 2 + ds["v50m"].values[2, 30, 30] ** 2
+    ) ** 0.5
+    clml = (
+        ds["ulml"].values[2, 30, 30] ** 2 + ds["vlml"].values[2, 30, 30] ** 2
+    ) ** 0.5
     hlml = ds["hlml"].values[2, 30, 30]
 
     print([c2m, c10m, c50m, clml, ds["disph"].values[2, 30, 30]])

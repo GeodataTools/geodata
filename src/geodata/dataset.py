@@ -1,17 +1,17 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2020 Michael Davidson (UCSD), William Honaker.
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 """
@@ -105,10 +105,7 @@ class Dataset:
         step = months.step if months.step else 1
         mos = range(months.start, months.stop + step, step)
 
-        if (
-            self.weatherconfig["file_granularity"] == "daily"
-            or self.weatherconfig["file_granularity"] == "dailymeans"
-        ):
+        if self.weatherconfig["file_granularity"] in {"daily", "dailymeans"}:
             # Separate files for each day (eg MERRA)
             # Check for complete set of files of year, month, day
             mo_tuples = [(yr, mo, monthrange(yr, mo)[1]) for yr in yrs for mo in mos]
