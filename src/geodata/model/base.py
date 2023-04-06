@@ -18,6 +18,7 @@ import abc
 import json
 import logging
 import pickle
+import shutil
 from pathlib import Path
 from typing import Union
 
@@ -91,18 +92,27 @@ class BaseModel(abc.ABC):
     def type(self) -> str:
         """Type of the model."""
 
-    @abc.abstractmethod
-    def estimate(self, xs: slice, ys: slice, ts: slice) -> xr.Dataset:
-        """Estimate wind speed from the source data.
+    def estimate(
+        self, *args: Union[slice, int], **kwargs: Union[slice, int]
+    ) -> xr.Dataset:
+        """Estimate the wind speed at given coordinates.
 
         Args:
-            xs (slice): The x slice to estimate.
-            ys (slice): The y slice to estimate.
-            ts (slice): The t slice to estimate.
+            height (int): Height of the wind speed, need to be greater than 0.
+            years (slice): Years.
+            months (slice, optional): Months. If None, all months are estimated.
+            xs (slice): X coordinates. If None, all x coordinates in source are estimated.
+            ys (slice): Y coordinates. If None, all y coordinates in source are estimated.
+            use_real_data (bool, optional): If available, use real data for estimation. Defaults to False.
 
         Returns:
-            xr.Dataset: The estimated wind speed.
+            xr.Dataset: Dataset with wind speed.
         """
+
+        if self.from_dataset:
+            return self._estimate_dataset(*args, **kwargs)
+        else:
+            return self._estimate_cutout(*args, **kwargs)
 
     @property
     def metadata(self) -> dict:
@@ -170,7 +180,7 @@ class BaseModel(abc.ABC):
             nc4_path.exists()
             and meta_path.with_suffix(".pkl").exists()
             and meta_path.with_suffix(".json").exists()
-            and len(list(nc4_path.iterdir())) == len(self.source.downloadedFiles)
+            and len(list(nc4_path.rglob("*.nc4"))) == len(self.source.downloadedFiles)
         )
 
     def prepare(self, force: bool = False):
@@ -185,6 +195,7 @@ class BaseModel(abc.ABC):
 
         if not self._check_prepared():
             logger.info("Model not present in model directory, creating.")
+            shutil.rmtree(self._path, ignore_errors=True)
             (self._path / "nc4").mkdir(exist_ok=True, parents=True)
 
         if self.from_dataset:
@@ -222,9 +233,33 @@ class BaseModel(abc.ABC):
         return self._metadata["is_dataset"]
 
     @abc.abstractmethod
-    def save(self, path: Union[str, Path]):
-        """Save the model.
+    def _estimate_dataset(self, *args, **kwargs) -> xr.Dataset:
+        """Estimate the wind speed from a dataset.
 
         Args:
-            path (Union[str, Path]): The path to save the model.
+            height (int): Height of the wind speed, need to be greater than 0.
+            years (slice): Years.
+            months (slice, optional): Months. If None, all months are estimated.
+            xs (slice): X coordinates. If None, all x coordinates in source are estimated.
+            ys (slice): Y coordinates. If None, all y coordinates in source are estimated.
+            use_real_data (bool, optional): If available, use real data for estimation. Defaults to False.
+
+        Returns:
+            xr.Dataset: Dataset with wind speed.
+        """
+
+    @abc.abstractmethod
+    def _estimate_cutout(self, *args, **kwargs) -> xr.Dataset:
+        """Estimate the wind speed from a cutout.
+
+        Args:
+            height (int): Height of the wind speed, need to be greater than 0.
+            years (slice): Years.
+            months (slice, optional): Months. If None, all months are estimated.
+            xs (slice): X coordinates. If None, all x coordinates in source are estimated.
+            ys (slice): Y coordinates. If None, all y coordinates in source are estimated.
+            use_real_data (bool, optional): If available, use real data for estimation. Defaults to False.
+
+        Returns:
+            xr.Dataset: Dataset with wind speed.
         """
