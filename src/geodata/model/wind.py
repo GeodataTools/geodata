@@ -35,11 +35,8 @@ Example:
     >>> from geodata.model import WindModel
     >>> cutout = Cutout("merra2", 2010, 2010, 0, 0, 0, 0)
     >>> model = WindModel(cutout)
-    >>> model.predict()
-    >>> model.save()
-    >>> model = WindModel.load("merra2", 2010, 2010, 0, 0, 0, 0)
-    >>> model.predict()
-    >>> model.save()
+    >>> model.prepare()
+    >>> model.estimate(xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
 """
 
 import logging
@@ -47,6 +44,7 @@ from pathlib import Path
 from typing import Optional, Union
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from numba import njit, prange
 from tqdm.auto import tqdm
@@ -156,7 +154,6 @@ class WindModel(BaseModel):
 
     def __init__(self, source: Union[Dataset, Cutout], **kwargs):
         super().__init__(source, **kwargs)
-        self.interpolate = kwargs.get("interpolate", True)
 
     def _extract_dataset_metadata(self, dataset: Dataset) -> dict:
         if not dataset.prepared:
@@ -253,57 +250,68 @@ class WindModel(BaseModel):
 
         return prepared_files
 
-    def estimate(self, xs: slice, ys: slice, ts: slice) -> xr.Dataset:
-        """Estimate the wind speed at given coordinates.
-
-        Args:
-            xs (slice): X coordinates.
-            ys (slice): Y coordinates.
-            ts (slice): Time coordinates.
-
-        Returns:
-            xr.Dataset: Dataset with wind speed.
-        """
-        if self.from_dataset:
-            return self._estimate_dataset(xs, ys, ts)
-        else:
-            return self._estimate_cutout(xs, ys, ts)
-
     def _estimate_dataset(
-        self, xs: slice, ys: slice, years: slice, months: Optional[slice] = None
+        self,
+        height: int,
+        years: slice,
+        months: Optional[slice] = None,
+        xs: Optional[slice] = None,
+        ys: Optional[slice] = None,
+        use_real_data: Optional[bool] = False,
     ) -> xr.Dataset:
-        """Estimate the wind speed at given coordinates from a dataset.
-
-        Args:
-            xs (slice): X coordinates.
-            ys (slice): Y coordinates.
-            years (slice): Years.
-            months (Optional[slice], optional): Months. If None, all months are estimated.
-
-        Returns:
-            xr.Dataset: Dataset with wind speed.
-        """
+        assert height > 0, "Height must be greater than 0."
 
         if months is None:
-            months = slice(1, 13)
+            months = slice(1, 12)
 
-        for year in range(years.start, years.stop):
-            for month in range(months.start, months.stop):
-                ds_paths = list(
-                    (Path(str(year)) / str(month).zfill(2)).glob("*.coeffs.nc4")
+        raw_paths = [Path(p) for c, p in self.metadata["files"]]
+        ds_paths = []
+
+        for p in raw_paths:
+            assert (self._path / p).exists(), f"File {p} does not exist."
+
+            try:
+                year = int(p.parts[1])
+                month = int(p.parts[2])
+            except ValueError:
+                logger.warning(
+                    "Illegal file %s contained in model, final estimated result may be incomplete",
+                    p,
                 )
-                ds_paths += [DATASET_ROOT_PATH / self.module / p for p in ds_paths]
-                ds = xr.open_mfdataset(ds_paths)
+
+            if year not in range(years.start, years.stop + 1) or month not in range(
+                months.start, months.stop + 1
+            ):
+                continue
+
+            orig_ds_path = DATASET_ROOT_PATH / self.module / p.relative_to(p.parts[0])
+            ds_paths += [
+                self._path / p,
+                orig_ds_path.with_name(orig_ds_path.name.replace(".coeffs", "")),
+            ]
+
+        start_time = pd.Timestamp(year=years.start, month=months.start, day=1)
+        end_time = pd.Timestamp(
+            year=years.stop, month=months.stop + 1, day=1
+        )  # exclude last month
+
+        ds = xr.open_mfdataset(ds_paths)
+
+        if xs is None:
+            xs = ds.coords["lon"]
+        if ys is None:
+            ys = ds.coords["lat"]
+
+        ds = ds.sel(lon=xs, lat=ys, time=slice(start_time, end_time))
+
+        if height in HEIGHTS.values() and use_real_data:
+            logger.info("Using real data for estimation at height %d", height)
+            return (ds[f"u{height}m"] ** 2 + ds[f"v{height}m"] ** 2) ** 0.5
+
+        alpha = ds["coeffs"][..., 0]
+        beta = ds["coeffs"][..., 1]
+
+        return alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
 
     def _estimate_cutout(self, xs: slice, ys: slice, ts: slice) -> xr.Dataset:
-        """Estimate the wind speed at given coordinates from a cutout.
-
-        Args:
-            xs (slice): X coordinates.
-            ys (slice): Y coordinates.
-            ts (slice): Time coordinates.
-
-        Returns:
-            xr.Dataset: Dataset with wind speed.
-        """
         raise NotImplementedError
