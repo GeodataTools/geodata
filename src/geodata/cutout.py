@@ -210,7 +210,7 @@ class Cutout:
                 os.mkdir(self.cutout_dir)
 
             # Write meta file
-            (self.meta_clean.unstack("year-month").to_netcdf(self.datasetfn()))
+            self.meta_clean.unstack("year-month").to_netcdf(self.datasetfn())
 
     def datasetfn(self, *args):
         """Return path to dataset xarray files related to this Cutout.
@@ -233,8 +233,10 @@ class Cutout:
         else:
             dataset = None
         return os.path.join(
+            # pylint: disable=consider-using-f-string
             self.cutout_dir,
             ("meta.nc" if dataset is None else "{}{:0>2}.nc".format(*dataset)),
+            # pylint: enable=consider-using-f-string
         )
 
     @property
@@ -317,6 +319,16 @@ class Cutout:
             self.coords["y"].values[[-1, 0]]
         )
 
+    @property
+    def years(self):
+        """Cutout's covered years as slice object."""
+        return slice(*self.coords["year"].values)
+
+    @property
+    def months(self):
+        """Cutout's covered months as slice object."""
+        return slice(*self.coords["month"].values)
+
     def grid_coordinates(self):
         """Return grid coordinates of the Cutout."""
         xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
@@ -330,6 +342,7 @@ class Cutout:
 
     def __repr__(self):
         yearmonths = self.coords["year-month"].to_index()
+        # pylint: disable=consider-using-f-string
         return "<Cutout {} x={:.2f}-{:.2f} y={:.2f}-{:.2f} time={}/{}-{}/{} {}prepared>".format(
             self.name,
             self.coords["x"].values[0],
@@ -342,6 +355,7 @@ class Cutout:
             yearmonths[-1][1],
             "" if self.prepared else "UN",
         )
+        # pylint: enable=consider-using-f-string
 
     def add_mask(self, name: str, merged_mask: bool = True, shape_mask: bool = True):
         """Add mask attribute to the cutout, from a previously saved mask objects.
@@ -959,7 +973,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
     lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) // 2)
 
     if func == "mean":
-        coarsen = (
+        _coarsen = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -969,7 +983,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
             .mean()
         )
     elif func == "sum":
-        coarsen = (
+        _coarsen = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
