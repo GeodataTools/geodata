@@ -1,3 +1,4 @@
+# Copyright 2023 Xiqiang Liu (UCSD)
 # Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi.
 # Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
@@ -14,10 +15,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""
-GEODATA
+"""Cutout module for handling weather data.
 
-Geospatial Data Collection and "Pre-Analysis" Tools
+This module provides the Cutout class for handling weather data. It is
+used to load and prepare weather data for use in the model. It also
+automatically loads and saves the data to disk.
 """
 
 import logging
@@ -30,7 +32,6 @@ import pyproj
 import shapely
 import xarray as xr
 from shapely.geometry import box
-from six import iteritems
 
 from . import config
 from .convert import (
@@ -172,7 +173,7 @@ class Cutout:
                 os.mkdir(self.cutout_dir)
 
             # Write meta file
-            (self.meta_clean.unstack("year-month").to_netcdf(self.datasetfn()))
+            self.meta_clean.unstack("year-month").to_netcdf(self.datasetfn())
 
     def datasetfn(self, *args):
         #    Link to dataset (default to meta.nc)
@@ -186,8 +187,10 @@ class Cutout:
         else:
             dataset = None
         return os.path.join(
+            # pylint: disable=consider-using-f-string
             self.cutout_dir,
             ("meta.nc" if dataset is None else "{}{:0>2}.nc".format(*dataset)),
+            # pylint: enable=consider-using-f-string
         )
 
     @property
@@ -251,7 +254,7 @@ class Cutout:
         meta = self.meta
         if meta.attrs.get("view", {}):
             view = {}
-            for name, value in iteritems(meta.attrs.get("view", {})):
+            for name, value in meta.attrs.get("view", {}).items():
                 view.update({name: [value.start, value.stop]})
             meta.attrs["view"] = str(view)
         return meta
@@ -266,6 +269,16 @@ class Cutout:
             self.coords["y"].values[[-1, 0]]
         )
 
+    @property
+    def years(self):
+        """Cutout's covered years as slice object."""
+        return slice(*self.coords["year"].values)
+
+    @property
+    def months(self):
+        """Cutout's covered months as slice object."""
+        return slice(*self.coords["month"].values)
+
     def grid_coordinates(self):
         xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
         return np.asarray((np.ravel(xs), np.ravel(ys))).T
@@ -277,6 +290,7 @@ class Cutout:
 
     def __repr__(self):
         yearmonths = self.coords["year-month"].to_index()
+        # pylint: disable=consider-using-f-string
         return "<Cutout {} x={:.2f}-{:.2f} y={:.2f}-{:.2f} time={}/{}-{}/{} {}prepared>".format(
             self.name,
             self.coords["x"].values[0],
@@ -289,9 +303,9 @@ class Cutout:
             yearmonths[-1][1],
             "" if self.prepared else "UN",
         )
+        # pylint: enable=consider-using-f-string
 
-    ## Masking
-
+    # Masking
     def add_mask(self, name, merged_mask=True, shape_mask=True):
         """
         Add mask attribute to the cutout, from a previously saved mask objects.
@@ -370,7 +384,7 @@ class Cutout:
 
     def mask(self, dataset, true_area=True, merged_mask=True, shape_mask=True):
         """
-        Mask a converted Xarray dataSet from cutout with previously added mask attribute
+        Mask a converted xarray Dataset from cutout with previously added mask attribute
         with optional area inclusion, and return a dictionary of xarray Dataset.
 
         The program will search for 'merged_mask' and 'shape_mask' attributes in the
@@ -379,7 +393,7 @@ class Cutout:
         will have the same key in the dictionary returned, and the mask for merged_mask will
         have the key name "merged_mask".
 
-        dataset (Xarray.DataSet):
+        dataset (xarray.Dataset): a converted xarray dataset from cutout.
         true_area (bool): if the returned masks will have the area variable. Defaults to True.
         merged_mask (bool): if true, the program will try to
                 include the merged_mask from the cutout object. Defaults to True.
@@ -426,27 +440,18 @@ class Cutout:
     ## Preparation functions
 
     get_meta = cutout_get_meta  # preparation.cutout_get_meta
-
     get_meta_view = cutout_get_meta_view  # preparation.cutout_get_meta_view
-
     prepare = cutout_prepare  # preparation.cutout_prepare
-
     produce_specific_dataseries = cutout_produce_specific_dataseries
 
     ## Conversion and aggregation functions
 
     convert_cutout = convert_cutout
-
     heat_demand = heat_demand
-
     temperature = temperature
-
     soil_temperature = soil_temperature
-
     solar_thermal = solar_thermal
-
     wind = wind
-
     pv = pv
 
 
@@ -505,7 +510,7 @@ def coarsen(ori, tar, func="mean"):
     lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) // 2)
 
     if func == "mean":
-        coarsen = (
+        _coarsen = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -515,7 +520,7 @@ def coarsen(ori, tar, func="mean"):
             .mean()
         )
     elif func == "sum":
-        coarsen = (
+        _coarsen = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -524,7 +529,10 @@ def coarsen(ori, tar, func="mean"):
             )
             .sum()
         )
-    out = coarsen.reindex_like(tar, method="nearest")
+    else:
+        raise NotImplementedError("Only mean and sum are implemented for coarsen")
+
+    out = _coarsen.reindex_like(tar, method="nearest")
     return out
 
 
