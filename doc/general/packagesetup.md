@@ -7,7 +7,7 @@ This guide covers how to install and configure the **geodata** package for local
 Make sure that you have the following **required** software set up:
 
 * [Python 3](https://www.python.org/downloads/)
-* [Conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda) or [Pip](https://pip.pypa.io/en/stable/installation/) Python package management system.
+* [Conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda) or [pip](https://pip.pypa.io/en/stable/installation/) Python package management system.
 
 
 Table of Contents:
@@ -15,7 +15,7 @@ Table of Contents:
 - [Configuring File Storage](#configuring-file-storage)
 - [Building Geodata](#building-geodata)
   - [Recommended Conda Installation Guide](#the-recommended-way-installation-in-conda-environment)
-  - [MAC OS Pip Guide](#mac-os-installation-with-pip)
+  - [macOS Pip Guide](#macos-installation-with-pip)
   - [Windows Pip Guide](#windows-installation-with-pip)
     - [pipwin instruction](#option-i-pipwin)
     - [wheel file instruction](#option-ii-wheel-files)
@@ -62,12 +62,10 @@ conda activate
 To use **geodata** in Python scripts by calling `import geodata`, you'll need to build the package.  To do so, in the terminal/shell window, navigate to the package's root directory (ie, "geodata"), and run the following:
 
 ```bash
-python3 setup.py install
+pip install .
 ```
 
-**Note I.**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
-
-**Note II.**: If running `python3 setup.py install` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Conda (either Anaconda or miniconda depending on what you went with during setup).  Then run the following commands:
+**Note**: If running `pip install .` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Anaconda/miniconda depending on what you went with during setup. Then run the following commands:
 
 ```bash
 conda update --all
@@ -77,17 +75,15 @@ conda update --all
 conda install rasterio
 ```
 
-### MAC OS Installation with Pip
+### macOS Installation with Pip
 
-In the MAC OS terminal, navigate to the package's root directory, and run the following:
+In macOS's terminal, navigate to the package's root directory, and run the following:
 
 ```bash
-python3 setup.py install
+pip install .
 ```
 
-**Note**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
-
-The downside of not using a package management environment like conda is that we might run into dependency installation errors and have to fix it manuelly. (For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.) All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires Cython and GDAL. For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
+**Note**: All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires Cython and GDAL. For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
 
 If one of the dependency, such as **rasterio** does not install automatically (we know this through the error message from the command above), we will have to install it seperately in the terminal:
 
@@ -98,27 +94,25 @@ pip install rasterio
 Once the library above is successfully installed, re-run the installation command above to build Geodata:
 
 ```bash
-python3 setup.py install
+pip install .
 ```
 
 If there is an error message regarding one of Geodata's dependency, repeat the process and use `pip install` to seperately download it.
 
-### Windows installation with Pip
+### Windows Installation with pip
 
 In the Windows command prompt, navigate to the package's root directory, and run the following:
 
-```
-python3 setup.py install
+```bash
+pip install .
 ```
 
-**Note**: If your ternimal prompts that python3 was not found, you can also try `python` or `py` instead and make sure to try `python --version` check for version.
-
-Similar to the MAC OS installation guide, it is likely that we would run into dependency installation error. We can figure out which dependency causes the error in the error message, and download that package seperately. For a full list of dependencies, see the [setup.py](/setup.py) file or run the following command in the top directory: `python setup.py requirements`.  All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio**  library, which requires other dependencies.
+**Note**: All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires other dependencies.
 
 If one of the dependency, such as **GDAL** does not install automatically (we know this through the error message from the command above), we will have to install it seperately in the terminal. There are 2 options to solve this issue. Once we download the required dependency successfully, we can proceed by re-run the install command:
 
-```
-python3 setup.py install
+```bash
+pip install .
 ```
 #### Option I. Pipwin
 
