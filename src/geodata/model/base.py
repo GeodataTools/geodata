@@ -94,7 +94,7 @@ class BaseModel(abc.ABC):
 
     def estimate(
         self, *args: Union[slice, int], **kwargs: Union[slice, int]
-    ) -> xr.Dataset:
+    ) -> xr.DataArray:
         """Estimate the wind speed at given coordinates.
 
         Args:
@@ -106,7 +106,7 @@ class BaseModel(abc.ABC):
             use_real_data (bool, optional): If available, use real data for estimation. Defaults to False.
 
         Returns:
-            xr.Dataset: Dataset with wind speed.
+            xr.DataArray: Dataset with wind speed.
         """
 
         if self.from_dataset:
