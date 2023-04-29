@@ -33,7 +33,7 @@ Installation will also install the following dependencies:
 * `rasterio`
 * `rioxarray`
 * `shapely`
-* `progressbar2`
+* `tqdm`
 
 ## Documentation
 
