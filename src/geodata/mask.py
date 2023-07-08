@@ -188,12 +188,11 @@ class Mask:
             layer_path = [layer_path]
             layer_name = [layer_name]
 
-        for i in range(
-            len(layer_path)
-        ):  # add the layers, using the _add_layer() method #pylint: disable=consider-using-enumerate
+        # add the layers, using the _add_layer() method
+        # pylint: disable=consider-using-enumerate
+        for i in range(len(layer_path)):
             self._add_layer(layer_path[i], layer_name[i], **kwargs)
-
-        return
+        # pylint: enable=consider-using-enumerate
 
     def remove_layer(self, name):
         """Remove a layer in the mask given layer name."""
@@ -259,12 +258,14 @@ class Mask:
         """Find the coords that bound region that all layers contain"""
 
         layer_bound = self.get_bounds(layers=layers)
+        # pylint: disable=consider-using-dict-items,consider-using-generator
         min_left, min_bottom = (
             max([layer_bound[b][num] for b in layer_bound]) for num in [0, 1]
-        )  # pylint: disable=consider-using-dict-items,consider-using-generator
+        )
         min_right, min_top = (
             min([layer_bound[b][num] for b in layer_bound]) for num in [2, 3]
-        )  # pylint: disable=consider-using-dict-items,consider-using-generator
+        )
+        # pylint: enable=consider-using-dict-items,consider-using-generator
 
         return (min_left, min_bottom, min_right, min_top)
 
@@ -352,7 +353,6 @@ class Mask:
         if (
             not reference_layer
         ):  # if no reference layer is provided, using the layer with best resolution
-
             # find all resolutions
             resolutions = {}
             for k, val in layers.items():
@@ -366,7 +366,6 @@ class Mask:
                     best_res = res[0] * res[1]
 
         if method == "and":
-
             # make sure highest resolution layer is the first input for ras.merge
             merged_lst = [layers[reference_layer]]
             layers.pop(reference_layer)
@@ -550,15 +549,13 @@ class Mask:
         dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
 
+        # pylint: disable=protected-access
         if hasattr(shapes, "_geometry_column_name"):
-            shapes = (
-                shapes._geometry_column_name.to_dict()
-            )  # pylint: disable=protected-access
+            shapes = shapes._geometry_column_name.to_dict()
 
-        elif (
-            hasattr(shapes, "_name") and shapes._name == "geometry"
-        ):  # pylint: disable=protected-access
+        elif hasattr(shapes, "_name") and shapes._name == "geometry":
             shapes = shapes.to_dict()
+        # pylint: disable=protected-access
 
         # convert CRS for shapes
         if src_crs != dst_crs:
@@ -610,9 +607,8 @@ class Mask:
                     )
 
         if show_raster:
-            [
-                raster_show(r, title=name) for name, r in return_shape.items()
-            ]  # pylint: disable=expression-not-assigned
+            for name, r in return_shape.items():
+                raster_show(r, title=name)
 
         if attribute_save:
             self.shape_mask.update(return_shape)
@@ -663,15 +659,14 @@ class Mask:
 
     def close_files(self):
         """Close all the opened rasters. This method will disable further save_mask() call."""
-        [
-            i.close() for i in self.layers.values()
-        ]  # pylint: disable=expression-not-assigned
+        for i in self.layers.values():
+            i.close()
+
         if self.merged_mask:
             self.merged_mask.close()
         if self.shape_mask:
-            [
-                i.close() for i in self.shape_mask.values()
-            ]  # pylint: disable=expression-not-assigned
+            for i in self.shape_mask.values():
+                i.close()
 
     def save_mask(self, name=None, mask_dir=None, close_files=False):
         """
@@ -713,7 +708,7 @@ class Mask:
         else:  # if directory do not exist, remove all the previously saved content
             for f in os.listdir(layer_path):
                 if (
-                    f.split(".")[0] not in self.layers.keys()
+                    f.split(".")[0] not in self.layers
                 ):  # pylint: disable=consider-iterating-dictionary
                     os.remove(os.path.join(layer_path, f))
         # update layer
@@ -745,9 +740,7 @@ class Mask:
             os.mkdir(shape_path)
         else:
             for f in os.listdir(shape_path):
-                if (
-                    f.split(".")[0] not in self.shape_mask.keys()
-                ):  # pylint: disable=consider-iterating-dictionary
+                if f.split(".")[0] not in self.shape_mask:
                     os.remove(os.path.join(shape_path, f))
         if self.shape_mask:
             for name, raster in self.shape_mask.items():
@@ -941,7 +934,6 @@ def crop_raster(raster, bounds, lat_lon_bounds=True):
         )
 
     with MemoryFile() as memfile:  # using memory file to avoid creating new files
-
         kwargs = raster.meta.copy()
         kwargs.update(
             {
@@ -1115,7 +1107,6 @@ def filter_area(
     area_calc_crs="EPSG:6933",
     connectivity=4,
 ):
-
     """
     Eliminate the small area of a certain value in the raster by converting it to
     an equal-area reprojected series of connected shapes, removing shapes that are
@@ -1244,9 +1235,6 @@ def _and_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
     np.copyto(merged_data, new_data.data, where=mask, casting="unsafe")
 
 
-## VISUALIZATION METHOD
-
-
 def show(
     raster,
     shape=None,
@@ -1280,18 +1268,17 @@ def show(
     ax = fig.add_subplot()
 
     if shape is not None:
-
         shape.boundary.plot(ax=ax, linewidth=shape_width, color=shape_color)
 
     if lat_lon:
-        ax.imshow(
+        ax_img = ax.imshow(
             raster.read(1),
             interpolation="none",
             extent=plotting_extent(raster.read(1), raster.transform),
             **kwargs,
         )
     else:
-        ax.imshow(raster.read(1), interpolation="none", **kwargs)
+        ax_img = ax.imshow(raster.read(1), interpolation="none", **kwargs)
 
     if title is True:
         title = raster.name
@@ -1299,9 +1286,9 @@ def show(
     if colorbar:
         uniques = np.unique(raster.read(1))
         if len(uniques) < 3:
-            plt.colorbar(ax.get_children()[-2], ax=ax, values=[1, 0], ticks=uniques)
+            plt.colorbar(ax_img, ax=ax, values=[1, 0], ticks=uniques)
         else:
-            plt.colorbar(ax.get_children()[-2], ax=ax)
+            plt.colorbar(ax_img, ax=ax)
     if grid:
         ax.grid()
     if return_fig:
@@ -1315,8 +1302,6 @@ def show_all(r_dict, **kwargs):
     """
     show all the layers given a dictionary
     Example use case: show_all(my_mask.layers); show_all(my_mask.shape_mask)
-
     """
-    [
-        show(r, title=name, **kwargs) for name, r in r_dict.items()
-    ]  # pylint: disable=expression-not-assigned
+    for name, r in r_dict.items():
+        show(r, title=name, **kwargs)
