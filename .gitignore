@@ -131,3 +131,4 @@ dmypy.json
 # Geodata Specific
 .ipynb_checkpoints/
 example_notebooks/*.csv
+example_notebooks/data

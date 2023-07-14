@@ -38,6 +38,10 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
+# NOTE: Shapely's had an API change that results in MultiPolygon
+# being non-iterable. Use shp.geoms in those cases.
+SHAPELY_NEW_API = tuple(int(i) for i in shapely.__version__.split(".")) > (1, 8, 0)
+
 
 class Mask:
     """
@@ -441,11 +445,11 @@ class Mask:
         can also use a reference layer that is present in the mask object to avoid
         manuelly finding resolution.
 
-        shapes (dic): a dictionary of key, shape pair
+        shapes (dict): a dictionary of key, shape pair
         reference_layer (str): name to the layer which bounds/resolution is used.
         resolution (tuple): tuple of (width, height). If specified with a reference layer,
                 the method ignore the resolution of the referenced layer and use the input resolution.
-        combine_name (str)： the name of the combined shape, if specified, the program will combine the shapes as one shape.
+        combine_name (str): the name of the combined shape, if specified, the program will combine the shapes as one shape.
                 Only one layer will be added as a result.
         exclude (bool): when it is true, area inside the shape is 0. When it is false, area inside the shape is 1.
                 True by default.
@@ -493,7 +497,7 @@ class Mask:
                 shapes[key] = shp
 
         if combine_name:
-            shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
+            shapes = {combine_name: shapely.ops.unary_union(list(shapes.values()))}
 
         for key, shp in shapes.items():
             if not isinstance(shp, shapely.geometry.multipolygon.MultiPolygon):
@@ -503,15 +507,13 @@ class Mask:
             shape_bounds = ras.features.bounds(shp)
             if not reference_layer:
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
-            arr = (
-                ras.features.geometry_mask(
-                    shp,
-                    out_shape=resolution,
-                    transform=shape_transform,
-                    invert=exclude,
-                    **kwargs,
-                )
-                * 1
+
+            arr = ras.features.geometry_mask(
+                shp.geoms if SHAPELY_NEW_API else shp,
+                out_shape=resolution,
+                transform=shape_transform,
+                invert=exclude,
+                **kwargs,
             )
 
             # create raster
@@ -541,7 +543,7 @@ class Mask:
                 and we want to extract the shapes from the 'merged_mask' layer.
         combine_shape (bool): if the user want to combine the shapes as one shape, and only
                 one layer will be added as a result. False by default.
-        combine_name (str)： the name of the combined shape if combine_shape is True
+        combine_name (str): the name of the combined shape if combine_shape is True
         show_raster (bool): if the program will plot the result shapes. True by default.
         attribute_save (bool): if the program will want to save the shapes to the shape_mask attributes.
                 True by default.
@@ -811,7 +813,9 @@ def load_mask(name, mask_dir=config.mask_dir):
     return prev_mask
 
 
-def open_tif(layer_path, show_raster=True, close=False):
+def open_tif(
+    layer_path: str, show_raster: bool = True, close: bool = False
+) -> ras.DatasetReader:
     """
     Openning a layer using rasterio given a file path and store it as openning_layer attribute.
     This method does not add the layer to the mask object.
@@ -823,21 +827,24 @@ def open_tif(layer_path, show_raster=True, close=False):
 
     return (ras.DatasetReader) the raster to open
     """
+
     if not os.path.exists(layer_path):
         raise FileNotFoundError(f"{layer_path} not found.")
-    openning_tif = ras.open(layer_path)
+    openning_tif: ras.DatasetReader = ras.open(layer_path)
+
     if show_raster:
         raster_show(openning_tif)
     if not close:
         logger.info("Please remember to close the file with .close()")
     else:
         openning_tif.close()
+
     return openning_tif
 
 
-def ras_to_xarr(raster, band_name=None, adjust_coord=True):
+def ras_to_xarr(raster, band_name=None, adjust_coord=True) -> xr.DataArray:
     """Open a raster (rasterio openner) with xarray"""
-    xarr = xr.open_rasterio(raster)
+    xarr: xr.DataArray = xr.open_rasterio(raster)
     if adjust_coord:
         xarr = xarr.rename({"x": "lon", "y": "lat"})
         xarr = xarr.sortby(["lat", "lon"])
@@ -1168,11 +1175,11 @@ def filter_area(
     shp = convert_shape_crs(shp, src_crs=area_calc_crs, dst_crs="EPSG:4326")
 
     logger.info("Reverting the remaining shapes back to a raster.")
-    arr = (
-        ras.features.geometry_mask(
-            shp, out_shape=resolution, transform=shape_transform, invert=True
-        )
-        * 1
+    arr = ras.features.geometry_mask(
+        shp.geoms if SHAPELY_NEW_API else shp,
+        out_shape=resolution,
+        transform=shape_transform,
+        invert=True,
     )
 
     # create raster
@@ -1286,7 +1293,7 @@ def show(
     if colorbar:
         uniques = np.unique(raster.read(1))
         if len(uniques) < 3:
-            plt.colorbar(ax_img, ax=ax, values=[1, 0], ticks=uniques)
+            plt.colorbar(ax_img, ax=ax, ticks=uniques)
         else:
             plt.colorbar(ax_img, ax=ax)
     if grid:
