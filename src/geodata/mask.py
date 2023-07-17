@@ -21,6 +21,7 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 
 import logging
 import os
+from typing import Optional
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -33,6 +34,7 @@ from rasterio import mask as rmask
 from rasterio.io import MemoryFile
 from rasterio.merge import merge
 from rasterio.plot import plotting_extent
+from rioxarray import open_rasterio
 
 from . import config
 
@@ -842,9 +844,11 @@ def open_tif(
     return openning_tif
 
 
-def ras_to_xarr(raster, band_name=None, adjust_coord=True) -> xr.DataArray:
-    """Open a raster (rasterio openner) with xarray"""
-    xarr: xr.DataArray = xr.open_rasterio(raster)
+def ras_to_xarr(
+    raster: str, band_name: Optional[str] = None, adjust_coord: bool = True
+) -> xr.DataArray:
+    """Open a raster (rasterio openner) with rioxarray"""
+    xarr: xr.DataArray = open_rasterio(raster)
     if adjust_coord:
         xarr = xarr.rename({"x": "lon", "y": "lat"})
         xarr = xarr.sortby(["lat", "lon"])
