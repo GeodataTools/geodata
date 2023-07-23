@@ -14,14 +14,9 @@
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""
-GEODATA
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -40,9 +35,21 @@ from . import config
 
 logger = logging.getLogger(__name__)
 
+
+try:
+    from numba import njit, prange
+except ImportError:
+    from .utils import dummy_njit as njit
+
+    prange = range
+    logging.info("Numba not installed, custom functions on arrays are not vectorized.")
+
 # NOTE: Shapely's had an API change that results in MultiPolygon
 # being non-iterable. Use shp.geoms in those cases.
 SHAPELY_NEW_API = tuple(int(i) for i in shapely.__version__.split(".")) > (1, 8, 0)
+
+# Exclude for function compatibility reasons
+# pylint: disable=unused-argument
 
 
 class Mask:
@@ -50,34 +57,34 @@ class Mask:
     A class to create, manipulate, and load geodata mask object that takes geo tif
     or shp files as input.
 
-    name (str): name of the mask object
-    layers (dict): dictionary that stores the layers of the mask with
-                    their names and ras.DatasetReader values
-    merged_mask (ras.DatasetReader): processed mask after merging and flattening layers
-    shape_mask (dict): dictionary that stores the extracted shape after
-                    masking the shape on the merged_mask (by default, or on certain layers if sepcified)
-                    with the shape names and ras.DatasetReader values
-    saved (boolean): whether the mask has been saved/updated
-    """
-
-    ### initialization, adding layers
-
-    def __init__(
-        self, name, layer_path=None, layer_name=None, mask_dir=config.mask_dir, **kwargs
-    ):
-        """
-        Creating a new mask object. Layer_path will take the file name(s) without extension
-        as the default layer name. If layer name(s) is/are specified, it will take the corresponding
-        layer_name(s) as the name for new layer(s). Layer path can also be a dictionary of
-        {layer_name(str): layer_path(str)} key value pairs.
-
-        name (str): Name for the new mask object
-        layer_path (str, list, or dictionary): Path(s) of new layers to be added to the mask object
+    Args:
+        name (str): name of the mask object
+        layer_path (str, list, or dict): Path(s) of new layers to be added to the mask object without extension. It
+            can also be a dictionary of {layer_name(str): layer_path(str)} key value pairs.
         layer_name: (str, list): Names for Mask.layers created from the layer path
         mask_dir: (str): the path to where the mask object would be saved/stored.
                 By default, it should be the mask path in config.py.
+        **kwargs: keyword arguments to be passed when adding layers using the add_layer method
 
-        """
+    Attributes:
+        name (str): name of the mask object
+        layers (dict): dictionary that stores the layers of the mask with
+            their names and ras.DatasetReader values
+        merged_mask (ras.DatasetReader): processed mask after merging and flattening layers
+        shape_mask (dict): dictionary that stores the extracted shape after
+            masking the shape on the merged_mask (by default, or on certain layers if sepcified)
+            with the shape names and ras.DatasetReader values
+        saved (bool): whether the mask has been saved/updated
+    """
+
+    def __init__(
+        self,
+        name: str,
+        layer_path: Union[str, list[str], dict[str, str], None] = None,
+        layer_name: Union[str, list[str]] = None,
+        mask_dir: str = config.MASK_DIR,
+        **kwargs,
+    ):
         self.name = name
         self.layers = {}
 
@@ -758,19 +765,17 @@ class Mask:
         logger.info("Mask %s successfully saved at %s", self.name, self.mask_dir)
 
 
-## LOADING MASK, TEMPORARY FILES
-
-
-def load_mask(name, mask_dir=config.mask_dir):
+def load_mask(name, mask_dir=config.MASK_DIR):
     """
     Load a previously saved mask object
 
-    Parameters:
-    name (str): name for the mask
-    mask_dir (str): directory to look for previously saved mask file and where the mask
-            object will be updated. By default, it should be the mask path in config.py
+    Args:
+        name (str): name for the mask
+        mask_dir (str): directory to look for previously saved mask file and where the mask
+                object will be updated. By default, it should be the mask path in config.py
 
-    return (geodata.mask) the mask object created previously
+    Return:
+        geodata.Mask: the mask object created previously
     """
     obj_dir = os.path.join(mask_dir, name)
 
@@ -857,7 +862,7 @@ def ras_to_xarr(
     return xarr
 
 
-def create_temp_tif(arr, transform, open_raster=True, **kwargs):
+def create_temp_tif(arr, transform, open_raster=True):
     """
     Create a ras.DatasetReader object openning a temporary rasterio file
 
@@ -896,7 +901,7 @@ def save_opened_raster(raster, path):
     save_raster(arr, transform, path)
 
 
-def save_raster(arr, transform, path, **kwargs):
+def save_raster(arr, transform, path):
     """
     Given np.array and Affine transform, save the raster as tif file to the path
     https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -1001,6 +1006,33 @@ def reproject_raster(src, src_crs, dst_crs="EPSG:4326", trim=False, **kwargs):
             return trim_raster(return_ras)
 
         return return_ras
+
+
+def apply_fn_to_raster(raster: ras.DatasetReader, fn: callable):
+    """Apply a custom function to individual values in the raster array
+
+    raster (ras.DatasetReader): the source raster
+    fn (function): the function to be applied to the raster array
+        the function needs map one value to another
+    kwargs: the arguments to be passed to the function
+
+    return: (ras.DatasetReader) the updated raster
+    """
+
+    orig_values = raster.read(1)
+    fn = njit(fn)
+
+    @njit(parallel=True)
+    def _dummy_vectorize_fn(fn: callable, arr: np.ndarray):
+        assert arr.ndim == 2
+
+        for i in prange(arr.shape[0]):
+            for j in prange(arr.shape[1]):
+                arr[i, j] = fn(arr[i, j])
+
+        return arr
+
+    return create_temp_tif(_dummy_vectorize_fn(fn, orig_values), raster.transform)
 
 
 def filter_raster(raster, values=None, min_bound=None, max_bound=None, binarize=False):
@@ -1212,7 +1244,7 @@ def convert_shape_crs(shape, src_crs, dst_crs):
 ## MERGE HELPER METHOD
 
 
-def _sum_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
+def _sum_method(merged_data, new_data, merged_mask, new_mask):
     """The sum method will add up the values from all the layers. We can also
     customize the weights. The behind scene of this method is that it multiplys
     each layers with the corresponding weight, and add the in-memory temporary
@@ -1231,7 +1263,7 @@ def _sum_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
         np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
 
 
-def _and_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
+def _and_method(merged_data, new_data, merged_mask, new_mask):
     """By default, the merge_layer method will use a binary 'and' method:
     if any of the n grid cells of the n layers at the same location have 0,
     then the returned self.merged_layer will also have 0 at that location.
