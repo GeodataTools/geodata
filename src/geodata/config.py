@@ -42,7 +42,7 @@ cutout_dir = str(cutout_dir)
 era5_dir = str(era5_dir)
 merra2_dir = str(merra2_dir)
 MASK_DIR = str(MASK_DIR)
-model_dir = str(model_dir)
+MODEL_DIR = str(model_dir)
 
 # weather_dataset = {'module': 'cordex', 'model': 'MPI-M-MPI-ESM-LR'}
 weather_dataset = {"module": "era5"}
