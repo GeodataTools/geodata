@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -43,7 +43,7 @@ def dummy_njit(f=None, *args, **kwargs):
     """Dummy decorator for numba.njit. Handles the case when numba is not installed.
 
     Args:
-        f (function): Function to be decorated. If None, returns a an identity decorator.
+        f (function): Function to be decorated. If None, returns identity.
     """
 
     def decorator(func):
@@ -51,5 +51,5 @@ def dummy_njit(f=None, *args, **kwargs):
 
     if callable(f):
         return f
-    else:
-        return decorator
+
+    return decorator

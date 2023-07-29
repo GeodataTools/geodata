@@ -16,7 +16,6 @@
 
 import abc
 import json
-import logging
 import pickle
 import shutil
 from pathlib import Path
@@ -27,8 +26,9 @@ import xarray as xr
 import geodata
 
 from ..config import model_dir
-
-logger = logging.getLogger(__name__)
+from ..cutout import Cutout
+from ..dataset import Dataset
+from ..logging import logger
 
 
 class ModelMetaSerializer(json.encoder.JSONEncoder):
@@ -133,27 +133,31 @@ class BaseModel(abc.ABC):
                 "The model is instantiated without a valid source, such as a Dataset or Cutout."
             )
 
-    @abc.abstractmethod
-    def _extract_dataset_metadata(self, dataset: geodata.Dataset) -> dict:
-        """Extract metadata from dataset.
+    def _extract_dataset_metadata(self, dataset: Dataset) -> dict:
+        if not dataset.prepared:
+            raise ValueError("The source dataset for this model is not prepared.")
+        logger.info("Using dataset %s", dataset.module)
 
-        Args:
-            dataset (Dataset): Dataset.
+        metadata = {}
 
-        Returns:
-            dict: Metadata.
-        """
+        metadata["name"] = metadata["module"] = dataset.module
+        metadata["is_dataset"] = True
+        metadata["years"] = dataset.years
+        metadata["months"] = dataset.months
 
-    @abc.abstractmethod
-    def _extract_cutout_metadata(self, cutout: geodata.Cutout) -> dict:
-        """Extract metadata from cutout.
+        return metadata
 
-        Args:
-            cutout (Cutout): Cutout.
+    def _extract_cutout_metadata(self, cutout: Cutout) -> dict:
+        logger.info("Using cutout %s", cutout.name)
 
-        Returns:
-            dict: Metadata.
-        """
+        metadata = {}
+
+        metadata["name"] = cutout.name
+        metadata["module"] = cutout.dataset_module
+        metadata["years"] = cutout.years
+        metadata["months"] = cutout.months
+
+        return metadata
 
     @property
     def prepared(self) -> bool:
