@@ -186,8 +186,8 @@ class WindExtrapolationModel(WindBaseModel):
 
         start_time = pd.Timestamp(year=years.start, month=months.start, day=1)
         end_time = pd.Timestamp(
-            year=years.stop, month=months.stop + 1, day=1
-        )  # exclude last month
+            year=years.stop, month=months.stop, day=31, hour=23, minute=59, second=59
+        )
 
         ds = xr.open_mfdataset(ds_paths)
 
