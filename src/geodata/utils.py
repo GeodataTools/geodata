@@ -45,3 +45,19 @@ def make_optional_progressbar(show, prefix, max_value):
         maybe_progressbar = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
 
     return maybe_progressbar
+
+
+def dummy_njit(f=None, *args, **kwargs):  #  pylint: disable=keyword-arg-before-vararg
+    """Dummy decorator for numba.njit. Handles the case when numba is not installed.
+
+    Args:
+        f (function): Function to be decorated. If None, returns a an identity decorator.
+    """
+
+    def decorator(func):
+        return func
+
+    if callable(f):
+        return f
+    else:
+        return decorator

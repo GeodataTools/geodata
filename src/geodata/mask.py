@@ -14,13 +14,9 @@
 ## along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""
-GEODATA
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
 import logging
 import os
+from typing import Optional, Union
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -33,10 +29,27 @@ from rasterio import mask as rmask
 from rasterio.io import MemoryFile
 from rasterio.merge import merge
 from rasterio.plot import plotting_extent
+from rioxarray import open_rasterio
 
 from . import config
 
 logger = logging.getLogger(__name__)
+
+
+try:
+    from numba import njit, prange
+except ImportError:
+    from .utils import dummy_njit as njit
+
+    prange = range
+    logging.info("Numba not installed, custom functions on arrays are not vectorized.")
+
+# NOTE: Shapely's had an API change that results in MultiPolygon
+# being non-iterable. Use shp.geoms in those cases.
+SHAPELY_NEW_API = tuple(int(i) for i in shapely.__version__.split(".")) > (1, 8, 0)
+
+# Exclude for function compatibility reasons
+# pylint: disable=unused-argument
 
 
 class Mask:
@@ -44,34 +57,34 @@ class Mask:
     A class to create, manipulate, and load geodata mask object that takes geo tif
     or shp files as input.
 
-    name (str): name of the mask object
-    layers (dict): dictionary that stores the layers of the mask with
-                    their names and ras.DatasetReader values
-    merged_mask (ras.DatasetReader): processed mask after merging and flattening layers
-    shape_mask (dict): dictionary that stores the extracted shape after
-                    masking the shape on the merged_mask (by default, or on certain layers if sepcified)
-                    with the shape names and ras.DatasetReader values
-    saved (boolean): whether the mask has been saved/updated
-    """
-
-    ### initialization, adding layers
-
-    def __init__(
-        self, name, layer_path=None, layer_name=None, mask_dir=config.mask_dir, **kwargs
-    ):
-        """
-        Creating a new mask object. Layer_path will take the file name(s) without extension
-        as the default layer name. If layer name(s) is/are specified, it will take the corresponding
-        layer_name(s) as the name for new layer(s). Layer path can also be a dictionary of
-        {layer_name(str): layer_path(str)} key value pairs.
-
-        name (str): Name for the new mask object
-        layer_path (str, list, or dictionary): Path(s) of new layers to be added to the mask object
+    Args:
+        name (str): name of the mask object
+        layer_path (str, list, or dict): Path(s) of new layers to be added to the mask object without extension. It
+            can also be a dictionary of {layer_name(str): layer_path(str)} key value pairs.
         layer_name: (str, list): Names for Mask.layers created from the layer path
         mask_dir: (str): the path to where the mask object would be saved/stored.
                 By default, it should be the mask path in config.py.
+        **kwargs: keyword arguments to be passed when adding layers using the add_layer method
 
-        """
+    Attributes:
+        name (str): name of the mask object
+        layers (dict): dictionary that stores the layers of the mask with
+            their names and ras.DatasetReader values
+        merged_mask (ras.DatasetReader): processed mask after merging and flattening layers
+        shape_mask (dict): dictionary that stores the extracted shape after
+            masking the shape on the merged_mask (by default, or on certain layers if sepcified)
+            with the shape names and ras.DatasetReader values
+        saved (bool): whether the mask has been saved/updated
+    """
+
+    def __init__(
+        self,
+        name: str,
+        layer_path: Union[str, list[str], dict[str, str], None] = None,
+        layer_name: Union[str, list[str]] = None,
+        mask_dir: str = config.MASK_DIR,
+        **kwargs,
+    ):
         self.name = name
         self.layers = {}
 
@@ -188,12 +201,11 @@ class Mask:
             layer_path = [layer_path]
             layer_name = [layer_name]
 
-        for i in range(
-            len(layer_path)
-        ):  # add the layers, using the _add_layer() method #pylint: disable=consider-using-enumerate
+        # add the layers, using the _add_layer() method
+        # pylint: disable=consider-using-enumerate
+        for i in range(len(layer_path)):
             self._add_layer(layer_path[i], layer_name[i], **kwargs)
-
-        return
+        # pylint: enable=consider-using-enumerate
 
     def remove_layer(self, name):
         """Remove a layer in the mask given layer name."""
@@ -259,12 +271,14 @@ class Mask:
         """Find the coords that bound region that all layers contain"""
 
         layer_bound = self.get_bounds(layers=layers)
+        # pylint: disable=consider-using-dict-items,consider-using-generator
         min_left, min_bottom = (
             max([layer_bound[b][num] for b in layer_bound]) for num in [0, 1]
-        )  # pylint: disable=consider-using-dict-items,consider-using-generator
+        )
         min_right, min_top = (
             min([layer_bound[b][num] for b in layer_bound]) for num in [2, 3]
-        )  # pylint: disable=consider-using-dict-items,consider-using-generator
+        )
+        # pylint: enable=consider-using-dict-items,consider-using-generator
 
         return (min_left, min_bottom, min_right, min_top)
 
@@ -352,7 +366,6 @@ class Mask:
         if (
             not reference_layer
         ):  # if no reference layer is provided, using the layer with best resolution
-
             # find all resolutions
             resolutions = {}
             for k, val in layers.items():
@@ -366,7 +379,6 @@ class Mask:
                     best_res = res[0] * res[1]
 
         if method == "and":
-
             # make sure highest resolution layer is the first input for ras.merge
             merged_lst = [layers[reference_layer]]
             layers.pop(reference_layer)
@@ -442,11 +454,11 @@ class Mask:
         can also use a reference layer that is present in the mask object to avoid
         manuelly finding resolution.
 
-        shapes (dic): a dictionary of key, shape pair
+        shapes (dict): a dictionary of key, shape pair
         reference_layer (str): name to the layer which bounds/resolution is used.
         resolution (tuple): tuple of (width, height). If specified with a reference layer,
                 the method ignore the resolution of the referenced layer and use the input resolution.
-        combine_name (str)： the name of the combined shape, if specified, the program will combine the shapes as one shape.
+        combine_name (str): the name of the combined shape, if specified, the program will combine the shapes as one shape.
                 Only one layer will be added as a result.
         exclude (bool): when it is true, area inside the shape is 0. When it is false, area inside the shape is 1.
                 True by default.
@@ -494,7 +506,7 @@ class Mask:
                 shapes[key] = shp
 
         if combine_name:
-            shapes = {combine_name: shapely.ops.unary_union(shapes.values())}
+            shapes = {combine_name: shapely.ops.unary_union(list(shapes.values()))}
 
         for key, shp in shapes.items():
             if not isinstance(shp, shapely.geometry.multipolygon.MultiPolygon):
@@ -504,15 +516,13 @@ class Mask:
             shape_bounds = ras.features.bounds(shp)
             if not reference_layer:
                 shape_transform = ras.transform.from_bounds(*shape_bounds, *resolution)
-            arr = (
-                ras.features.geometry_mask(
-                    shp,
-                    out_shape=resolution,
-                    transform=shape_transform,
-                    invert=exclude,
-                    **kwargs,
-                )
-                * 1
+
+            arr = ras.features.geometry_mask(
+                shp.geoms if SHAPELY_NEW_API else shp,
+                out_shape=resolution,
+                transform=shape_transform,
+                invert=exclude,
+                **kwargs,
             )
 
             # create raster
@@ -542,7 +552,7 @@ class Mask:
                 and we want to extract the shapes from the 'merged_mask' layer.
         combine_shape (bool): if the user want to combine the shapes as one shape, and only
                 one layer will be added as a result. False by default.
-        combine_name (str)： the name of the combined shape if combine_shape is True
+        combine_name (str): the name of the combined shape if combine_shape is True
         show_raster (bool): if the program will plot the result shapes. True by default.
         attribute_save (bool): if the program will want to save the shapes to the shape_mask attributes.
                 True by default.
@@ -550,15 +560,13 @@ class Mask:
         dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
 
+        # pylint: disable=protected-access
         if hasattr(shapes, "_geometry_column_name"):
-            shapes = (
-                shapes._geometry_column_name.to_dict()
-            )  # pylint: disable=protected-access
+            shapes = shapes._geometry_column_name.to_dict()
 
-        elif (
-            hasattr(shapes, "_name") and shapes._name == "geometry"
-        ):  # pylint: disable=protected-access
+        elif hasattr(shapes, "_name") and shapes._name == "geometry":
             shapes = shapes.to_dict()
+        # pylint: disable=protected-access
 
         # convert CRS for shapes
         if src_crs != dst_crs:
@@ -610,9 +618,8 @@ class Mask:
                     )
 
         if show_raster:
-            [
-                raster_show(r, title=name) for name, r in return_shape.items()
-            ]  # pylint: disable=expression-not-assigned
+            for name, r in return_shape.items():
+                raster_show(r, title=name)
 
         if attribute_save:
             self.shape_mask.update(return_shape)
@@ -663,15 +670,14 @@ class Mask:
 
     def close_files(self):
         """Close all the opened rasters. This method will disable further save_mask() call."""
-        [
-            i.close() for i in self.layers.values()
-        ]  # pylint: disable=expression-not-assigned
+        for i in self.layers.values():
+            i.close()
+
         if self.merged_mask:
             self.merged_mask.close()
         if self.shape_mask:
-            [
-                i.close() for i in self.shape_mask.values()
-            ]  # pylint: disable=expression-not-assigned
+            for i in self.shape_mask.values():
+                i.close()
 
     def save_mask(self, name=None, mask_dir=None, close_files=False):
         """
@@ -713,7 +719,7 @@ class Mask:
         else:  # if directory do not exist, remove all the previously saved content
             for f in os.listdir(layer_path):
                 if (
-                    f.split(".")[0] not in self.layers.keys()
+                    f.split(".")[0] not in self.layers
                 ):  # pylint: disable=consider-iterating-dictionary
                     os.remove(os.path.join(layer_path, f))
         # update layer
@@ -745,9 +751,7 @@ class Mask:
             os.mkdir(shape_path)
         else:
             for f in os.listdir(shape_path):
-                if (
-                    f.split(".")[0] not in self.shape_mask.keys()
-                ):  # pylint: disable=consider-iterating-dictionary
+                if f.split(".")[0] not in self.shape_mask:
                     os.remove(os.path.join(shape_path, f))
         if self.shape_mask:
             for name, raster in self.shape_mask.items():
@@ -761,19 +765,17 @@ class Mask:
         logger.info("Mask %s successfully saved at %s", self.name, self.mask_dir)
 
 
-## LOADING MASK, TEMPORARY FILES
-
-
-def load_mask(name, mask_dir=config.mask_dir):
+def load_mask(name, mask_dir=config.MASK_DIR):
     """
     Load a previously saved mask object
 
-    Parameters:
-    name (str): name for the mask
-    mask_dir (str): directory to look for previously saved mask file and where the mask
-            object will be updated. By default, it should be the mask path in config.py
+    Args:
+        name (str): name for the mask
+        mask_dir (str): directory to look for previously saved mask file and where the mask
+                object will be updated. By default, it should be the mask path in config.py
 
-    return (geodata.mask) the mask object created previously
+    Return:
+        geodata.Mask: the mask object created previously
     """
     obj_dir = os.path.join(mask_dir, name)
 
@@ -818,7 +820,9 @@ def load_mask(name, mask_dir=config.mask_dir):
     return prev_mask
 
 
-def open_tif(layer_path, show_raster=True, close=False):
+def open_tif(
+    layer_path: str, show_raster: bool = True, close: bool = False
+) -> ras.DatasetReader:
     """
     Openning a layer using rasterio given a file path and store it as openning_layer attribute.
     This method does not add the layer to the mask object.
@@ -830,21 +834,26 @@ def open_tif(layer_path, show_raster=True, close=False):
 
     return (ras.DatasetReader) the raster to open
     """
+
     if not os.path.exists(layer_path):
         raise FileNotFoundError(f"{layer_path} not found.")
-    openning_tif = ras.open(layer_path)
+    openning_tif: ras.DatasetReader = ras.open(layer_path)
+
     if show_raster:
         raster_show(openning_tif)
     if not close:
         logger.info("Please remember to close the file with .close()")
     else:
         openning_tif.close()
+
     return openning_tif
 
 
-def ras_to_xarr(raster, band_name=None, adjust_coord=True):
-    """Open a raster (rasterio openner) with xarray"""
-    xarr = xr.open_rasterio(raster)
+def ras_to_xarr(
+    raster: str, band_name: Optional[str] = None, adjust_coord: bool = True
+) -> xr.DataArray:
+    """Open a raster (rasterio openner) with rioxarray"""
+    xarr: xr.DataArray = open_rasterio(raster)
     if adjust_coord:
         xarr = xarr.rename({"x": "lon", "y": "lat"})
         xarr = xarr.sortby(["lat", "lon"])
@@ -853,7 +862,7 @@ def ras_to_xarr(raster, band_name=None, adjust_coord=True):
     return xarr
 
 
-def create_temp_tif(arr, transform, open_raster=True, **kwargs):
+def create_temp_tif(arr, transform, open_raster=True):
     """
     Create a ras.DatasetReader object openning a temporary rasterio file
 
@@ -892,7 +901,7 @@ def save_opened_raster(raster, path):
     save_raster(arr, transform, path)
 
 
-def save_raster(arr, transform, path, **kwargs):
+def save_raster(arr, transform, path):
     """
     Given np.array and Affine transform, save the raster as tif file to the path
     https://rasterio.readthedocs.io/en/latest/topics/writing.html
@@ -941,7 +950,6 @@ def crop_raster(raster, bounds, lat_lon_bounds=True):
         )
 
     with MemoryFile() as memfile:  # using memory file to avoid creating new files
-
         kwargs = raster.meta.copy()
         kwargs.update(
             {
@@ -998,6 +1006,33 @@ def reproject_raster(src, src_crs, dst_crs="EPSG:4326", trim=False, **kwargs):
             return trim_raster(return_ras)
 
         return return_ras
+
+
+def apply_fn_to_raster(raster: ras.DatasetReader, fn: callable):
+    """Apply a custom function to individual values in the raster array
+
+    raster (ras.DatasetReader): the source raster
+    fn (function): the function to be applied to the raster array
+        the function needs map one value to another
+    kwargs: the arguments to be passed to the function
+
+    return: (ras.DatasetReader) the updated raster
+    """
+
+    orig_values = raster.read(1)
+    fn = njit(fn)
+
+    @njit(parallel=True)
+    def _dummy_vectorize_fn(fn: callable, arr: np.ndarray):
+        assert arr.ndim == 2
+
+        for i in prange(arr.shape[0]):
+            for j in prange(arr.shape[1]):
+                arr[i, j] = fn(arr[i, j])
+
+        return arr
+
+    return create_temp_tif(_dummy_vectorize_fn(fn, orig_values), raster.transform)
 
 
 def filter_raster(raster, values=None, min_bound=None, max_bound=None, binarize=False):
@@ -1115,7 +1150,6 @@ def filter_area(
     area_calc_crs="EPSG:6933",
     connectivity=4,
 ):
-
     """
     Eliminate the small area of a certain value in the raster by converting it to
     an equal-area reprojected series of connected shapes, removing shapes that are
@@ -1177,11 +1211,11 @@ def filter_area(
     shp = convert_shape_crs(shp, src_crs=area_calc_crs, dst_crs="EPSG:4326")
 
     logger.info("Reverting the remaining shapes back to a raster.")
-    arr = (
-        ras.features.geometry_mask(
-            shp, out_shape=resolution, transform=shape_transform, invert=True
-        )
-        * 1
+    arr = ras.features.geometry_mask(
+        shp.geoms if SHAPELY_NEW_API else shp,
+        out_shape=resolution,
+        transform=shape_transform,
+        invert=True,
     )
 
     # create raster
@@ -1210,7 +1244,7 @@ def convert_shape_crs(shape, src_crs, dst_crs):
 ## MERGE HELPER METHOD
 
 
-def _sum_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
+def _sum_method(merged_data, new_data, merged_mask, new_mask):
     """The sum method will add up the values from all the layers. We can also
     customize the weights. The behind scene of this method is that it multiplys
     each layers with the corresponding weight, and add the in-memory temporary
@@ -1229,7 +1263,7 @@ def _sum_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
         np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
 
 
-def _and_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
+def _and_method(merged_data, new_data, merged_mask, new_mask):
     """By default, the merge_layer method will use a binary 'and' method:
     if any of the n grid cells of the n layers at the same location have 0,
     then the returned self.merged_layer will also have 0 at that location.
@@ -1242,9 +1276,6 @@ def _and_method(merged_data, new_data, merged_mask, new_mask, **kwargs):
         mask = merged_data != 0
 
     np.copyto(merged_data, new_data.data, where=mask, casting="unsafe")
-
-
-## VISUALIZATION METHOD
 
 
 def show(
@@ -1280,18 +1311,17 @@ def show(
     ax = fig.add_subplot()
 
     if shape is not None:
-
         shape.boundary.plot(ax=ax, linewidth=shape_width, color=shape_color)
 
     if lat_lon:
-        ax.imshow(
+        ax_img = ax.imshow(
             raster.read(1),
             interpolation="none",
             extent=plotting_extent(raster.read(1), raster.transform),
             **kwargs,
         )
     else:
-        ax.imshow(raster.read(1), interpolation="none", **kwargs)
+        ax_img = ax.imshow(raster.read(1), interpolation="none", **kwargs)
 
     if title is True:
         title = raster.name
@@ -1299,9 +1329,9 @@ def show(
     if colorbar:
         uniques = np.unique(raster.read(1))
         if len(uniques) < 3:
-            plt.colorbar(ax.get_children()[-2], ax=ax, values=[1, 0], ticks=uniques)
+            plt.colorbar(ax_img, ax=ax, ticks=uniques)
         else:
-            plt.colorbar(ax.get_children()[-2], ax=ax)
+            plt.colorbar(ax_img, ax=ax)
     if grid:
         ax.grid()
     if return_fig:
@@ -1315,8 +1345,6 @@ def show_all(r_dict, **kwargs):
     """
     show all the layers given a dictionary
     Example use case: show_all(my_mask.layers); show_all(my_mask.shape_mask)
-
     """
-    [
-        show(r, title=name, **kwargs) for name, r in r_dict.items()
-    ]  # pylint: disable=expression-not-assigned
+    for name, r in r_dict.items():
+        show(r, title=name, **kwargs)
