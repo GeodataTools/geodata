@@ -21,7 +21,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 import glob
-import logging
 import os
 from calendar import monthrange
 from tempfile import mkstemp
@@ -30,11 +29,10 @@ import numpy as np
 import requests
 import xarray as xr
 from requests.exceptions import HTTPError
-from six.moves import range  # type: ignore
+from tqdm.contrib.logging import tqdm_logging_redirect
 
 from ..config import merra2_dir
-
-logger = logging.getLogger(__name__)
+from ..logging import logger
 
 datadir = merra2_dir
 
@@ -111,69 +109,79 @@ def api_merra2(toDownload, fileGranularity, downloadedFiles):
     else:
         multi = bool(fileGranularity in ("daily_multiple", "monthly_multiple"))
 
-        for f in toDownload:
-            error_files = []
-            if multi:
-                fd, target = mkstemp(suffix=".nc4")
-            else:
-                fd = 0
-                target = f[1]
-            os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-            logger.info("Preparing API calls for %s", f[1])
-            logger.info("Making request to %s", f[2])
-            result = requests.get(f[2])
-            try:
-                result.raise_for_status()
-                with open(target, "wb") as fout:
-                    fout.write(result.content)
-            except HTTPError as http_err:
-                logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
-                error_files.append(f[1])
-            except Exception as err:
-                logger.warning("Other error occurred: %s", err)
-                error_files.append(f[1])
+        total = len(toDownload) * (len(toDownload[0]) - 2) if multi else len(toDownload)
+        with tqdm_logging_redirect(
+            loggers=[logger], total=total, dynamic_ncols=True
+        ) as pbar:
+            for f in toDownload:
+                error_files = []
+                if multi:
+                    fd, target = mkstemp(suffix=".nc4")
+                else:
+                    fd = 0
+                    target = f[1]
+                os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+                logger.info("Preparing API calls for %s", f[1])
+                logger.info("Making request to %s", f[2])
+                result = requests.get(f[2], timeout=30)
+                try:
+                    result.raise_for_status()
+                    with open(target, "wb") as fout:
+                        fout.write(result.content)
+                except HTTPError as http_err:
+                    logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
+                    error_files.append(f[1])
+                except Exception as err:  # pylint: disable=broad-except
+                    logger.warning("Other error occurred: %s", err)
+                    error_files.append(f[1])
+                pbar.update()
 
-            if multi:
-                # ds_main = xr.open_dataset(target)
+                if multi:
+                    # ds_main = xr.open_dataset(target)
 
-                temp_files = [[fd, target]]
-                for k in range(3, len(f)):
-                    logger.info("Making request to %s", f[k])
-                    result = requests.get(f[k])
-                    fd_temp, target_temp = mkstemp(suffix=".nc4")
-                    temp_files.append([fd_temp, target_temp])
-                    try:
-                        result.raise_for_status()
-                        with open(target_temp, "wb") as fout:
-                            fout.write(result.content)
-                    except HTTPError as http_err:
-                        logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
-                        error_files.append(f[k])
-                    except Exception as err:
-                        logger.warning("Other error occurred: %s", err)
-                        error_files.append(f[k])
-                    # ds_toadd = xr.open_dataset(target_temp)
-                    # ds_main = xr.merge([ds_main, ds_toadd])
-                    # os.close(fd_temp)
-                    # os.unlink(target_temp)
+                    temp_files = [[fd, target]]
+                    for k in range(3, len(f)):
+                        logger.info("Making request to %s", f[k])
+                        result = requests.get(f[k], timeout=30)
+                        fd_temp, target_temp = mkstemp(suffix=".nc4")
+                        temp_files.append([fd_temp, target_temp])
+                        try:
+                            result.raise_for_status()
+                            with open(target_temp, "wb") as fout:
+                                fout.write(result.content)
+                        except HTTPError as http_err:
+                            logger.warning(
+                                "HTTP error occurred: %s", http_err
+                            )  # Python 3.6
+                            error_files.append(f[k])
+                        except Exception as err:  # pylint: disable=broad-except
+                            logger.warning("Other error occurred: %s", err)
+                            error_files.append(f[k])
+                        # ds_toadd = xr.open_dataset(target_temp)
+                        # ds_main = xr.merge([ds_main, ds_toadd])
+                        # os.close(fd_temp)
+                        # os.unlink(target_temp)
+                        pbar.update()
 
-                ds_main = xr.open_mfdataset([fn[1] for fn in temp_files], combine="by_coords")
-                ds_main.to_netcdf(f[1])
-                ds_main.close()
-                # ds_toadd.close()  # close last xr open file
+                    ds_main = xr.open_mfdataset(
+                        [fn[1] for fn in temp_files], combine="by_coords"
+                    )
+                    ds_main.to_netcdf(f[1])
+                    ds_main.close()
+                    # ds_toadd.close()  # close last xr open file
 
-                # close and clear temp files
-                # os.close(fd)
-                # os.unlink(target)
-                for tf in temp_files:
-                    os.close(tf[0])
-                    os.unlink(tf[1])
+                    # close and clear temp files
+                    # os.close(fd)
+                    # os.unlink(target)
+                    for tf in temp_files:
+                        os.close(tf[0])
+                        os.unlink(tf[1])
 
-            if len(error_files) > 0:
-                logger.warning("Unsuccessful download for %s", error_files)
-            else:
-                logger.info("Successfully downloaded data for %s", f[1])
-                downloadedFiles.append((f[0], f[1]))
+                if len(error_files) > 0:
+                    logger.warning("Unsuccessful download for %s", error_files)
+                else:
+                    logger.info("Successfully downloaded data for %s", f[1])
+                    downloadedFiles.append((f[0], f[1]))
 
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
@@ -342,7 +350,9 @@ def tasks_daily_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
             ys=ys,
             year=year,
             month=month,
-            fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year, month)),
+            fn=fn.format(
+                year=year, month=month, day=day, spinup=spinup_year(year, month)
+            ),
         )
         for year, month in yearmonths
         for day in range(1, monthrange(year, month)[1] + 1, 1)
@@ -379,7 +389,9 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_month_surface_flux,
-        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4"),
+        template=os.path.join(
+            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4"
+        ),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4",
         url_opendap="https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4.nc4",
         fn=os.path.join(
@@ -407,7 +419,9 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_month_surface_flux,
-        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_flx_Nx.*.nc4"),
+        template=os.path.join(
+            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_flx_Nx.*.nc4"
+        ),
         url=[
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4",
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4",
@@ -466,7 +480,9 @@ weather_data_config = {
         prepare_func=prepare_month_surface_flux,
         template=os.path.join(merra2_dir, "{year}/MERRA2_*.tavgM_2d_flx_Nx.*.nc4"),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4",
-        fn=os.path.join(merra2_dir, "{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4"),
+        fn=os.path.join(
+            merra2_dir, "{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4"
+        ),
         variables=[
             "ustar",
             "z0m",
@@ -488,7 +504,9 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_dailymeans_surface_flux,
-        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.statD_2d_slv_Nx.*.nc4"),
+        template=os.path.join(
+            merra2_dir, "{year}/{month:0>2}/MERRA2_*.statD_2d_slv_Nx.*.nc4"
+        ),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2SDNXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.statD_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4",
         fn=os.path.join(
             merra2_dir,
@@ -502,7 +520,9 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_slv_radiation,
-        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_rad_Nx.*.nc4"),
+        template=os.path.join(
+            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_rad_Nx.*.nc4"
+        ),
         url=[
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4",
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXRAD.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_rad_Nx.{year}{month:0>2}{day:0>2}.nc4",
@@ -541,7 +561,9 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_month_aerosol,
-        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_aer_Nx.*.nc4"),
+        template=os.path.join(
+            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_aer_Nx.*.nc4"
+        ),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXAER.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_aer_Nx.{year}{month:0>2}{day:0>2}.nc4",
         fn=os.path.join(
             merra2_dir,

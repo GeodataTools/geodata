@@ -15,11 +15,11 @@
 
 
 import abc
+import hashlib
 import json
-import pickle
 import shutil
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import xarray as xr
 
@@ -29,15 +29,6 @@ from ..config import model_dir
 from ..cutout import Cutout
 from ..dataset import Dataset
 from ..logging import logger
-
-
-class ModelMetaSerializer(json.encoder.JSONEncoder):
-    r"""JSON encoder for model metadata that serializes `slice(...)` as `str`."""
-
-    def default(self, o):
-        if isinstance(o, slice):
-            return str(o)
-        return json.encoder.JSONEncoder.default(self, o)
 
 
 class BaseModel(abc.ABC):
@@ -50,7 +41,24 @@ class BaseModel(abc.ABC):
         **kwargs: Additional keyword arguments to pass to the model.
     """
 
+    SUPPROTED_WEATHER_DATA_CONFIGS: tuple[str]
+    metadata_keys: set[str] = {
+        "name",
+        "module",
+        "from_dataset",
+        "years",
+        "months",
+        "files_orig",
+        "files_prepared",
+        "weather_data_config",
+    }
+
     def __init__(self, source: Union[geodata.Dataset, geodata.Cutout], **kwargs):
+        if source.config not in self.SUPPROTED_WEATHER_DATA_CONFIGS:
+            raise ValueError(
+                f"Weather data config {source.config} is not supported by this model."
+            )
+
         if not source.prepared:
             raise ValueError(
                 "The source Dataset/Cutout for this model is not prepared."
@@ -58,6 +66,8 @@ class BaseModel(abc.ABC):
 
         self.source = source
         self._extra_kwargs = kwargs
+        self._corrupt_metadata = False
+        self._prepared = False
 
         if isinstance(source, geodata.Dataset):
             self._ref_path = model_dir.parent / self.source.module
@@ -66,13 +76,26 @@ class BaseModel(abc.ABC):
             self._ref_path = model_dir.parent / "cutouts"
             self._path = model_dir / self.type / self.source.name
 
-        if self._check_prepared():
-            with open(self._path / "meta.json", encoding="utf_8") as f:
-                self._metadata_json = json.load(f)
-            with open(self._path / "meta.pkl", "rb") as f:
-                self._metadata = pickle.load(f)
+        if (meta_path := self._path / "meta.json").exists():
+            try:
+                with open(meta_path, encoding="utf_8") as f:
+                    self.metadata = json.load(f)
+            except json.JSONDecodeError:
+                logger.warning(
+                    "Metadata file %s is corrupted. Model will be re-prepared.",
+                    meta_path,
+                )
+                self._corrupt_metadata = True
+                if isinstance(source, geodata.Dataset):
+                    self.metadata = self.extract_dataset_metadata(source)
+                else:
+                    self.metadata = self.extract_cutout_metadata(source)
         else:
-            self.metadata = source
+            # NOTE: We only store metadata in transient fashion until prepartion is done
+            if isinstance(source, geodata.Dataset):
+                self.metadata = self.extract_dataset_metadata(source)
+            else:
+                self.metadata = self.extract_cutout_metadata(source)
 
     def __repr__(self):
         return f"Model(source={self.source}, type={self.type})"
@@ -80,12 +103,12 @@ class BaseModel(abc.ABC):
     @property
     def name(self) -> str:
         """Name of the model."""
-        return f"{self._metadata['name']}_{self.type}"
+        return f"{self.metadata['name']}_{self.type}"
 
     @property
     def module(self) -> str:
         """Module of the model."""
-        return self._metadata["name"]
+        return self.metadata["module"]
 
     @property
     @abc.abstractmethod
@@ -93,7 +116,13 @@ class BaseModel(abc.ABC):
         """Type of the model."""
 
     def estimate(
-        self, *args: Union[slice, int], **kwargs: Union[slice, int]
+        self,
+        height: int,
+        years: slice,
+        months: Optional[slice] = None,
+        xs: Optional[slice] = None,
+        ys: Optional[slice] = None,
+        use_real_data: bool = False,
     ) -> xr.DataArray:
         """Estimate the wind speed at given coordinates.
 
@@ -110,53 +139,70 @@ class BaseModel(abc.ABC):
         """
 
         if self.from_dataset:
-            return self._estimate_dataset(*args, **kwargs)
-        else:
-            return self._estimate_cutout(*args, **kwargs)
-
-    @property
-    def metadata(self) -> dict:
-        """The metadata of the model."""
-        if hasattr(self, "_metadata"):
-            return self._metadata
-        else:
-            raise ValueError("Metadata has not be prepared yet.")
-
-    @metadata.setter
-    def metadata(self, source: Union[geodata.Dataset, geodata.Cutout]):
-        if isinstance(source, geodata.Dataset):
-            self._metadata = self._extract_dataset_metadata(source)
-        elif isinstance(source, geodata.Cutout):
-            self._metadata = self._extract_cutout_metadata(source)
-        else:
-            raise ValueError(
-                "The model is instantiated without a valid source, such as a Dataset or Cutout."
+            return self._estimate_dataset(
+                height=height,
+                years=years,
+                months=months,
+                xs=xs,
+                ys=ys,
+                use_real_data=use_real_data,
             )
 
-    def _extract_dataset_metadata(self, dataset: Dataset) -> dict:
+        return self._estimate_cutout(
+            height=height,
+            years=years,
+            months=months,
+            xs=xs,
+            ys=ys,
+            use_real_data=use_real_data,
+        )
+
+    def extract_dataset_metadata(self, dataset: Dataset) -> dict:
         if not dataset.prepared:
             raise ValueError("The source dataset for this model is not prepared.")
+
         logger.info("Using dataset %s", dataset.module)
 
         metadata = {}
 
         metadata["name"] = metadata["module"] = dataset.module
-        metadata["is_dataset"] = True
-        metadata["years"] = dataset.years
-        metadata["months"] = dataset.months
+        metadata["from_dataset"] = True
+
+        if isinstance(dataset.years, slice):
+            metadata["years"] = dataset.years.start, dataset.years.stop
+        if isinstance(dataset.months, slice):
+            metadata["months"] = dataset.months.start, dataset.months.stop
+
+        metadata["weather_data_config"] = dataset.config
+
+        # NOTE: file paths for estimation parameters will be added later in the prepare step
+        metadata["files_prepared"] = {}
+        metadata["files_orig"] = {}
+        for c, fp in dataset.downloadedFiles:
+            if c == metadata["weather_data_config"]:
+                with open(fp, "rb") as f:
+                    metadata["files_orig"][
+                        str(Path(fp).relative_to(self._ref_path))
+                    ] = hashlib.sha256(f.read()).hexdigest()
 
         return metadata
 
-    def _extract_cutout_metadata(self, cutout: Cutout) -> dict:
+    def extract_cutout_metadata(self, cutout: Cutout) -> dict:
+        # NOTE: WIP, do not use.
         logger.info("Using cutout %s", cutout.name)
 
         metadata = {}
 
         metadata["name"] = cutout.name
         metadata["module"] = cutout.dataset_module
-        metadata["years"] = cutout.years
-        metadata["months"] = cutout.months
+        metadata["from_dataset"] = False
 
+        if isinstance(cutout.years, slice):
+            metadata["years"] = cutout.years.start, cutout.years.stop
+        if isinstance(cutout.months, slice):
+            metadata["months"] = cutout.months.start, cutout.months.stop
+
+        # TODO: nc4 files consistency check needed
         return metadata
 
     @property
@@ -166,26 +212,60 @@ class BaseModel(abc.ABC):
         Returns:
             bool: True if prepared.
         """
-        return self._check_prepared()
+
+        if not self._prepared:
+            self._prepared = self._check_prepared()
+        return self._prepared
 
     def _check_prepared(self) -> bool:
-        """Check if the model is prepared.
-
-        Returns:
-            bool: True if prepared.
-        """
-
         assert self._path is not None, "The model saving path has not been set yet."
 
         nc4_path: Path = self._path / "nc4"
-        meta_path: Path = self._path / "meta"
+        meta_path: Path = self._path / "meta.json"
 
-        return (
-            nc4_path.exists()
-            and meta_path.with_suffix(".pkl").exists()
-            and meta_path.with_suffix(".json").exists()
-            and len(list(nc4_path.rglob("*.nc4"))) == len(self.source.downloadedFiles)
-        )
+        if not nc4_path.exists() or not meta_path.exists() or self._corrupt_metadata:
+            return False
+        with open(meta_path, encoding="utf-8") as f:
+            metadata_loaded = json.load(f)
+            if set(metadata_loaded.keys()) != self.metadata_keys:
+                return False
+
+        if len(self.metadata["files_orig"]) != len(self.metadata["files_prepared"]):
+            return False
+
+        nc4_rel_path = nc4_path.relative_to(self._path)
+        for fp in self.metadata["files_orig"]:
+            fp_prepared = str(nc4_rel_path / Path(fp).with_suffix(".params.nc4").name)
+
+            if (
+                fp not in self.metadata["files_orig"]
+                or fp_prepared not in self.metadata["files_prepared"]
+            ):
+                return False
+
+            with open(self._ref_path / fp, "rb") as f:
+                if (
+                    self.metadata["files_orig"][fp]
+                    != hashlib.sha256(f.read()).hexdigest()
+                ):
+                    logger.warning(
+                        "File %s in source dataset has been modified since model creation. Model is not prepared!",
+                        fp,
+                    )
+                    return False
+
+            with open(self._path / fp_prepared, "rb") as f:
+                if (
+                    self.metadata["files_prepared"][fp_prepared]
+                    != hashlib.sha256(f.read()).hexdigest()
+                ):
+                    logger.warning(
+                        "Parameter file %s in model has been modified since model creation. Model is not prepared!",
+                        fp_prepared,
+                    )
+                    return False
+
+        return True
 
     def prepare(self, force: bool = False):
         """Prepare the model.
@@ -193,25 +273,26 @@ class BaseModel(abc.ABC):
         Args:
             force (bool, optional): Force re-prepare the model. Defaults to False."""
 
+        self._prepared = False  # NOTE: force re-checking preparedness here
         if self.prepared and not force:
             logger.info("The model is already prepared.")
             return
 
-        if not self._check_prepared():
-            logger.info("Model not present in model directory, creating.")
-            shutil.rmtree(self._path, ignore_errors=True)
-            (self._path / "nc4").mkdir(exist_ok=True, parents=True)
+        logger.info("Model not present in model directory, creating.")
+        shutil.rmtree(self._path, ignore_errors=True)
+        (self._path / "nc4").mkdir(exist_ok=True, parents=True)
 
-        if self.from_dataset:
-            self._metadata["files"] = self._prepare_dataset()
-        else:
-            self._metadata["files"] = self._prepare_cutout()
+        self.metadata["files_prepared"] = {}
+        for fp in (
+            self._prepare_dataset() if self.from_dataset else self._prepare_cutout()
+        ):
+            with open(self._path / fp, "rb") as f:
+                self.metadata["files_prepared"][fp] = hashlib.sha256(
+                    f.read()
+                ).hexdigest()
 
         with open(self._path / "meta.json", "w", encoding="utf-8") as f:
-            json.dump(self._metadata, f, cls=ModelMetaSerializer, indent=4)
-
-        with open(self._path / "meta.pkl", "wb") as f:
-            pickle.dump(self._metadata, f)
+            json.dump(self.metadata, f, indent=4)
 
         logger.info("Finished preparing model.")
 
@@ -234,10 +315,20 @@ class BaseModel(abc.ABC):
     @property
     def from_dataset(self) -> bool:
         """Check if the model is from a dataset."""
-        return self._metadata["is_dataset"]
+        if "from_dataset" not in self.metadata:
+            return False
+        return self.metadata["from_dataset"]
 
     @abc.abstractmethod
-    def _estimate_dataset(self, *args, **kwargs) -> xr.Dataset:
+    def _estimate_dataset(
+        self,
+        height: int,
+        years: slice,
+        months: Optional[slice] = None,
+        xs: Optional[slice] = None,
+        ys: Optional[slice] = None,
+        use_real_data: Optional[bool] = False,
+    ) -> xr.Dataset:
         """Estimate the wind speed from a dataset.
 
         Args:
@@ -253,7 +344,15 @@ class BaseModel(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _estimate_cutout(self, *args, **kwargs) -> xr.Dataset:
+    def _estimate_cutout(
+        self,
+        height: int,
+        years: slice,
+        months: Optional[slice] = None,
+        xs: Optional[slice] = None,
+        ys: Optional[slice] = None,
+        use_real_data: Optional[bool] = False,
+    ) -> xr.Dataset:
         """Estimate the wind speed from a cutout.
 
         Args:
@@ -267,3 +366,13 @@ class BaseModel(abc.ABC):
         Returns:
             xr.Dataset: Dataset with wind speed.
         """
+
+    @property
+    def files(self):
+        if "files_prepared" not in self.metadata or "files_orig" not in self.metadata:
+            return []
+
+        files_prepared = [self._path / p for p in self.metadata["files_prepared"]]
+        files_orig = [self._ref_path / p for p in self.metadata["files_orig"]]
+
+        return files_prepared + files_orig
