@@ -61,6 +61,7 @@ class WindBaseModel(BaseModel):
     """
 
     type: str = "wind"
+    SUPPROTED_WEATHER_DATA_CONFIGS = ["slv_flux_hourly"]
     _prepare_fn: Callable[[xr.Dataset], xr.Dataset]
 
     def _prepare_dataset(self) -> list[tuple[str, Path]]:
@@ -69,9 +70,8 @@ class WindBaseModel(BaseModel):
         logger.info("Preparing the model from dataset.")
 
         prepared_files = []
-        for config, file_path in tqdm(self.source.downloadedFiles):
-            orig_ds_path = Path(file_path)
-
+        for file_path in tqdm(self.metadata["files_orig"], dynamic_ncols=True):
+            orig_ds_path = self._ref_path / file_path
             ds = xr.open_dataset(orig_ds_path)
             try:
                 ds = self._prepare_fn(ds)
@@ -82,25 +82,22 @@ class WindBaseModel(BaseModel):
                 )
                 continue
 
-            ds_path = orig_ds_path.relative_to(self._ref_path).with_suffix(
-                ".params.nc4"
+            ds_path: Path = (
+                self._path / "nc4" / Path(file_path).with_suffix(".params.nc4").name
             )
-            ds_path: Path = self._path / "nc4" / ds_path
             ds_path.parent.mkdir(parents=True, exist_ok=True)
             ds.to_netcdf(ds_path)
 
-            # (config, parameter_filepath, original_dataset_filepath)
             prepared_files.append(
-                (
-                    config,
-                    str(ds_path.relative_to(self._path)),
-                )
+                str(ds_path.relative_to(self._path)),
             )
 
         return prepared_files
 
     def _prepare_cutout(self) -> list[tuple[str, Path]]:
         """Prepare the model from a cutout."""
+
+        # TODO: Needs rework to conform to new model interface!!!
         logger.info("Preparing the model from dataset.")
 
         prepared_files = []

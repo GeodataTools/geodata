@@ -21,7 +21,6 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
 import glob
-import logging
 import os
 from calendar import monthrange
 from tempfile import mkstemp
@@ -30,11 +29,10 @@ import numpy as np
 import requests
 import xarray as xr
 from requests.exceptions import HTTPError
-from six.moves import range  # type: ignore
+from tqdm.contrib.logging import tqdm_logging_redirect
 
 from ..config import merra2_dir
-
-logger = logging.getLogger(__name__)
+from ..logging import logger
 
 datadir = merra2_dir
 
@@ -111,73 +109,79 @@ def api_merra2(toDownload, fileGranularity, downloadedFiles):
     else:
         multi = bool(fileGranularity in ("daily_multiple", "monthly_multiple"))
 
-        for f in toDownload:
-            error_files = []
-            if multi:
-                fd, target = mkstemp(suffix=".nc4")
-            else:
-                fd = 0
-                target = f[1]
-            os.makedirs(os.path.dirname(f[1]), exist_ok=True)
-            logger.info("Preparing API calls for %s", f[1])
-            logger.info("Making request to %s", f[2])
-            result = requests.get(f[2])
-            try:
-                result.raise_for_status()
-                with open(target, "wb") as fout:
-                    fout.write(result.content)
-            except HTTPError as http_err:
-                logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
-                error_files.append(f[1])
-            except Exception as err:
-                logger.warning("Other error occurred: %s", err)
-                error_files.append(f[1])
+        total = len(toDownload) * (len(toDownload[0]) - 2) if multi else len(toDownload)
+        with tqdm_logging_redirect(
+            loggers=[logger], total=total, dynamic_ncols=True
+        ) as pbar:
+            for f in toDownload:
+                error_files = []
+                if multi:
+                    fd, target = mkstemp(suffix=".nc4")
+                else:
+                    fd = 0
+                    target = f[1]
+                os.makedirs(os.path.dirname(f[1]), exist_ok=True)
+                logger.info("Preparing API calls for %s", f[1])
+                logger.info("Making request to %s", f[2])
+                result = requests.get(f[2], timeout=30)
+                try:
+                    result.raise_for_status()
+                    with open(target, "wb") as fout:
+                        fout.write(result.content)
+                except HTTPError as http_err:
+                    logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
+                    error_files.append(f[1])
+                except Exception as err:  # pylint: disable=broad-except
+                    logger.warning("Other error occurred: %s", err)
+                    error_files.append(f[1])
+                pbar.update()
 
-            if multi:
-                # ds_main = xr.open_dataset(target)
+                if multi:
+                    # ds_main = xr.open_dataset(target)
 
-                temp_files = [[fd, target]]
-                for k in range(3, len(f)):
-                    logger.info("Making request to %s", f[k])
-                    result = requests.get(f[k])
-                    fd_temp, target_temp = mkstemp(suffix=".nc4")
-                    temp_files.append([fd_temp, target_temp])
-                    try:
-                        result.raise_for_status()
-                        with open(target_temp, "wb") as fout:
-                            fout.write(result.content)
-                    except HTTPError as http_err:
-                        logger.warning(
-                            "HTTP error occurred: %s", http_err
-                        )  # Python 3.6
-                        error_files.append(f[k])
-                    except Exception as err:
-                        logger.warning("Other error occurred: %s", err)
-                        error_files.append(f[k])
-                    # ds_toadd = xr.open_dataset(target_temp)
-                    # ds_main = xr.merge([ds_main, ds_toadd])
-                    # os.close(fd_temp)
-                    # os.unlink(target_temp)
+                    temp_files = [[fd, target]]
+                    for k in range(3, len(f)):
+                        logger.info("Making request to %s", f[k])
+                        result = requests.get(f[k], timeout=30)
+                        fd_temp, target_temp = mkstemp(suffix=".nc4")
+                        temp_files.append([fd_temp, target_temp])
+                        try:
+                            result.raise_for_status()
+                            with open(target_temp, "wb") as fout:
+                                fout.write(result.content)
+                        except HTTPError as http_err:
+                            logger.warning(
+                                "HTTP error occurred: %s", http_err
+                            )  # Python 3.6
+                            error_files.append(f[k])
+                        except Exception as err:  # pylint: disable=broad-except
+                            logger.warning("Other error occurred: %s", err)
+                            error_files.append(f[k])
+                        # ds_toadd = xr.open_dataset(target_temp)
+                        # ds_main = xr.merge([ds_main, ds_toadd])
+                        # os.close(fd_temp)
+                        # os.unlink(target_temp)
+                        pbar.update()
 
-                ds_main = xr.open_mfdataset(
-                    [fn[1] for fn in temp_files], combine="by_coords"
-                )
-                ds_main.to_netcdf(f[1])
-                ds_main.close()
-                # ds_toadd.close()  # close last xr open file
+                    ds_main = xr.open_mfdataset(
+                        [fn[1] for fn in temp_files], combine="by_coords"
+                    )
+                    ds_main.to_netcdf(f[1])
+                    ds_main.close()
+                    # ds_toadd.close()  # close last xr open file
 
-                # close and clear temp files
-                # os.close(fd)
-                # os.unlink(target)
-                for tf in temp_files:
-                    os.close(tf[0])
-                    os.unlink(tf[1])
+                    # close and clear temp files
+                    # os.close(fd)
+                    # os.unlink(target)
+                    for tf in temp_files:
+                        os.close(tf[0])
+                        os.unlink(tf[1])
 
-            if len(error_files) > 0:
-                logger.warning("Unsuccessful download for %s", error_files)
-            else:
-                logger.info("Successfully downloaded data for %s", f[1])
-                downloadedFiles.append((f[0], f[1]))
+                if len(error_files) > 0:
+                    logger.warning("Unsuccessful download for %s", error_files)
+                else:
+                    logger.info("Successfully downloaded data for %s", f[1])
+                    downloadedFiles.append((f[0], f[1]))
 
 
 def prepare_meta_merra2(xs, ys, year, month, template, module, **params):
