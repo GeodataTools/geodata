@@ -13,14 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ...config import DATASET_ROOT_PATH
 from ...logging import logger
 from ._base import HEIGHTS, WindBaseModel
 
@@ -84,10 +82,10 @@ class WindExtrapolationModel(WindBaseModel):
     Example:
         >>> from geodata import Dataset
         >>> from geodata.model.wind import WindExtrapolationModel
-        >>> dataset = Dataset(module="merra2", weather_data_config="surface_flux_hourly", years=slice(2010, 2010), months=slice(1,2))
+        >>> dataset = Dataset(module="merra2", weather_data_config="slv_flux_hourly", years=slice(2010, 2010), months=slice(1,2))
         >>> model = WindExtrapolationModel(dataset)
         >>> model.prepare()
-        >>> model.estimate(xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
+        >>> model.estimate(height=12, xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
     """
 
     def _prepare_fn(
@@ -113,6 +111,14 @@ class WindExtrapolationModel(WindBaseModel):
 
         variables = [f for f in HEIGHTS if f in ds and f.replace("u", "v") in ds]
         heights = np.array([HEIGHTS[f] for f in variables]) - disph[..., np.newaxis]
+
+        logger.debug("Selected variables: %s", variables)
+        logger.debug("Shape of heights: %s", heights.shape)
+        # Basic sanity check
+        if 0 in heights.shape:
+            raise ValueError(
+                "Dataset does not contain any other useable heights other than lml"
+            )
 
         if compute_lml:
             hlml = ds["hlml"].values
@@ -158,38 +164,12 @@ class WindExtrapolationModel(WindBaseModel):
         if months is None:
             months = slice(1, 12)
 
-        raw_paths = [Path(p) for c, p in self.metadata["files"]]
-        ds_paths = []
-
-        for p in raw_paths:
-            assert (self._path / p).exists(), f"File {p} does not exist."
-
-            try:
-                year = int(p.parts[1])
-                month = int(p.parts[2])
-            except ValueError:
-                logger.warning(
-                    "Illegal file %s contained in model, final estimated result may be incomplete",
-                    p,
-                )
-
-            if year not in range(years.start, years.stop + 1) or month not in range(
-                months.start, months.stop + 1
-            ):
-                continue
-
-            orig_ds_path = DATASET_ROOT_PATH / self.module / p.relative_to(p.parts[0])
-            ds_paths += [
-                self._path / p,
-                orig_ds_path.with_name(orig_ds_path.name.replace(".params", "")),
-            ]
-
         start_time = pd.Timestamp(year=years.start, month=months.start, day=1)
         end_time = pd.Timestamp(
             year=years.stop, month=months.stop, day=31, hour=23, minute=59, second=59
         )
 
-        ds = xr.open_mfdataset(ds_paths)
+        ds = xr.open_mfdataset(self.files)
 
         if xs is None:
             xs = ds.coords["lon"]
@@ -205,7 +185,8 @@ class WindExtrapolationModel(WindBaseModel):
         alpha = ds["coeffs"][..., 0]
         beta = ds["coeffs"][..., 1]
 
-        return alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
+        result = alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
+        return result.drop_vars("coeff")  # remove unnecessary coordinate
 
     def _estimate_cutout(self, xs: slice, ys: slice, ts: slice) -> xr.Dataset:
         raise NotImplementedError
