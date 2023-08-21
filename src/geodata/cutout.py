@@ -309,7 +309,7 @@ class Cutout:
         """
         # make sure data is in correct format for coarsening
         xr_ds = ds_reformat_index(self.meta)
-        mask = load_mask(name, mask_dir=config.mask_dir)
+        mask = load_mask(name, mask_dir=config.MASK_DIR)
 
         if not mask.merged_mask and not mask.shape_mask:
             raise ValueError(
