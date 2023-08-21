@@ -1244,7 +1244,7 @@ def convert_shape_crs(shape, src_crs, dst_crs):
 ## MERGE HELPER METHOD
 
 
-def _sum_method(merged_data, new_data, merged_mask, new_mask):
+def _sum_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff):
     """The sum method will add up the values from all the layers. We can also
     customize the weights. The behind scene of this method is that it multiplys
     each layers with the corresponding weight, and add the in-memory temporary
@@ -1263,7 +1263,7 @@ def _sum_method(merged_data, new_data, merged_mask, new_mask):
         np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
 
 
-def _and_method(merged_data, new_data, merged_mask, new_mask):
+def _and_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff):
     """By default, the merge_layer method will use a binary 'and' method:
     if any of the n grid cells of the n layers at the same location have 0,
     then the returned self.merged_layer will also have 0 at that location.
