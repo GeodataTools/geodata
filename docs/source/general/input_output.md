@@ -1,6 +1,4 @@
-Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
-
-# What inputs/outputs are currently possible with Geodata?
+# Supported Input/Output Formats
 
 ## Inputs
 
@@ -24,8 +22,8 @@ Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/maste
 
 Geodata can work with the following GIS file for masking:
 
-* Tag Image File Format (.tif)
-* The shapefile format (.shp; geospatial vector data format for geographic information system software)
+* Tag Image File Format (`.tif`)
+* The shapefile format (`.shp`; geospatial vector data format for geographic information system software)
 
 ## Outputs
 
@@ -36,9 +34,9 @@ The following outputs are currently supported forclimate data:
 
 **Wind**
 
-* Wind generation time-series ([MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#wind-generation-time-series), [ERA5](https://github.com/east-winds/geodata/blob/master/doc/era5/era5_outputs.md#wind-generation-time-series))
-* Wind speed time-series ([MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#wind-speed-time-series), [ERA5](https://github.com/east-winds/geodata/blob/master/doc/era5/era5_outputs.md#wind-speed-time-series))
-* Wind power density time-series ([MERRA2 only](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#wind-power-density-time-series))
+* Wind generation time-series ([MERRA2](../merra2/merra2_outputs.md#<Wind generation time-series>), [ERA5](../era5/era5_outputs.md#<Wind generation time-series>))
+* Wind speed time-series ([MERRA2](../merra2/merra2_outputs.md#<Wind speed time-series>), [ERA5](../era5/era5_outputs.md#<Wind speed time-series>))
+* Wind power density time-series ([MERRA2 only](../merra2/merra2_outputs.md#<Wind power density time-series>))
 
 
 **Solar**
