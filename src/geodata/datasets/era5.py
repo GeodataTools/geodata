@@ -398,7 +398,7 @@ weather_data_config = {
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
         product="reanalysis-era5-single-levels",
         product_type="reanalysis",
-        variables=[
+        keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
@@ -412,6 +412,20 @@ weather_data_config = {
             "forecast_surface_roughness",
             "geopotential",
         ],
+        variables=[
+            "u100",
+            "v100",
+            "t2m",
+            "ro",
+            "stl4",
+            "ssr",
+            "sp",
+            "ssrd",
+            "tisr",
+            "fdir",
+            "fsr",
+            "z",
+        ]
     ),
     "wind_solar_monthly": dict(
         api_func=api_monthly_era5,
@@ -423,7 +437,7 @@ weather_data_config = {
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
         product="reanalysis-era5-single-levels-monthly-means",
         product_type="monthly_averaged_reanalysis",
-        variables=[
+        keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
@@ -436,6 +450,20 @@ weather_data_config = {
             "total_sky_direct_solar_radiation_at_surface",
             "forecast_surface_roughness",
             "geopotential",
+        ],
+        variables=[
+            "u100",
+            "v100",
+            "t2m",
+            "ro",
+            "stl4",
+            "ssr",
+            "sp",
+            "ssrd",
+            "tisr",
+            "fdir",
+            "fsr",
+            "z",
         ],
     ),
 }
