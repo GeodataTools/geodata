@@ -382,7 +382,7 @@ class Dataset:
         for f in self.downloadedFiles:
             file_path = f[1]
             variables = self.weatherconfig["variables"]
-            if (self.weatherconfig["module"] == "era5"):
+            if self.module == "era5":
                 variables = [
                     "u100",
                     "v100",
