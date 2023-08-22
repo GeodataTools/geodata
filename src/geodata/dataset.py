@@ -381,7 +381,20 @@ class Dataset:
 
         for f in self.downloadedFiles:
             file_path = f[1]
-            variables = self.weatherconfig["variables"]
+            variables = [
+                "u100",
+                "v100",
+                "t2m",
+                "ro",
+                "stl4",
+                "ssr",
+                "sp",
+                "ssrd",
+                "tisr",
+                "fdir",
+                "fsr",
+                "z",
+            ]
 
             with xr.open_dataset(file_path) as ds:
                 var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
