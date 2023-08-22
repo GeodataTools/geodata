@@ -420,7 +420,7 @@ class Cutout:
             for key, val in self.shape_mask.items():
                 ds = dataset.assign({"mask": (axis, val.data[0])})
                 if true_area:
-                    ds = ds.assign({"area": (axis, self.area["area"])})
+                    ds = ds.assign({"area": (axis, self.area["area"].data)})
                 res[key] = ds
         logger.info("shape_mask combined with dataset. ")
 
