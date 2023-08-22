@@ -401,7 +401,6 @@ class Dataset:
             with xr.open_dataset(file_path) as ds:
                 var_rename = dict((v, v.lower()) for v in list(ds.data_vars))
                 ds = ds.rename(var_rename)
-                print(ds[variables])
                 ds = ds[variables]
 
                 fd, target = mkstemp(suffix=".nc4")
