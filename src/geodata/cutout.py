@@ -309,7 +309,7 @@ class Cutout:
         """
         # make sure data is in correct format for coarsening
         xr_ds = ds_reformat_index(self.meta)
-        mask = load_mask(name, mask_dir=config.mask_dir)
+        mask = load_mask(name, mask_dir=config.MASK_DIR)
 
         if not mask.merged_mask and not mask.shape_mask:
             raise ValueError(
@@ -420,7 +420,7 @@ class Cutout:
             for key, val in self.shape_mask.items():
                 ds = dataset.assign({"mask": (axis, val.data[0])})
                 if true_area:
-                    ds = ds.assign({"area": (axis, self.area["area"])})
+                    ds = ds.assign({"area": (axis, self.area["area"].data)})
                 res[key] = ds
         logger.info("shape_mask combined with dataset. ")
 
