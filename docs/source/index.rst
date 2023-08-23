@@ -10,27 +10,19 @@ Welcome to Geodata's documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: General
-   :glob:
+   :caption: Quickstart
    :hidden:
 
-   general/*
+   quick_start/packagesetup
+   quick_start/input_output
 
 .. toctree::
+   :caption: Dataset Specific Tutorials
    :maxdepth: 1
-   :caption: ERA5
-   :glob:
    :hidden:
 
-   era5/*
-
-.. toctree::
-   :maxdepth: 1
-   :caption: MERRA2
-   :glob:
-   :hidden:
-
-   merra2/*
+   datasets/era5/index
+   datasets/merra2/index
 
 .. toctree::
    :maxdepth: 1

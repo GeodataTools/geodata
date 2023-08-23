@@ -46,7 +46,7 @@ to keep only required variables, significantly reducing bandwidth
 requirements and disk usage.
 
 Geodata currently supports MERRA-2 and ERA5 reanalysis products and
-various GIS file formats (see :doc:`here<general/input_output>`).
+various GIS file formats (see :doc:`here<quick_start/input_output>`).
 For example, to evaluate solar PV availability using
 `MERRA2 <https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary&sa=D&source=docs&ust=1646032882397245&usg=AOvVaw1WJVA5CNhT-7x_XWIA58o5>`__
 on 01/01/2011, use the following method call:

@@ -43,9 +43,7 @@ We use [cartopy](https://scitools.org.uk/cartopy/docs/latest/tutorials/using_the
 import cartopy.io.shapereader as shpreader
 ```
 
-We will use the following geotiff and shape files for this demo:
-
-#### china_modis.tif
+We will use the following geotiff and shape files for this demo: `china_modis.tif`
 
 We downloaded the MODIS land cover data, which uses satellite remote sensing data to estimate the land use type on an annual basis. See: [EarthData_MCD12Q1](https://lpdaac.usgs.gov/products/mcd12q1v006/).
 

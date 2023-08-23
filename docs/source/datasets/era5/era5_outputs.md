@@ -1,6 +1,6 @@
-Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
-
 # Generating Outputs with ERA5 Data
+
+<!-- We may need to overhaul this section after the model module becomes stable! -->
 
 **geodata** currently supports the following wind outputs using ERA5 data from the [Copernicus Data Store](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview).
 
@@ -8,44 +8,30 @@ Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/maste
 * Wind speed time-series (`windspd`)
 * Solar photovoltaic generation time-series (`pv`)
 
-
 ## Supported ERA5 Outputs
-
 
 ### Wind Generation Time-series
 
 Convert wind speeds for turbine to wind energy generation.
 
-```
-geodata.convert.wind(
-    cutout,
-    turbine,
-    smooth=False,
-    var_height)
+```python
+geodata.convert.wind(cutout: geodata.Cutout, turbine: str | dict[str, str], smooth: bool = False)
 ```
 
 #### Parameters
 
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
-* `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
-* `smooth` - **bool or dict** - If `True`, smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
+* `cutout` - `Cutout` -  A cutout created by `geodata.Cutout()`
+* `turbine` - `str | dict` - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of turbines here.](https://github.com/GeodataTools/geodata/tree/master/src/geodata/resources/windturbine)
+* `smooth` - `bool | dict` - If `True`, smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
 
-*Note* -
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
+*Note*: You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
 
 #### Example Code
 
+```python
+ds_wind = geodata.convert.wind(cutout, turbine="Suzlon_S82_1.5_MW", smooth=True)
+ds_wind.to_dataframe(name="wind")
 ```
-ds_wind = geodata.convert.wind(
-                cutout,
-                turbine='Suzlon_S82_1.5_MW',
-                smooth=True
-            )
-
-ds_wind.to_dataframe(name = 'wind')
-```
-
-
 
 ### Wind Speed Time-series
 
@@ -53,19 +39,16 @@ Extract wind speeds at given height (ms-1)
 
 
 ```
-geodata.convert.windspd(
-    cutout,
-    **params)
+geodata.convert.windspd(cutout: geodata.Cutout, **params)
 ```
 
 #### Parameters
 
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
+* `cutout` - `str` -  A cutout created by `geodata.Cutout()`
 * `**params` - Must have 1 of the following:
-    - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
-    - `hub-height` - **num** - Extrapolation height (m)
-*Note* -
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
+    - `turbine` - `str | dict` - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, [the list of turbines here.](https://github.com/GeodataTools/geodata/tree/master/src/geodata/resources/windturbine)
+    - `hub-height` - `int` - Extrapolation height (m)
+*Note*: You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
 #### Example Code
 
 ```

@@ -4,11 +4,11 @@
 
 **Geodata** is currently optimized to work with the following datasets:
 
-### ERA5 Inputs:
+### ERA5
 
 * [ERA5 hourly data on single levels](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
 
-### MERRA2 Inputs:
+### MERRA2
 
 * [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
 * [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
@@ -27,22 +27,19 @@ Geodata can work with the following GIS file for masking:
 
 ## Outputs
 
-The following outputs are currently supported forclimate data:
-
-
-
+The following outputs are currently supported for climate data:
 
 **Wind**
 
-* Wind generation time-series ([MERRA2](../merra2/merra2_outputs.md#<Wind generation time-series>), [ERA5](../era5/era5_outputs.md#<Wind generation time-series>))
-* Wind speed time-series ([MERRA2](../merra2/merra2_outputs.md#<Wind speed time-series>), [ERA5](../era5/era5_outputs.md#<Wind speed time-series>))
-* Wind power density time-series ([MERRA2 only](../merra2/merra2_outputs.md#<Wind power density time-series>))
+* Wind generation time-series ([MERRA2](../datasets/merra2/merra2_outputs.md#wind-generation-time-series), [ERA5](../datasets/era5/era5_outputs.md#wind-generation-time-series))
+* Wind speed time-series ([MERRA2](../datasets/merra2/merra2_outputs.md#wind-speed-time-series), [ERA5](../datasets/era5/era5_outputs.md#wind-speed-time-series))
+* Wind power density time-series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#wind-power-density-time-series))
 
 
 **Solar**
 
-* Solar photovoltaic generation time-series ([ERA5 only](https://github.com/east-winds/geodata/blob/master/doc/era5/era5_outputs.md#solar-photovoltaic-generation-time-series))
-* PV generation time-series ([MERRA2 only](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#pv-generation-time-series))
+* Solar photovoltaic generation time-series ([ERA5 only](../datasets/era5/era5_outputs.md#solar-photovoltaic-generation-time-series))
+* PV generation time-series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pv-generation-time-series))
 
 
 **Temperature**
@@ -52,10 +49,9 @@ The following outputs are currently supported forclimate data:
 
 **Aerosols**
 
-* PM2.5 time series ([MERRA2 only](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#pm25-time-series))
+* PM2.5 time series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pm25-time-series))
 
-
-
+### Mask Specific
 
 The following outputs are currently supported for masking:
 

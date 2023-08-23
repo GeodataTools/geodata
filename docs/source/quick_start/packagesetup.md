@@ -1,24 +1,14 @@
-Back to the [Table of Contents](https://github.com/GeodataTools/geodata/blob/master/doc/general/tableofcontents.md).
-
-# Geodata Package Setup
+# Installation
 
 This guide covers how to install and configure the **geodata** package for local and cloud use.
 
 Make sure that you have the following **required** software set up:
 
 * [Python 3](https://www.python.org/downloads/)
-* [Conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda) or [pip](https://pip.pypa.io/en/stable/installation/) Python package management system.
 
-
-Table of Contents:
-- [Downloading Geodata](#downloading-geodata)
-- [Configuring File Storage](#configuring-file-storage)
-- [Building Geodata](#building-geodata)
-  - [Recommended Conda Installation Guide](#the-recommended-way-installation-in-conda-environment)
-  - [macOS Pip Guide](#macos-installation-with-pip)
-  - [Windows Pip Guide](#windows-installation-with-pip)
-    - [pipwin instruction](#option-i-pipwin)
-    - [wheel file instruction](#option-ii-wheel-files)
+* Package Management System
+  - [conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda) 
+  - [pip](https://pip.pypa.io/en/stable/installation/)
 
 ## Downloading Geodata
 
@@ -29,9 +19,10 @@ git clone https://github.com/GeodataTools/geodata.git
 cd geodata
 ```
 
-## Configuring File Storage
+## Configuring File Storage Location
 
 To configure where to store downloaded and processed files, define an environment variable called `GEODATA_ROOT` and save in your shell configuration files, such as `.bashrc` or `.zshrc`:
+
 ```bash
 export GEODATA_ROOT=<YOUR_PATH_HERE>
 ```
@@ -45,18 +36,16 @@ If you do not define this variable, all datasets and cutouts will be stored unde
 
 ## Building Geodata
 
-This guide includes 3 sections: the Conda environment (for Linux, Window, and Mac) guide, MAC OS with Pip guide, and Windows OS with Pip guide.
+### Anaconda/miniconda Environment
 
-### The Recommended Way: Installation in Conda Environment
+[Anaconda](https://www.anaconda.com/download)/[miniconda](https://docs.conda.io/en/latest/miniconda.html) is a powerful package manager and environment manager for Windows, macOS or Linux, and it provides easy installation for all operating systems. It is especially convenient if you are building Geodata on the cloud with potential installation permission issues.
 
-Conda is a powerful package manager and environment manager for Windows, macOS or Linux, and it provides easy installation for all operating systems. It is especially convenient if you are building Geodata on the cloud with potential installation permission issues.
-
-If you already have Conda installed on your machine, jump straight to the `conda activate` step. Otherwise, you have 2 [options](https://conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda): download Anaconda or miniconda. Installing Anaconda requires >3GB disk space and takes minutes to download, so we will choose **miniconda** instead because is a small, bootstrap version of Anaconda that includes only conda, Python, the packages they depend on, and a small number of other useful packages. You can get miniconda following use this [link](https://docs.conda.io/en/latest/miniconda.html#installing).
+If you already have Anaconda/miniconda installed on your machine, jump straight to the `conda activate` step. Otherwise, you have 2 [options](https://conda.io/projects/conda/en/latest/user-guide/install/download.html#anaconda-or-miniconda): download Anaconda or miniconda. Installing Anaconda requires >3GB disk space and takes minutes to download, so we will choose **miniconda** instead because is a small, bootstrap version of Anaconda that includes only conda, Python, the packages they depend on, and a small number of other useful packages.
 
 If you have conda 4.6 or later versions, in the terminal/shell, run the following command below to activate the conda [environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments).
 
 ```bash
-conda activate
+conda activate <ENVIRONMENT_NAME>
 ```
 
 To use **geodata** in Python scripts by calling `import geodata`, you'll need to build the package.  To do so, in the terminal/shell window, navigate to the package's root directory (ie, "geodata"), and run the following:
@@ -75,9 +64,10 @@ conda update --all
 conda install rasterio
 ```
 
-### macOS Installation with Pip
+### Installation with pip
 
-In macOS's terminal, navigate to the package's root directory, and run the following:
+#### macOS/Linux
+In macOS or Linux's terminal, navigate to the package's root directory, and run the following:
 
 ```bash
 pip install .
@@ -99,7 +89,7 @@ pip install .
 
 If there is an error message regarding one of Geodata's dependency, repeat the process and use `pip install` to seperately download it.
 
-### Windows Installation with pip
+#### Windows
 
 In the Windows command prompt, navigate to the package's root directory, and run the following:
 
@@ -114,7 +104,7 @@ If one of the dependency, such as **GDAL** does not install automatically (we kn
 ```bash
 pip install .
 ```
-#### Option I. Pipwin
+##### Pipwin
 
 This option is recommended. When we download libraries that is built on **GDAL**, we might run into this [issue](https://stackoverflow.com/q/54734667), where a GDAL API version must be specified.
 
@@ -136,7 +126,7 @@ You may need to also install the **wheel** package `pip install wheel` to facili
 
 Similarly, if you run into installation errors regarding the **rasterio** or **bottleneck** packages, you can also call **pipwin install rasterio** or **pipwin install bottleneck** to download them.
 
-#### Option II. Wheel Files
+##### Direct Wheel Install
 
 To install **rasterio** and the necessary GDAL library, we can download the appropriate binaries for your system by hand ([rasterio](https://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) and [GDAL](https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal)) , place them into the current working directory, and run the following command in the downloads folder:
 
@@ -148,4 +138,4 @@ pip install {rasterio binary name here}.whl
 
 You may also need to also install the **wheel** package `pip install wheel` to facilitate building the wheels.
 
-For more documentation/troubleshooting conda installation issues, see: https://github.com/conda-forge/rasterio-feedstock
+For more documentation/troubleshooting conda installation issues, see [here](https://github.com/conda-forge/rasterio-feedstock)
