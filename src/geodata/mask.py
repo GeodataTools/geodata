@@ -1,22 +1,22 @@
-## Copyright 2021 Jiahe Feng (Davidson Lab).
+# Copyright 2021 Jiahe Feng (Davidson Lab).
+# Copyright 2023 Xiqiang Liu.
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program. If not, see <http://www.gnu.org/licenses/>.
-
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 import os
-from typing import Optional, Union
+from typing import Iterable, Literal, Optional
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -31,7 +31,7 @@ from rasterio.merge import merge
 from rasterio.plot import plotting_extent
 from rioxarray import open_rasterio
 
-from . import config
+from .config import MASK_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -52,40 +52,37 @@ SHAPELY_NEW_API = tuple(int(i) for i in shapely.__version__.split(".")) > (1, 8,
 
 
 class Mask:
-    """
-    A class to create, manipulate, and load geodata mask object that takes geo tif
+    """A class to create, manipulate, and load geodata mask object that takes GeoTIFF
     or shp files as input.
 
-    Args:
-        name (str): name of the mask object
-        layer_path (str, list, or dict): Path(s) of new layers to be added to the mask object without extension. It
-            can also be a dictionary of {layer_name(str): layer_path(str)} key value pairs.
-        layer_name: (str, list): Names for Mask.layers created from the layer path
-        mask_dir: (str): the path to where the mask object would be saved/stored.
-                By default, it should be the mask path in config.py.
-        **kwargs: keyword arguments to be passed when adding layers using the add_layer method
+    Creating a new mask object. Layer_path will take the file name(s) without extension
+    as the default layer name. If layer name(s) is/are specified, it will take the corresponding
+    layer_name(s) as the name for new layer(s). Layer path can also be a dictionary of
+    `{layer_name: layer_path(str)}` key-value pairs.
 
-    Attributes:
-        name (str): name of the mask object
-        layers (dict): dictionary that stores the layers of the mask with
-            their names and ras.DatasetReader values
-        merged_mask (ras.DatasetReader): processed mask after merging and flattening layers
-        shape_mask (dict): dictionary that stores the extracted shape after
-            masking the shape on the merged_mask (by default, or on certain layers if sepcified)
-            with the shape names and ras.DatasetReader values
-        saved (bool): whether the mask has been saved/updated
+    Args:
+        name (str): Name for the new mask object.
+        layer_path (str or dict): Path(s) of new layers to beadded to the mask object.
+            It can be None. In that case, nothing will be added.
+        layer_name (str or list): Names for the incoming layers.
+            If layer_path is a dictionary, layer_name will be ignored.
+        mask_dir (str): The path to where the mask object would be saved/stored.
+            By default, it should be the mask path in config.py.
+        **kwargs: Additional arguments passed to the `add_layer` method, only used if layers need to be added.
     """
+
+    MergingMethods = Literal["and", "sum"]
 
     def __init__(
         self,
         name: str,
-        layer_path: Union[str, list[str], dict[str, str], None] = None,
-        layer_name: Union[str, list[str]] = None,
-        mask_dir: str = config.MASK_DIR,
+        layer_path: Optional[str | list | dict] = None,
+        layer_name: str | list | None = None,
+        mask_dir: str = MASK_DIR,
         **kwargs,
     ):
         self.name = name
-        self.layers = {}
+        self.layers: dict[str, ras.DatasetReader] = {}
 
         self.merged_mask = None
         self.shape_mask = {}
@@ -124,33 +121,15 @@ class Mask:
             + is_save
         )
 
-    def __str__(self):
-        """Print/str representation of the object"""
-        return f"Mask {self.name}"
-
     def _add_layer(
         self,
-        layer_path,
-        layer_name=None,
-        replace=True,
-        trim=True,
-        src_crs=None,
-        dest_crs="EPSG:4326",
+        layer_path: str,
+        layer_name: Optional[str] = None,
+        replace: bool = True,
+        trim: bool = True,
+        src_crs: Optional[str] = None,
+        dest_crs: str = "EPSG:4326",
     ):
-        """
-        Add a layer to the mask, this method incorporates CRS conversion.
-
-        layer_path (str): the path to the layer file
-        layer_name (str): the layer name, by default it is None and the layer name
-                would be the file name without extension
-        replace (bool): if the layer input with same name will replace the old one
-                By default True.
-        trim (bool): if the method will trim the all-empty row/column border of the raster.
-                By default True.
-        src_crs (str): the source file CRS
-        dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
-        """
-
         if not os.path.exists(layer_path):
             raise FileNotFoundError(f"{layer_path} not found.")
 
@@ -165,7 +144,8 @@ class Mask:
                 logger.info("Overwriting existing layer %s.", layer_name)
             else:
                 raise ValueError(
-                    f"Layer name {layer_name} already existed in mask {self.name}, please change the name or replace the existing one with replace = True"
+                    f"Layer name {layer_name} already existed in mask {self.name}, please change the name or "
+                    "replace the existing one with replace = True."
                 )
 
         new_raster = ras.open(layer_path, "r+")
@@ -188,12 +168,40 @@ class Mask:
         logger.info("Layer %s added to the mask %s.", layer_name, self.name)
         self.saved = False
 
-    def add_layer(self, layer_path, layer_name=None, **kwargs):
-        """Add a layer to the mask from given path(s) by calling the _add_layer() method"""
+    def add_layer(
+        self,
+        layer_path: str | list | dict[str, str],
+        layer_name: str | list | None = None,
+        replace: bool = True,
+        trim: bool = True,
+        src_crs: Optional[str] = None,
+        dest_crs: str = "EPSG:4326",
+    ):
+        """Add a layer to the mask from given path(s) by calling the _add_layer() method.
+
+        Args:
+            layer_path (str or list or dict): The path(s) to the layer file(s)
+            layer_name (str or list): The layer name(s), if names weren't specificd in
+                `layer_path`.
+            replace (bool): Whether the layer input with same name will replace the old one
+                By default True.
+            trim (bool): Whether the method will trim the all-empty row/column border
+                of the raster. By default, this is true.
+            src_crs (str): The source file CRS
+            dest_crs (str): The destination CRS.
+                By default it is 'EPSG:4326' lat lon coordinate system.
+        """
 
         if isinstance(layer_path, dict):  # if layer_path input is dictionary
             for name, val in layer_path.items():
-                self._add_layer(val, layer_name=name, **kwargs)
+                self._add_layer(
+                    val,
+                    layer_name=name,
+                    replace=replace,
+                    trim=trim,
+                    src_crs=src_crs,
+                    dest_crs=dest_crs,
+                )
             return
 
         if isinstance(layer_path, str):  # if layer path is string
@@ -202,10 +210,21 @@ class Mask:
 
         # add the layers, using the _add_layer() method
         for i in range(len(layer_path)):
-            self._add_layer(layer_path[i], layer_name[i], **kwargs)
+            self._add_layer(
+                layer_path[i],
+                layer_name[i],
+                replace=replace,
+                trim=trim,
+                src_crs=src_crs,
+                dest_crs=dest_crs,
+            )
 
-    def remove_layer(self, name):
-        """Remove a layer in the mask given layer name."""
+    def remove_layer(self, name: str):
+        """Remove a layer in the mask given layer name.
+
+        Args:
+            name (str): The name of the layer to be removed.
+        """
         if name in self.layers:
             self.layers[name].close()
             del self.layers[name]
@@ -213,8 +232,17 @@ class Mask:
             raise KeyError(f"No layer name {name} found in the mask.")
         self.saved = False
 
-    def rename_layer(self, layer_name, new_name):
-        """Rename a layer in the mask given name."""
+    def rename_layer(self, layer_name: str, new_name: str):
+        """Rename a layer in the mask given name.
+
+        Args:
+            layer_name (str): The name of the layer to be renamed.
+            new_name (str): The new name of the layer.
+
+        Raises:
+            KeyError: If the layer name is not found in the mask.
+        """
+
         if layer_name in self.layers:
             self.layers[new_name] = self.layers[layer_name]
             del self.layers[layer_name]
@@ -222,87 +250,125 @@ class Mask:
         else:
             raise KeyError(f"No layer name {layer_name} found in the mask.")
 
-    ### layer manipulation
-
-    def get_res(self, layers=None, product=False):
+    def get_res(
+        self, layers: Optional[Iterable[str]] = None, product: bool = False
+    ) -> dict[str, tuple[float, float]]:
         """
         Get resolutions of layers.
 
-        layers (list): the list of layers to get resolution. If not specified,
+        Args:
+            layers (Iterable[str]): The list of layers to get resolution. If not specified,
                 select all layers in the object.
-        product (bool): if the user want to see the product of the grid cell height and width.
-                by default False.
+            product (bool): Whether the method returns the product of the grid cell height and width.
+                By default this is set to False.
 
-        return: (dictionary) a dictionary with layer names as keys and resolution as values.
+        Returns:
+            dict: A dictionary with layer names as keys and resolution as values.
         """
-        res = {}
 
-        if not layers:
-            layers = self.layers
-        else:
-            layers = {k: self.layers[k] for k in layers}
+        layers = {k: self.layers[k] for k in layers} if layers else self.layers
+        res: dict[tuple[float, float]] = {k: val.res for k, val in layers.items()}
 
-        for k, val in layers.items():
-            res[k] = val.res
+        return {k: (res[k][0] * res[k][1]) for k in res} if product else res
 
-        if product:  # return grid cell area (not geographical)
-            for k in layers.keys():
-                res[k] = res[k][0] * res[k][1]
+    def get_bounds(
+        self, layers: Optional[str] = None
+    ) -> dict[str, tuple[float, float, float, float]]:
+        """Get boundary information of layers
 
-        return res
+        Args:
+            layers (list): The list of layers to get bounds.
+                If not specified, select all layers in the object.
 
-    def get_bounds(self, layers=None):
-        """Get boundary information of layers"""
-        bounds = {}
+        Returns:
+            dict: A dictionary with layer names as keys and bounds as values.
+        """
 
-        if not layers:
-            layers = self.layers
-        else:
-            layers = {k: self.layers[k] for k in layers}
+        layers = {k: self.layers[k] for k in layers} if layers else self.layers
+        return {k: val.bounds for k, val in layers.items()}
 
-        for k, val in layers.items():
-            bounds[k] = val.bounds
-        return bounds
+    def find_inner_bound(
+        self, layers: Optional[str] = None
+    ) -> tuple[float, float, float, float]:
+        """Find the bounding box that's within specified layers.
 
-    def find_inner_bound(self, layers=None):
-        """Find the coords that bound region that all layers contain"""
+        Args:
+            layers (list): The list of layers to find inner bound.
+                If not specified, select all layers in the object.
+
+        Returns:
+            tuple[float, float, float, float]: A bounding box `(minx, miny, maxx, maxy)`
+            that represents the bounding box that bound the joint region.
+        """
 
         layer_bound = self.get_bounds(layers=layers)
-        min_left, min_bottom = (
-            max([layer_bound[b][num] for b in layer_bound]) for num in [0, 1]
-        )
-        min_right, min_top = (
-            min([layer_bound[b][num] for b in layer_bound]) for num in [2, 3]
-        )
+        return shapely.intersection_all(
+            [shapely.box(*bound) for bound in layer_bound.values()]
+        ).bounds
 
-        return (min_left, min_bottom, min_right, min_top)
+    def crop_layer(
+        self,
+        layer_name: str,
+        bounds: tuple[float, float, float, float],
+        lat_lon_bounds: bool = True,
+        dest_layer_name: Optional[str] = None,
+    ):
+        """Crop a layer of mask object using `crop_raster` method.
 
-    def crop_layer(self, layer_name, bounds, lat_lon_bounds=True, dest_layer_name=None):
-        """Crop a layer of mask object using crop_raster() method"""
-        if not dest_layer_name:
-            dest_layer_name = layer_name
+        Args:
+            layer_name (str): The name of the layer to be cropped.
+            bounds (tuple): The bounds of the cropped layer.
+                The order of the bounds should be (left, right, bottom, top).
+            lat_lon_bounds (bool): Whether the bounds are in latitude/longitude coordinates.
+                By default this is set to True.
+            dest_layer_name (str): The name of the cropped layer.
+                If not specified, the cropped layer will replace the original layer.
+        """
+
+        dest_layer_name = layer_name if dest_layer_name is None else dest_layer_name
         self.layers[dest_layer_name] = crop_raster(
             self.layers[layer_name], bounds, lat_lon_bounds
         )
         self.saved = False
 
-    def trim_layer(self, layer_name, dest_layer_name=None):
-        """Trim a layer of mask object using trim_raster() method"""
-        if not dest_layer_name:
-            dest_layer_name = layer_name
+    def trim_layer(self, layer_name: str, dest_layer_name: Optional[str] = None):
+        """Trim a layer of mask object using `trim_raster` method.
+
+        Args:
+            layer_name (str): The name of the layer to be trimmed.
+            dest_layer_name (str): The name of the trimmed layer.
+                If not specified, the trimmed layer will replace the original layer.
+        """
+        dest_layer_name = layer_name if dest_layer_name is None else dest_layer_name
         self.layers[dest_layer_name] = trim_raster(self.layers[layer_name])
         self.saved = False
 
     def filter_layer(
         self,
-        layer_name,
-        dest_layer_name=None,
-        values=None,
-        min_bound=None,
-        max_bound=None,
-        binarize=False,
+        layer_name: str,
+        dest_layer_name: Optional[str] = None,
+        values: Optional[Iterable[float]] = None,
+        min_bound: Optional[float] = None,
+        max_bound: Optional[float] = None,
+        binarize: bool = False,
     ):
-        """Trim a layer of mask object using trim_raster() method"""
+        """Filter a layer of mask object using `filter_raster` method.
+
+        Args:
+            layer_name (str): The name of the layer to be filtered.
+            dest_layer_name (str): The name of the filtered layer. If not specified,
+                the filtered layer will replace the original layer.
+            values (list): The list of numberic values in the raster array to filter out as 1.
+                If not specified, the method will not filter out any values in the raster.
+            min_bound (float): The minimum value in the raster array to filter out as 1.
+                If not specified, the method will not filter out any values lower than the min_bound.
+            max_bound (float): The maximum value in the raster array to filter out as 1
+                If not specified, the method will not filter out any values higher than the max_bound.
+            binarize (bool): Whether the method will return 0 and 1 for the raster
+
+        Raises:
+            ValueError: If no values, min_bound, nor max_bound are specified.
+        """
         if not dest_layer_name:
             dest_layer_name = layer_name
 
@@ -313,97 +379,100 @@ class Mask:
 
     def merge_layer(
         self,
-        method="and",
-        weights=None,
-        layers=None,
-        trim=False,
-        show_raster=True,
-        reference_layer=None,
-        attribute_save=True,
+        method: MergingMethods = "and",
+        weights: Optional[dict[str, float]] = None,
+        layers: Optional[Iterable[str]] = None,
+        trim: bool = False,
+        show_raster: bool = True,
+        reference_layer: Optional[str] = None,
+        attribute_save: bool = True,
         **kwargs,
-    ):
-        """
-        Merge multiple and flatten multiple layers from self.layers using either 'and'
+    ) -> ras.DatasetReader:
+        """Merge multiple and flatten multiple layers from self.layers using either 'and'
         and 'sum' method. By default, 'and' method is used, and we would save the result
-        to self.merged_mask attribute.
+        to `merged_mask` attribute.
 
         Adjusted from rasterio's documentation on merging:
         https://rasterio.readthedocs.io/en/latest/api/rasterio.merge.html
+
         Geospatial bounds and resolution of a new output file in the units of the input
         file coordinate reference system may be provided, but by default, the method will
         use the layer with the best resolution for the output bounds/resolution, unless a
         reference layer is provided.
 
-        method (str): "sum" or "and", the difference is explained in the docstring for
-                _sum_method and _and_method
-        weights (dict): when method = "and", the weights for each layer. None by default,
-                where the weight will be 1 for all layers.
-        layers (list): a list of layers to be merged. None by default and the method will
-                automatically perform merging on all the layers contained in the same mask object.
-        trim (bool): if the method will trim the area where all the layers must contain,
-                false by default.
-        show_raster (bool): whether the merged_mask output will be plotted,
-                true by default.
-        reference_layer (str): the name of the layer which we use as the output bounds/resolution.
-        attribute_save (bool): whether the method save the output to self.merged_mask
-                true by default.
-        **kwargs (dict): other parameters for rasterio.merge.merge(),
-                use the link above to find all possible parameters.
+        Args:
+            method (str): The method to merge the layers. By default, 'and' method is used.
+                'and' method will perform "AND" operation over the overlapping pixels.
+                'sum' method will take the sum of the overlapping pixels.
+            weights (dict): The weight of each layer to be merged. By default, all layers
+                will have the same weight of 1.
+            layers (Iterable[str]): The list of layers to be merged. If not specified, all layers
+                in the object will be merged.
+            trim (bool): Whether the method will trim the all-empty row/column border
+                of the raster. By default, this is set to `False`.
+            show_raster (bool): Whether the method will plot the merged raster. By default,
+                this is set to `True`.
+            reference_layer (str): The name of the layer to be used as the reference layer.
+                If not specified, the method will use the layer with the best (highest) resolution.
+            attribute_save (bool): Whether the method will save the merged raster to the
+                `merged_mask` attribute. By default, this is set to `True`.
+            **kwargs: Additional arguments passed to the `rasterio.merge` method.
 
+        Returns:
+            rasterio.DatasetReader: The merged raster.
+
+        Raises:
+            ValueError: If the specified method is other than 'and' and 'sum'.
         """
 
         if not layers:
-            layers = list(self.layers.keys())
+            layers = list(self.layers)
 
         # specify layers to be used in the merged process
         layers = {k: self.layers[k] for k in layers}
 
-        if (
-            not reference_layer
-        ):  # if no reference layer is provided, using the layer with best resolution
-            # find all resolutions
-            resolutions = {}
-            for k, val in layers.items():
-                resolutions[k] = val.res
-
-            # find the layer with best resolution
-            best_res = float("inf")
-            for k, res in resolutions.items():
-                if res[0] * res[1] < best_res:
-                    reference_layer = k
-                    best_res = res[0] * res[1]
+        # If no reference layer is provided, using the layer with best (highest) resolution
+        if not reference_layer:
+            resolutions = {k: np.prod(v.res) for k, v in layers.items()}
+            reference_layer = min(resolutions, key=resolutions.get)
 
         if method == "and":
             # make sure highest resolution layer is the first input for ras.merge
-            merged_lst = [layers[reference_layer]]
+            merging_layers = [layers[reference_layer]]
             layers.pop(reference_layer)
-            merged_lst += list(layers.values())
+            merging_layers += list(layers.values())
 
-            arr, aff = merge(merged_lst, method=_and_method, **kwargs)
+            arr, aff = merge(merging_layers, method=_and_method, **kwargs)
 
         elif method == "sum":
             if not weights:
                 logger.info(
-                    "No weight dictionary provided, all the layers for merging will have weights of 1 by default"
+                    "No weight dictionary provided, all the layers for merging will "
+                    "have weights of 1 by default"
                 )
-                weights = {k: 1 for k in layers.keys()}
+                weights = {k: 1 for k in layers}
             else:
                 for k in layers.keys():
                     if k not in set(weights.keys()):
                         weights[k] = 1
 
-            temp_layers = {}
-            for lay_name, lay_weight in weights.items():
-                temp_layers[lay_name] = create_temp_tif(
-                    layers[lay_name].read(1) * lay_weight, layers[lay_name].transform
+            temp_layers = {
+                name: create_temp_tif(
+                    layers[name].read(1) * weight, layers[name].transform
                 )
+                for name, weight in weights.items()
+            }
 
             # make sure highest resolution layer is the first input for ras.merge
-            merged_lst = [temp_layers[reference_layer]]
+            merging_layers = [temp_layers[reference_layer]]
             temp_layers.pop(reference_layer)
-            merged_lst += list(temp_layers.values())
-            arr, aff = merge(merged_lst, method=_sum_method, **kwargs)
-            [r.close() for r in merged_lst]
+            merging_layers += list(temp_layers.values())
+
+            arr, aff = merge(merging_layers, method=_sum_method, **kwargs)
+            for layer in temp_layers.values():
+                layer.close()
+        else:
+            raise ValueError(f"Method {method} is not supported.")
 
         return_ras = create_temp_tif(arr[0], aff)
 
@@ -420,48 +489,51 @@ class Mask:
             self.merged_mask = return_ras
             logger.info("Merged Mask saved as attribute 'merged_mask'.")
 
-        else:
-            return return_ras
+        return return_ras
 
     def remove_merge_layer(self):
+        """Remove the saved merged mask."""
         self.merged_mask = None
-
-    ### loading shapes as layers and extracting shapes
 
     def add_shape_layer(
         self,
-        shapes,
-        reference_layer=None,
-        resolution=None,
-        combine_name=None,
-        exclude=False,
-        buffer=0,
-        src_crs="EPSG:4326",
-        buffer_crs="EPSG:6933",
-        dst_crs="EPSG:4326",
+        shapes: dict[str, shapely.Geometry],
+        reference_layer: Optional[str] = None,
+        resolution: Optional[tuple[float, float]] = None,
+        combine_name: Optional[str] = None,
+        exclude: bool = False,
+        buffer: float = 0.0,
+        src_crs: str = "EPSG:4326",
+        buffer_crs: str = "EPSG:6933",
+        dst_crs: str = "EPSG:4326",
         **kwargs,
     ):
-        """
-        Add shapes to the mask layers. This is different from shape extractions,
+        """Add shapes to the mask layers. This is different from shape extractions,
         as we will simply treat one shp file as a layer, instead of grabbing the merged
         mask within that shape. This method take in a dictionary of shapes, a resolution
         of the result raster with that shape, and add the shape to the mask object. Users
         can also use a reference layer that is present in the mask object to avoid
         manuelly finding resolution.
 
-        shapes (dict): a dictionary of key, shape pair
-        reference_layer (str): name to the layer which bounds/resolution is used.
-        resolution (tuple): tuple of (width, height). If specified with a reference layer,
-                the method ignore the resolution of the referenced layer and use the input resolution.
-        combine_name (str): the name of the combined shape, if specified, the program will combine the shapes as one shape.
-                Only one layer will be added as a result.
-        exclude (bool): when it is true, area inside the shape is 0. When it is false, area inside the shape is 1.
-                True by default.
-        buffer (float): round buffer distance in km^2 extending out the shapes; if input is greater than 0,
-                method will give approximate representation of all points within this given distance of
-                the shapes objects.
-        src_crs (str): the source tif CRS, by default it is 'EPSG:4326' lat lon coordinate system
-        dst_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
+        Args:
+            shapes (dict): A dictionary of key, shape pair.
+                Shapes should be a supported geometry type in shapely.
+            reference_layer (str): Name to the layer which bounds/resolution is used.
+                If not specified, the method will use the layer with the best (highest) resolution.
+            resolution (tuple[float, float]): A tuple of `(width_resolution, height_resoution)`.
+                If specified with a reference layer, the method ignore the resolution of the referenced layer
+                    and use the input resolution instead.
+            combine_name (str): The name of the combined shape. If specified here, Mask will combine all
+                input shapes into one layer.
+            exclude (bool): Whether we want to exclude the area specified by the shape or
+                the area not specified by shape. By default, this is set to `False`.
+            buffer (float): Round buffer distance in km^2 extending out the shapes.
+                If input is greater than 0, this method will give approximate representation of all points
+                within this given distance of the shapes objects.
+            src_crs (str): The source tif CRS, by default it is 'EPSG:4326' lat lon coordinate system.
+            buffer_crs (str): The CRS for the buffer. By default it is 'EPSG:6933' meter coordinate system.
+            dst_crs (str): The destination CRS, by default it is 'EPSG:4326' lat lon coordinate system.
+            **kwargs: Additional arguments passed to the `rasterio.features.geometry_mask` method.
         """
 
         if reference_layer:
@@ -476,7 +548,8 @@ class Mask:
         else:
             if not resolution:
                 raise TypeError(
-                    "Please provide the tuple of 'resolution = (width, height)' for the resolution of the new shape raster."
+                    "Please provide the tuple of 'resolution = (width, height)' for the resolution "
+                    "of the new shape raster."
                 )
 
         # convert CRS for shapes
@@ -756,7 +829,10 @@ class Mask:
         logger.info("Mask %s successfully saved at %s", self.name, self.mask_dir)
 
 
-def load_mask(name, mask_dir=config.MASK_DIR):
+## LOADING MASK, TEMPORARY FILES
+
+
+def load_mask(name, mask_dir=MASK_DIR):
     """
     Load a previously saved mask object
 
@@ -1026,38 +1102,49 @@ def apply_fn_to_raster(raster: ras.DatasetReader, fn: callable):
     return create_temp_tif(_dummy_vectorize_fn(fn, orig_values), raster.transform)
 
 
-def filter_raster(raster, values=None, min_bound=None, max_bound=None, binarize=False):
-    """
-    Filter the raster with a list of values to be True. This method can also set
+def filter_raster(
+    raster: ras.DatasetReader,
+    values: Optional[Iterable[float]] = None,
+    min_bound: Optional[float] = None,
+    max_bound: Optional[float] = None,
+    binarize: bool = False,
+) -> ras.DatasetReader:
+    """Filter the raster with a list of values to be True. This method can also set
     a min bound and max bound to select values in the raster higher or lower than
     these two boundaries. If binarize is False (by default), the method will return
     the original values of the raster that satisfy the condition.
 
-    raster (ras.DatasetReader): the source raster
-    values (list): the list of numberic values in the raster array to be selected
-    min_bound (float): the lower boundary of data to be selected
-    max_bound (float): the upper boundary of data to be selected
-    binarized (bool): if to convert the selected data to be True
-    return: (ras.DatasetReader) the binarized raster
+    Args:
+        raster (ras.DatasetReader): The source raster
+        values (list): The list of numberic values in the raster array to filter out as 1.
+            Optional. If not specified, the method will not filter out any values in the raster.
+        min_bound (float): The minimum value in the raster array to filter out as 1.
+            Optional. If not specified, the method will not filter out any values lower than the min_bound.
+        max_bound (float): The maximum value in the raster array to filter out as 1
+            Optional. If not specified, the method will not filter out any values higher than the max_bound.
+        binarize (bool): Whether the method will return 0 and 1 for the raster
+
+    Returns:
+        (ras.DatasetReader) the filtered raster
+
+    Raises:
+        ValueError: If no values, min_bound, nor max_bound are specified.
     """
-    if (values is None and min_bound is None) and max_bound is None:
+    if values is None and min_bound is None and max_bound is None:
         raise ValueError("Please specify any of values, min_bound, or max_bound.")
 
     bool_arr = raster.read(1)
     if values is not None:
         bool_arr = np.isin(bool_arr, values)
     if min_bound is not None:
-        bool_arr = np.greater(bool_arr, min_bound) * 1
+        bool_arr = bool_arr > min_bound
     if max_bound is not None:
-        bool_arr = np.less(bool_arr, max_bound) * 1
+        bool_arr = bool_arr < max_bound
 
     # if the method return 0 and 1 for the raster
-
     if binarize:
-        return create_temp_tif((bool_arr * 1).astype(np.int8), raster.transform)
-
-    else:
-        return create_temp_tif(bool_arr * raster.read(1), raster.transform)
+        return create_temp_tif(bool_arr.astype(np.uint8), raster.transform)
+    return create_temp_tif(bool_arr * raster.read(1), raster.transform)
 
 
 # def binarize_raster(raster, values):

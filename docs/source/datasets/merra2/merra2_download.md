@@ -1,8 +1,8 @@
-Back to the [Table of Contents](https://github.com/east-winds/geodata/blob/master/doc/general/tableofcontents.md).
+# Download MERRA2 Data and Create MERRA2 Cutouts
 
-# Downloading MERRA2 Data and creating MERRA2 Cutouts
-
-A short guide to using **geodata** to download MERRA2 data, and create cutouts - subsets of data based on specific time and geographic ranges - for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
+This is a short guide to using **geodata** to download MERRA2 data, and create cutouts 
+(subsets of data based on specific time and geographic ranges) 
+for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
 **Geodata** is currently optimized to work with the following MERRA2 datasets:
 * [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
@@ -14,44 +14,52 @@ A short guide to using **geodata** to download MERRA2 data, and create cutouts -
 * [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
 * [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
 
-## Download using the geodata package itself
+## Download Dataset
 
-Download methods for MERRA2 hourly data are built into the **geodata** package.  A basic example is as follows:
+Download methods for MERRA2 hourly data are built into the **geodata** package. A basic example is as follows:
 
-```
+```python
 import logging
-logging.basicConfig(level=logging.INFO)
+
 import geodata
 
-DS = geodata.Dataset(module="merra2",
-					weather_data_config="surface_flux_hourly",
-					years=slice(2012, 2012),
-					months=slice(2,2))
+logging.basicConfig(level=logging.INFO)
 
-if DS.prepared == False:
-	DS.get_data()
+dataset = geodata.Dataset(
+    module="merra2",
+    weather_data_config="surface_flux_hourly",
+    years=slice(2012, 2012),
+    months=slice(2, 2),
+)
 
-DS.trim_variables(downloadedfiles = True)
+if not dataset.prepared:
+    dataset.get_data()
+
+dataset.trim_variables(downloadedfiles=True)
 ```
 
 Let's breakdown the code above:
 
-```
+```python
 import logging
-logging.basicConfig(level=logging.INFO)
+
 import geodata
-```
-Importing the logging package allows **geodata** to generate console input for download status, errors, etc.
-Importing geodata is necessary to run **geodata**.
 
+logging.basicConfig(level=logging.INFO)
 ```
-DS = geodata.Dataset(module="merra2",
-					weather_data_config="surface_flux_monthly",
-					years=slice(2012, 2012),
-					months=slice(1,3))
+Importing the logging package allows **geodata** to generate more verbose console input for download status, errors, etc. 
+We also must `import geodata` in order to use it.
+
+```python
+dataset = geodata.Dataset(
+    module="merra2",
+    weather_data_config="surface_flux_hourly",
+    years=slice(2012, 2012),
+    months=slice(2, 2),
+)
 ```
 
-`geodata.Dataset()` creates a dataset object via which you can download data files.  To create objects for MERRA2 hourly, single-level surface flux diagnostics, specify `module="merra2"`.  You must also have configured `merra2_dir` in `config.py` to point to a directory on your local machine  (to set up `config.py`, [see here](https://github.com/east-winds/geodata/blob/master/doc/general/packagesetup.md)).
+`geodata.Dataset` creates a dataset object via which you can download data files.  To create objects for MERRA2 hourly, single-level surface flux diagnostics, specify `module="merra2"`. You must properly configure geodata before this ([see here](https://github.com/east-winds/geodata/blob/master/doc/general/packagesetup.md)).
 
 The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for January to March 2012.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 

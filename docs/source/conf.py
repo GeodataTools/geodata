@@ -6,15 +6,17 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+from geodata import __version__
+
 project = "Geodata"
 copyright = "2023, Geodata Contributors"
 author = "Geodata Contributors"
-release = "0.1.0"
+release = __version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["myst_parser"]
+extensions = ["myst_parser", "sphinx.ext.autodoc", "sphinx.ext.napoleon", "sphinx.ext.viewcode"]
 
 templates_path = ["_templates"]
 exclude_patterns = []

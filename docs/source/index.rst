@@ -48,6 +48,13 @@ Welcome to Geodata's documentation!
 
    visualization/*
 
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+   :glob:
+   :hidden:
+
+   api_reference/*
 
 
 Indices and tables
