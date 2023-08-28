@@ -41,4 +41,4 @@ jobs:
             run: |
               pip install pytest
               pip install -e ".[download]"
-              pytest master_test/
+              pytest master_tests/
