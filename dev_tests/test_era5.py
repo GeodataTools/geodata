@@ -82,6 +82,18 @@ def test_download():
         assert dataset.prepared
 
 
+def test_trim():
+    configs = get_data_configs()
+    years = get_years()
+    months = get_months()
+    bounds = get_bounds()
+
+    for config, year, month, bound in zip(configs, years, months, bounds):
+        dataset = get_era5(config, bound, year, month)
+        dataset.trim_variables()
+        assert dataset.data_vars == dataset.weather_data_config["variables"]
+
+
 def test_cutout():
     configs = get_data_configs()
     years = get_years()
@@ -92,15 +104,3 @@ def test_cutout():
     for config, year, month, x, y in zip(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
         assert cutout.prepared
-
-
-def test_trim():
-    configs = get_data_configs()
-    years = get_years()
-    months = get_months()
-    bounds = get_bounds()
-
-    for config, year, month, bound in zip(configs, years, months, bounds):
-        dataset = get_era5(config, bound, year, month)
-        dataset.trim_variables()
-        assert dataset.data_vars == config["variables"]
