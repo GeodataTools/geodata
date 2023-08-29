@@ -1,12 +1,14 @@
-[project]
+[tool.poetry]
 name = "geodata"
+version = "0.1.0"
 description = "Geospatial Data Collection and Pre-Analysis Tools"
 authors = [
-  {name = "Michael Davidson", email = "mrdavidson@ucsd.edu"},
-  {name = "William Honaker"},
-  {name = "Xiqiang Liu", email = "xil073@ucsd.edu"}
+  "Michael Davidson <mrdavidson@ucsd.edu>",
+  "William Honaker",
+  "Xiqiang Liu <xil073@ucsd.edu>"
 ]
-license = {text = "GPLv3"}
+license = "GPLv3"
+readme = "README.md"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -15,36 +17,43 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
 ]
-requires-python = ">=3.7,<3.11"
-dependencies = [
-    "numpy>=1.8.0",
-    "scipy>=1.8.0",
-    "pandas>=0.22", 
-    "dask[complete]>=0.18.0",
-    "pyproj>=3.4.0",
-    "requests>=2.28.0",
-    "shapely>=2.0.0",
-    "geopandas>=0.12.0",
-    "xarray>=0.11.2",
-    "netCDF4>=1.6.0",
-    "numba>=0.56.0",
-    "matplotlib>=3.6.0",
-    "rasterio>=1.3.0"
-]
-dynamic = ["version", "readme"]
 
-[project.optional-dependencies]
-download = ["cdsapi>=0.5.0"]
-dev = ["black", "isort", "pytest", "pylint"]
-docs = ["sphinx", "myst-parser"]
+[tool.poetry.dependencies]
+python = ">=3.9,<4"
+numpy = ">=1.8.0"
+scipy = ">=1.8.0"
+pandas = ">=0.22"
+Bottleneck = "^1.3.5"
+numexpr = "^2.8.4"
+xarray = ">=0.11.2"
+netCDF4 = "^1.6.2"
+dask = {version = ">=0.18.0", extras = ["complete"]}
+boto3 = "^1.26.46"
+toolz = "^0.12.0"
+pyproj = "^3.4.1"
+requests = "^2.28.1"
+matplotlib = "^3.6.2"
+rasterio = "^1.3.4"
+rioxarray = "^0.14.0"
+shapely = "^2.0.0"
+progressbar2 = "^4.2.0"
+geopandas = "^0.12.2"
+cdsapi = {version = "^0.5.1", optional = true}
+notebook = {version = "^6.5.2", optional = true}
 
-[tool.setuptools.dynamic]
-version = {attr = "geodata._version.__version__"}
-readme = {file = ["README.md"]}
+[tool.poetry.group.dev.dependencies]
+black = "^22.12.0"
+isort = "^5.11.4"
+pytest = "^7.2.0"
+pylint = "^2.15.10"
+
+[tool.poetry.extras]
+download = ["cdsapi"]
+notebook = ["notebook"]
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.isort]
 profile = "black"
@@ -52,6 +61,9 @@ profile = "black"
 [tool.pylint]
     [tool.pylint.master]
     fail-under = 9.0
+    extension-pkg-allow-list = [
+        "rasterio.crs",
+    ]
 
     [tool.pylint.'DESIGN']
     # Maximum number of arguments for function / method

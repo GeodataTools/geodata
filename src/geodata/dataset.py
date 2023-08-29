@@ -345,7 +345,7 @@ class Dataset:
             api_func(
                 self.toDownload,
                 self.bounds,
-                self.weatherconfig["keywords"],
+                self.weatherconfig["variables"],
                 self.weatherconfig["product"],
                 self.weatherconfig["product_type"],
                 self.downloadedFiles,
