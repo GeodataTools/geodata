@@ -18,6 +18,7 @@ import logging
 import geodata
 
 import xarray as xr
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 
@@ -46,6 +47,18 @@ def get_ys() -> list[slice]:
     return [slice(1, 2.5)]
 
 
+def get_turbine() -> str:
+    return "Suzlon_S82_1.5_MW"
+
+
+def get_smooth() -> bool:
+    return True
+
+
+def get_var_height() -> str:
+    return "lml"
+
+
 def get_merra2(data_config: str, bound: list[int], year: slice, month: slice):
     dataset = geodata.Dataset(
         module="merra2",
@@ -71,6 +84,11 @@ def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slic
     )
     cutout.prepare()
     return cutout
+
+def create_wind_output(cutout: geodata.Cutout, turbine, smooth, var_height):
+    ds_wind = geodata.convert.wind(cutout, turbine, smooth, var_height=var_height)
+    df_wind = ds_wind.to_dataframe(name="wind")
+    return df_wind
 
 
 def test_download():
@@ -109,3 +127,19 @@ def test_cutout():
     for config, year, month, x, y in zip(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
         assert cutout.prepared
+
+
+def test_wind_output():
+    configs = get_data_configs()
+    years = get_years()
+    months = get_months()
+    xs = get_xs()
+    ys = get_ys()
+
+    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+        cutout = create_cutout(config, x, y, year, month)
+        turbine = get_turbine()
+        smooth = get_smooth()
+        var_height = get_var_height()
+        df_wind = create_wind_output(cutout, turbine, smooth, var_height)
+        assert df_wind.dtypes.to_dict() == {'lon': np.dtype('float64'), 'lat': np.dtype('float64'), 'wind': np.dtype('float64')}
