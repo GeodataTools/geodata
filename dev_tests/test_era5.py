@@ -46,11 +46,21 @@ def get_xs() -> list[slice]:
 def get_ys() -> list[slice]:
     return [slice(1, 2.5)]
 
+
 def get_turbine() -> str:
     return "Suzlon_S82_1.5_MW"
 
+
 def get_smooth() -> bool:
     return True
+
+
+def get_panel() -> str:
+    return "KANEKA"
+
+
+def get_orientation() -> str:
+    return "latitude_optimal"
 
 
 def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
@@ -79,15 +89,23 @@ def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slic
     cutout.prepare()
     return cutout
 
+
 def create_wind_output(cutout: geodata.Cutout, turbine, smooth):
     ds_wind = geodata.convert.wind(cutout, turbine, smooth)
     df_wind = ds_wind.to_dataframe(name="wind")
     return df_wind
 
+
 def create_windspd_output(cutout: geodata.Cutout, turbine):
     ds_windspd = geodata.convert.wind(cutout, turbine)
     df_windspd = ds_windspd.to_dataframe(name="windspd")
     return df_windspd
+
+
+def create_pv_output(cutout: geodata.Cutout, panel, orientation):
+    ds_pv = geodata.convert.pv(cutout, panel, orientation)
+    df_pv = ds_pv.to_dataframe(name="pv")
+    return df_pv
 
 
 def test_download():
@@ -127,6 +145,7 @@ def test_cutout():
         cutout = create_cutout(config, x, y, year, month)
         assert cutout.prepared
 
+
 def test_wind_output():
     configs = get_data_configs()
     years = get_years()
@@ -141,6 +160,7 @@ def test_wind_output():
         df_wind = create_wind_output(cutout, turbine, smooth)
         assert df_wind.dtypes.to_dict() == {'lon': np.dtype('float32'), 'lat': np.dtype('float32'), 'wind': np.dtype('float64')}
 
+
 def test_windspd_output():
     configs = get_data_configs()
     years = get_years()
@@ -153,3 +173,18 @@ def test_windspd_output():
         turbine = get_turbine()
         df_windspd = create_windspd_output(cutout, turbine)
         assert df_windspd.dtypes.to_dict() == {'lon': np.dtype('float32'), 'lat': np.dtype('float32'), 'windspd': np.dtype('float64')}
+
+
+def test_pv_output():
+    configs = get_data_configs()
+    years = get_years()
+    months = get_months()
+    xs = get_xs()
+    ys = get_ys()
+
+    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+        cutout = create_cutout(config, x, y, year, month)
+        panel = get_panel()
+        orientation = get_orientation()
+        df_pv = create_pv_output(cutout, panel, orientation)
+        assert df_pv.dtypes.to_dict() == {'lat': np.dtype('float32'), 'lon': np.dtype('float32'), 'pv': np.dtype('float64')}
