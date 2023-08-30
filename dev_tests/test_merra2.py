@@ -17,6 +17,8 @@ import logging
 
 import geodata
 
+import xarray as xr
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -80,6 +82,21 @@ def test_download():
     for config, year, month, bound in zip(configs, years, months, bounds):
         dataset = get_merra2(config, bound, year, month)
         assert dataset.prepared
+
+
+def test_trim():
+    configs = get_data_configs()
+    years = get_years()
+    months = get_months()
+    bounds = get_bounds()
+
+    for config, year, month, bound in zip(configs, years, months, bounds):
+        dataset = get_merra2(config, bound, year, month)
+        dataset.trim_variables()
+        for f in dataset.downloadedFiles:
+            file_path = f[1]
+            with xr.open_dataset(file_path) as ds:
+                assert list(ds.data_vars) == dataset.weatherconfig["variables"]
 
 
 def test_cutout():
