@@ -84,6 +84,11 @@ def create_wind_output(cutout: geodata.Cutout, turbine, smooth):
     df_wind = ds_wind.to_dataframe(name="wind")
     return df_wind
 
+def create_windspd_output(cutout: geodata.Cutout, turbine):
+    ds_windspd = geodata.convert.wind(cutout, turbine)
+    df_windspd = ds_windspd.to_dataframe(name="windspd")
+    return df_windspd
+
 
 def test_download():
     configs = get_data_configs()
@@ -135,3 +140,16 @@ def test_wind_output():
         smooth = get_smooth()
         df_wind = create_wind_output(cutout, turbine, smooth)
         assert df_wind.dtypes.to_dict() == {'lon': np.dtype('float32'), 'lat': np.dtype('float32'), 'wind': np.dtype('float64')}
+
+def test_windspd_output():
+    configs = get_data_configs()
+    years = get_years()
+    months = get_months()
+    xs = get_xs()
+    ys = get_ys()
+
+    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+        cutout = create_cutout(config, x, y, year, month)
+        turbine = get_turbine()
+        df_windspd = create_windspd_output(cutout, turbine)
+        assert df_windspd.dtypes.to_dict() == {'lon': np.dtype('float32'), 'lat': np.dtype('float32'), 'windspd': np.dtype('float64')}
