@@ -17,6 +17,8 @@ import logging
 
 import geodata
 
+import xarray as xr
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -91,7 +93,10 @@ def test_trim():
     for config, year, month, bound in zip(configs, years, months, bounds):
         dataset = get_era5(config, bound, year, month)
         dataset.trim_variables()
-        assert dataset.data_vars == dataset.weather_data_config["variables"]
+        for f in dataset.downloadedFiles:
+            file_path = f[1]
+            with xr.open_dataset(file_path) as ds:
+                assert list(ds.data_vars) == dataset.weatherconfig["variables"]
 
 
 def test_cutout():
