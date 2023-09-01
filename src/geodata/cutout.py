@@ -45,7 +45,7 @@ from .convert import (
     temperature,
     wind,
 )
-from .mask import load_mask
+from .mask import Mask
 from .preparation import (
     cutout_get_meta,
     cutout_get_meta_view,
@@ -81,9 +81,7 @@ class Cutout:
             if isinstance(years, list):
                 cutoutparams.update(years=slice(years[0], years[-1]))
             else:
-                raise TypeError(
-                    "Unrecognized years parameter given. Only slice or array accepted."
-                )
+                raise TypeError("Unrecognized years parameter given. Only slice or array accepted.")
 
         if "months" not in cutoutparams:
             logger.info("No months specified, defaulting to 1-12")
@@ -102,12 +100,8 @@ class Cutout:
                 and "months" in cutoutparams
                 and all(
                     os.path.isfile(self.datasetfn([y, m]))
-                    for y in range(
-                        cutoutparams["years"].start, cutoutparams["years"].stop + 1
-                    )
-                    for m in range(
-                        cutoutparams["months"].start, cutoutparams["months"].stop + 1
-                    )
+                    for y in range(cutoutparams["years"].start, cutoutparams["years"].stop + 1)
+                    for m in range(cutoutparams["months"].start, cutoutparams["months"].stop + 1)
                 )
             ):
                 # All files are accounted for. Checking basic data and coverage
@@ -116,9 +110,7 @@ class Cutout:
                     raise TypeError("No module given in meta file of cutout.")
                 # load dataset module based on file metadata
 
-                self.dataset_module = sys.modules[
-                    "geodata.datasets." + meta.attrs["module"]
-                ]
+                self.dataset_module = sys.modules["geodata.datasets." + meta.attrs["module"]]
                 cutoutparams["module"] = meta.attrs["module"]
 
                 logger.info("All cutout (%s, %s) files available.", name, cutout_dir)
@@ -148,16 +140,12 @@ class Cutout:
             if "module" not in cutoutparams:
                 raise TypeError("Module is required to create cutout.")
             # load module from geodata library
-            self.dataset_module = sys.modules[
-                "geodata.datasets." + cutoutparams["module"]
-            ]
+            self.dataset_module = sys.modules["geodata.datasets." + cutoutparams["module"]]
 
             logger.info("Cutout (%s, %s) not found or incomplete.", name, cutout_dir)
 
             if {"xs", "ys", "years"}.difference(cutoutparams):
-                raise TypeError(
-                    "Arguments `xs`, `ys` and `years` need to be specified for a cutout."
-                )
+                raise TypeError("Arguments `xs`, `ys` and `years` need to be specified for a cutout.")
 
             if meta is not None:
                 # if meta.nc exists, close and delete it
@@ -196,16 +184,10 @@ class Cutout:
     @property
     def meta_data_config(self):
         return dict(
-            tasks_func=self.dataset_module.weather_data_config[self.config][
-                "tasks_func"
-            ],
-            prepare_func=self.dataset_module.weather_data_config[self.config][
-                "meta_prepare_func"
-            ],
+            tasks_func=self.dataset_module.weather_data_config[self.config]["tasks_func"],
+            prepare_func=self.dataset_module.weather_data_config[self.config]["meta_prepare_func"],
             template=self.dataset_module.weather_data_config[self.config]["template"],
-            file_granularity=self.dataset_module.weather_data_config[self.config][
-                "file_granularity"
-            ],
+            file_granularity=self.dataset_module.weather_data_config[self.config]["file_granularity"],
         )
         # return self.dataset_module.meta_data_config
         ## Step 2 - Change this to pull from
@@ -229,10 +211,7 @@ class Cutout:
             prepared=self.prepared,
             projection=self.dataset_module.projection,
             shape=[len(self.coords["y"]), len(self.coords["x"])],
-            extent=(
-                list(self.coords["x"].values[[0, -1]])
-                + list(self.coords["y"].values[[-1, 0]])
-            ),
+            extent=(list(self.coords["x"].values[[0, -1]]) + list(self.coords["y"].values[[-1, 0]])),
             dimensions=self.meta.dims,
             coordinates=self.meta.coords,
             variables=self.dataset_module.weather_data_config[self.config]["variables"],
@@ -265,9 +244,7 @@ class Cutout:
 
     @property
     def extent(self):
-        return list(self.coords["x"].values[[0, -1]]) + list(
-            self.coords["y"].values[[-1, 0]]
-        )
+        return list(self.coords["x"].values[[0, -1]]) + list(self.coords["y"].values[[-1, 0]])
 
     def grid_coordinates(self):
         xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
@@ -309,21 +286,17 @@ class Cutout:
         """
         # make sure data is in correct format for coarsening
         xr_ds = ds_reformat_index(self.meta)
-        mask = load_mask(name, mask_dir=config.MASK_DIR)
+        mask = Mask.from_name(name, mask_dir=config.MASK_DIR)
 
         if not mask.merged_mask and not mask.shape_mask:
-            raise ValueError(
-                f"No mask found in {mask.name}. Please create a proper mask object first."
-            )
+            raise ValueError(f"No mask found in {mask.name}. Please create a proper mask object first.")
 
         if mask.merged_mask and merged_mask:
             self.merged_mask = coarsen(mask.load_merged_xr(), xr_ds)
             logger.info("Cutout.merged_mask added.")
 
         if mask.shape_mask and shape_mask:
-            self.shape_mask = {
-                k: coarsen(v, xr_ds) for k, v in mask.load_shape_xr().items()
-            }
+            self.shape_mask = {k: coarsen(v, xr_ds) for k, v in mask.load_shape_xr().items()}
             logger.info("Cutout.shape_mask added.")
 
     def add_grid_area(self, axis=("lat", "lon"), adjust_coord=True):
@@ -398,9 +371,7 @@ class Cutout:
         dataset = dataset.transpose("time", "lat", "lon")
 
         if self.merged_mask is None and self.shape_mask is None:
-            raise ValueError(
-                "No mask found in cutout. Please add masks with self.add_mask()"
-            )
+            raise ValueError("No mask found in cutout. Please add masks with self.add_mask()")
 
         if self.area is None and true_area is True:
             raise ValueError(
@@ -459,9 +430,7 @@ def ds_reformat_index(ds):
         return ds.sortby(["lat", "lon"])
     elif "lat" in ds.coords and "lon" in ds.coords:
         return (
-            ds.reset_coords(["lon", "lat"], drop=True)
-            .rename({"x": "lon", "y": "lat"})
-            .sortby(["lat", "lon"])
+            ds.reset_coords(["lon", "lat"], drop=True).rename({"x": "lon", "y": "lat"}).sortby(["lat", "lon"])
         )
     else:
         return ds.rename({"x": "lon", "y": "lat"}).sortby(["lat", "lon"])
@@ -498,12 +467,8 @@ def coarsen(ori, tar, func="mean"):
     In order to not lose too much data, a threshold for bias in degree could be given.
     When threshold = 0, it means that the function is going to find the best place with smallest bias.
     """
-    lat_multiple = round(
-        ((tar.lat[1] - tar.lat[0]) / (ori.lat[1] - ori.lat[0])).values.tolist()
-    )
-    lon_multiple = round(
-        ((tar.lon[1] - tar.lon[0]) / (ori.lon[1] - ori.lon[0])).values.tolist()
-    )
+    lat_multiple = round(((tar.lat[1] - tar.lat[0]) / (ori.lat[1] - ori.lat[0])).values.tolist())
+    lon_multiple = round(((tar.lon[1] - tar.lon[0]) / (ori.lon[1] - ori.lon[0])).values.tolist())
     lat_start = _find_intercept(ori.lat, tar.lat, (lat_multiple - 1) // 2)
     lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) // 2)
 
@@ -545,16 +510,7 @@ def calc_grid_area(lis_lats_lons):
     st = ""
     for v, l in zip(var, ll):  # noqa: E741
         st = st + str(v) + "=" + str(l) + " " + "+"
-    st = (
-        st
-        + "lat_0="
-        + str(np.mean(ll))
-        + " "
-        + "+"
-        + "lon_0"
-        + "="
-        + str(np.mean(lons))
-    )
+    st = st + "lat_0=" + str(np.mean(ll)) + " " + "+" + "lon_0" + "=" + str(np.mean(lons))
     tx = "+proj=aea +" + st
     pa = pyproj.Proj(tx)
 
