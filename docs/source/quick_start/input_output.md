@@ -22,7 +22,7 @@
 
 Geodata can work with the following GIS file for masking:
 
-* Tag Image File Format (`.tif`)
+* Tag Image File Format ([`.tif`](https://en.wikipedia.org/wiki/GeoTIFF))
 * The shapefile format (`.shp`; geospatial vector data format for geographic information system software)
 
 ## Outputs
@@ -55,7 +55,7 @@ The following outputs are currently supported for climate data:
 
 The following outputs are currently supported for masking:
 
-* Geospatial raster data in Tag Image File Format (.tif)
+* Geospatial raster data in Tag Image File Format ([`.tif`](https://en.wikipedia.org/wiki/GeoTIFF))
 
 
 

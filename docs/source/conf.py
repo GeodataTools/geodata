@@ -17,7 +17,7 @@ release = __version__
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "myst_parser",
+    "myst_nb",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
@@ -26,12 +26,22 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = []
+
 myst_heading_anchors = 3
+nb_execution_mode = "off"
+myst_enable_extensions = [
+    "amsmath",
+    "colon_fence",
+    "deflist",
+    "dollarmath",
+    "html_image",
+]
+
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
     "shapely": ("https://shapely.readthedocs.io/en/stable/", None),
 }
 

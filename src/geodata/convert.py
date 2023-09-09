@@ -84,9 +84,7 @@ def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
         )
         prefix = "Convert `{}`: ".format(func_name)
 
-    maybe_progressbar = make_optional_progressbar(
-        show_progress, prefix, len(yearmonths)
-    )
+    maybe_progressbar = make_optional_progressbar(show_progress, prefix, len(yearmonths))
 
     for ym in maybe_progressbar(yearmonths):
         with xr.open_dataset(cutout.datasetfn(ym)) as ds:
@@ -220,9 +218,7 @@ def heat_demand(cutout, threshold=15.0, a=1.0, constant=0.0, hour_shift=0.0, **p
 ## solar thermal collectors
 
 
-def convert_solar_thermal(
-    ds, orientation, trigon_model, clearsky_model, c0, c1, t_store
-):
+def convert_solar_thermal(ds, orientation, trigon_model, clearsky_model, c0, c1, t_store):
     # convert storage temperature to Kelvin in line with reanalysis data
     t_store += 273.15
 
@@ -230,9 +226,7 @@ def convert_solar_thermal(
     # http://rda.ucar.edu/datasets/ds094.0/#metadata/detailed.html?_do=y
     solar_position = SolarPosition(ds)
     surface_orientation = SurfaceOrientation(ds, solar_position, orientation)
-    irradiation = TiltedIrradiation(
-        ds, solar_position, surface_orientation, trigon_model, clearsky_model
-    )
+    irradiation = TiltedIrradiation(ds, solar_position, surface_orientation, trigon_model, clearsky_model)
 
     # overall efficiency; can be negative, so need to remove negative values below
     eta = c0 - c1 * ((t_store - ds["temperature"]) / irradiation)
@@ -597,11 +591,7 @@ def convert_pm25(ds):
     """
 
     ds["pm25"] = (
-        ds["dusmass25"]
-        + ds["sssmass25"]
-        + ds["bcsmass"]
-        + 1.4 * ds["ocsmass"]
-        + 1.375 * ds["so4smass"]
+        ds["dusmass25"] + ds["sssmass25"] + ds["bcsmass"] + 1.4 * ds["ocsmass"] + 1.375 * ds["so4smass"]
     )
 
     return 1e9 * ds["pm25"]  # kg / m3 to ug / m3

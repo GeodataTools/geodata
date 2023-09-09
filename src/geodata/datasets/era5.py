@@ -64,9 +64,7 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
     return ds
 
 
-def api_hourly_era5(
-    toDownload, bounds, download_vars, product, product_type, downloadedFiles
-):
+def api_hourly_era5(toDownload, bounds, download_vars, product, product_type, downloadedFiles):
     if not has_cdsapi:
         raise RuntimeError(
             "Need installed cdsapi python package available from "
@@ -113,9 +111,7 @@ def api_hourly_era5(
             downloadedFiles.append((f[0], f[1]))
 
 
-def api_monthly_era5(
-    toDownload, bounds, download_vars, product, product_type, downloadedFiles
-):
+def api_monthly_era5(toDownload, bounds, download_vars, product, product_type, downloadedFiles):
     if not has_cdsapi:
         raise RuntimeError(
             "Need installed cdsapi python package available from "
@@ -188,9 +184,7 @@ def convert_and_subset_lons_lats_era5(ds, xs, ys):
 
     # Longitudes should go from -180. to +180.
     if len(ds.coords["x"].sel(x=slice(xs.start + 360.0, xs.stop + 360.0))):
-        ds = xr.concat(
-            [ds.sel(x=slice(xs.start + 360.0, xs.stop + 360.0)), ds.sel(x=xs)], dim="x"
-        )
+        ds = xr.concat([ds.sel(x=slice(xs.start + 360.0, xs.stop + 360.0)), ds.sel(x=xs)], dim="x")
         ds = ds.assign_coords(
             x=np.where(
                 ds.coords["x"].values <= 180,

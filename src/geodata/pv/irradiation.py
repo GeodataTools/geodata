@@ -35,9 +35,7 @@ def DiffuseHorizontalIrrad(ds, solar_position, clearsky_model, influx):
     atmospheric_insolation = solar_position["atmospheric insolation"]
 
     if clearsky_model is None:
-        clearsky_model = (
-            "enhanced" if "temperature" in ds and "humidity" in ds else "simple"
-        )
+        clearsky_model = "enhanced" if "temperature" in ds and "humidity" in ds else "simple"
 
     # Reindl 1990 clearsky model
 
@@ -49,10 +47,8 @@ def DiffuseHorizontalIrrad(ds, solar_position, clearsky_model, influx):
         # Simple Reindl model without ambient air temperature and
         # relative humidity
         fraction = (
-            ((k > 0.0) & (k <= 0.3))
-            * np.fmin(1.0, 1.020 - 0.254 * k + 0.0123 * sinaltitude)
-            + ((k > 0.3) & (k < 0.78))
-            * np.fmin(0.97, np.fmax(0.1, 1.400 - 1.749 * k + 0.177 * sinaltitude))
+            ((k > 0.0) & (k <= 0.3)) * np.fmin(1.0, 1.020 - 0.254 * k + 0.0123 * sinaltitude)
+            + ((k > 0.3) & (k < 0.78)) * np.fmin(0.97, np.fmax(0.1, 1.400 - 1.749 * k + 0.177 * sinaltitude))
             + (k >= 0.78) * np.fmax(0.1, 0.486 * k - 0.182 * sinaltitude)
         )
     elif clearsky_model == "enhanced":
@@ -74,8 +70,7 @@ def DiffuseHorizontalIrrad(ds, solar_position, clearsky_model, influx):
                     1.329 - 1.716 * k + 0.267 * sinaltitude - 0.00357 * T + 0.106 * rh,
                 ),
             )
-            + (k >= 0.78)
-            * np.fmax(0.1, 0.426 * k - 0.256 * sinaltitude + 0.00349 * T + 0.0734 * rh)
+            + (k >= 0.78) * np.fmax(0.1, 0.426 * k - 0.256 * sinaltitude + 0.00349 * T + 0.0734 * rh)
         )
     else:
         raise ValueError("`clearsky model` must be chosen from 'simple' and 'enhanced'")
@@ -109,9 +104,7 @@ def TiltedDiffuseIrrad(solar_position, surface_orientation, direct, diffuse):
     R_b = cosincidence / sinaltitude
 
     diffuse_t = (
-        (1.0 - A)
-        * ((1 + np.cos(surface_slope)) / 2.0)
-        * (1.0 + f * np.sin(surface_slope / 2.0) ** 3)
+        (1.0 - A) * ((1 + np.cos(surface_slope)) / 2.0) * (1.0 + f * np.sin(surface_slope / 2.0) ** 3)
         + A * R_b
     ) * diffuse
 
@@ -119,9 +112,7 @@ def TiltedDiffuseIrrad(solar_position, surface_orientation, direct, diffuse):
     # note: REatlas does not do the fixup
     if logger.isEnabledFor(logging.WARNING):
         if ((diffuse_t < 0.0) & (sinaltitude > np.sin(np.deg2rad(1.0)))).any():
-            logger.warning(
-                "diffuse_t exhibits negative values above altitude threshold."
-            )
+            logger.warning("diffuse_t exhibits negative values above altitude threshold.")
 
     with np.errstate(invalid="ignore"):
         diffuse_t.values[np.isnan(diffuse_t.values) | (diffuse_t.values < 0.0)] = 0.0
@@ -191,19 +182,15 @@ def TiltedIrradiation(
 
         influx = direct + diffuse
         direct_t = k * direct
-        diffuse_t = (1.0 + cos_surface_slope) / 2.0 * diffuse + _albedo(
-            ds, influx
-        ) * influx * ((1.0 - cos_surface_slope) / 2.0)
+        diffuse_t = (1.0 + cos_surface_slope) / 2.0 * diffuse + _albedo(ds, influx) * influx * (
+            (1.0 - cos_surface_slope) / 2.0
+        )
 
         total_t = direct_t.fillna(0.0) + diffuse_t.fillna(0.0)
     else:
-        diffuse_t = TiltedDiffuseIrrad(
-            solar_position, surface_orientation, direct, diffuse
-        )
+        diffuse_t = TiltedDiffuseIrrad(solar_position, surface_orientation, direct, diffuse)
         direct_t = TiltedDirectIrrad(solar_position, surface_orientation, direct)
-        ground_t = TiltedGroundIrrad(
-            solar_position, surface_orientation, direct + diffuse
-        )
+        ground_t = TiltedGroundIrrad(solar_position, surface_orientation, direct + diffuse)
 
         total_t = (direct_t + diffuse_t + ground_t).rename("total tilted")
 
@@ -212,8 +199,6 @@ def TiltedIrradiation(
     # => Suppress irradiation below solar altitudes of 1 deg.
 
     cap_alt = solar_position["altitude"] < np.deg2rad(altitude_threshold)
-    total_t.values[
-        (cap_alt | (direct + diffuse <= 0.01)).transpose(*total_t.dims).values
-    ] = 0.0
+    total_t.values[(cap_alt | (direct + diffuse <= 0.01)).transpose(*total_t.dims).values] = 0.0
 
     return total_t

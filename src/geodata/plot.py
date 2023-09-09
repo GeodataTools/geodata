@@ -97,22 +97,16 @@ def time_series(
         ds = ds.coarsen(time=time_factor, boundary="trim").sum()
 
     if agg_slice is False and (lat_slice is None and lon_slice is None):
-        assert (
-            not agg_slice
-        ), "agg_slice cannot be set to False without lat_slice or lon_slice."
+        assert not agg_slice, "agg_slice cannot be set to False without lat_slice or lon_slice."
 
     if lat_slice:
         assert lat_slice[1] > lat_slice[0], "Please give correct latitude slice"
-        ds = ds.where(ds.lat >= lat_slice[0], drop=True).where(
-            ds.lat <= lat_slice[1], drop=True
-        )
+        ds = ds.where(ds.lat >= lat_slice[0], drop=True).where(ds.lat <= lat_slice[1], drop=True)
         create_title += f"lat slice {lat_slice} "
 
     if lon_slice:
         assert lon_slice[1] > lon_slice[0], "Please give correct longitude slice"
-        ds = ds.where(ds.lon >= lon_slice[0], drop=True).where(
-            ds.lon <= lon_slice[1], drop=True
-        )
+        ds = ds.where(ds.lon >= lon_slice[0], drop=True).where(ds.lon <= lon_slice[1], drop=True)
         create_title += f"lon slice {lon_slice} "
 
     if coord_dict:
@@ -147,9 +141,7 @@ def time_series(
             ds.sel(lat=la, lon=lo).plot(ax=ax, label=key, **kwargs)
             create_title += f"{loc_name} "
 
-    if not coord_dict and (
-        agg_slice is True or (lat_slice is None and lon_slice is None)
-    ):
+    if not coord_dict and (agg_slice is True or (lat_slice is None and lon_slice is None)):
         ds = ds_ts_aggregate(ds, agg_slice_method)
         ds.plot(ax=ax, **kwargs)
         create_title += f"spatially {agg_slice_method} aggregated "
@@ -176,9 +168,7 @@ def time_series(
         elif lat_slice and lon_slice:
             for la in ds.lat.values:
                 for lo in ds.lon.values:
-                    ds.sel(lat=la, lon=lo).plot(
-                        ax=ax, label=f"lat {la}, lon {lo}", **kwargs
-                    )
+                    ds.sel(lat=la, lon=lo).plot(ax=ax, label=f"lat {la}, lon {lo}", **kwargs)
 
     if legend and (agg_slice is False or coord_dict):
         ax.legend()
