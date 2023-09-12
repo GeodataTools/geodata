@@ -1,34 +1,32 @@
-## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 """
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
+This module contains various functions used to perform conversion in Geodata.
 """
 
-from __future__ import absolute_import
 
 import datetime as dt
 import logging
 from operator import itemgetter
+from typing import TypeVar
 
 import numpy as np
 import xarray as xr
-from six import string_types
+from tqdm.auto import trange
 
 from . import wind as windm
 from .pv.irradiation import TiltedIrradiation
@@ -36,45 +34,36 @@ from .pv.orientation import SurfaceOrientation, get_orientation
 from .pv.solar_panel_model import SolarPanelModel
 from .pv.solar_position import SolarPosition
 from .resource import get_solarpanelconfig, get_windturbineconfig, windturbine_smooth
-from .utils import make_optional_progressbar
 
 logger = logging.getLogger(__name__)
+Cutout = TypeVar("Cutout")
 
 
-def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
-    """
-    Convert and aggregate a weather-based renewable generation time-series.
+def convert_cutout(cutout: Cutout, convert_func: callable, show_progress: bool = False, **convert_kwds):
+    """Convert and aggregate a weather-based renewable generation time-series.
 
-    NOTE: Not meant to be used by the user him or herself. Rather it is a
-    gateway function that is called by all the individual time-series
+    NOTE: This is a function designed to be used internally instead of being used by the user him or herself.
+    It is a gateway function that is called by all the individual time-series
     generation functions like pv and wind. Thus, all its parameters are also
     available from these.
 
-    Parameters (passed through as **params)
-    ---------------------------------------
-    show_progress : boolean|string
-            Whether to show a progress bar if boolean and its label if given as a
-            string (defaults to True).
+    Args:
+        cutout (Cutout): Cutout object
+        convert_func (callable): Function to convert the cutout
+        show_progress (bool): Show progress bar. Set to False by default.
+        **convert_kwds: Keyword arguments passed to convert_func
 
-    Returns
-    -------
-    resource : xr.DataArray
-            Time-series of renewable generation aggregated to buses, if
-            `matrix` or equivalents are provided else the total sum of
-            generated energy.
-
-    Internal Parameters (provided by f.ex. wind and pv)
-    ---------------------------------------------------
-    convert_func : Function
-            Callback like convert_wind, convert_pv
+    Returns:
+        xr.DataArray: Converted cutout
     """
-    assert cutout.prepared, "The cutout has to be prepared first."
+
+    if not cutout.prepared:
+        raise RuntimeError("The cutout has to be prepared first.")
 
     results = []
-
     yearmonths = cutout.coords["year-month"].to_index()
 
-    if isinstance(show_progress, string_types):
+    if isinstance(show_progress, str):
         prefix = show_progress
     else:
         func_name = (
@@ -82,11 +71,9 @@ def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
             if convert_func.__name__.startswith("convert_")
             else convert_func.__name__
         )
-        prefix = "Convert `{}`: ".format(func_name)
+        prefix = f"Convert `{func_name}`: "
 
-    maybe_progressbar = make_optional_progressbar(show_progress, prefix, len(yearmonths))
-
-    for ym in maybe_progressbar(yearmonths):
+    for ym in trange(len(yearmonths), desc=prefix, disable=not show_progress, dynamic_ncols=True):
         with xr.open_dataset(cutout.datasetfn(ym)) as ds:
             if "view" in cutout.meta.attrs:
                 if isinstance(cutout.meta.attrs["view"], str):
@@ -104,67 +91,45 @@ def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
             da = convert_func(ds, **convert_kwds)
             results.append(da.load())
 
-    results = xr.concat(results, dim="time")
-
-    return results
+    return xr.concat(results, dim="time")
 
 
-## temperature
+def temperature(cutout: Cutout, **params):
+    """Convert temperature in Cutout to outside temperature.
 
+    Args:
+        cutout (Cutout): Cutout object
 
-def convert_temperature(ds):
-    """Return outside temperature (useful for e.g. heat pump T-dependent
-    coefficient of performance).
+    Returns:
+        xr.DataArray: Outside temperature
     """
-
-    # Temperature is in Kelvin
-    return ds["temperature"] - 273.15
-
-
-def temperature(cutout, **params):
-    return cutout.convert_cutout(convert_func=convert_temperature, **params)
-
-
-## soil temperature
-
-
-def convert_soil_temperature(ds):
-    """Return soil temperature (useful for e.g. heat pump T-dependent
-    coefficient of performance).
-    """
-
-    # Temperature is in Kelvin
-
-    # There are nans where there is sea; by setting them
-    # to zero we guarantee they do not contribute when multiplied
-    # by matrix in geodata/aggregate.py
-    return (ds["soil temperature"] - 273.15).fillna(0.0)
+    return cutout.convert_cutout(convert_func=lambda ds: ds["temperature"] - 273.15, **params)
 
 
 def soil_temperature(cutout, **params):
-    return cutout.convert_cutout(convert_func=convert_soil_temperature, **params)
+    """Return soil temperature (useful for e.g. heat pump T-dependent
+    coefficient of performance).
 
+    Args:
+        cutout (Cutout): Cutout object
 
-## heat demand
-
-
-def convert_heat_demand(ds, threshold, a, constant, hour_shift):
-    # Temperature is in Kelvin; take daily average
-    T = ds["temperature"]
-    T.coords["time"].values += np.timedelta64(dt.timedelta(hours=hour_shift))
-
-    T = ds["temperature"].resample(time="1D").mean(dim="time")
-    threshold += 273.15
-    heat_demand_value = a * (threshold - T)
-
-    heat_demand_value.values[heat_demand_value.values < 0.0] = 0.0
-
-    return constant + heat_demand_value
-
-
-def heat_demand(cutout, threshold=15.0, a=1.0, constant=0.0, hour_shift=0.0, **params):
+    Returns:
+        xr.DataArray: Soil temperature
     """
-    Convert outside temperature into daily heat demand using the
+    return cutout.convert_cutout(
+        convert_func=lambda ds: (ds["soil temperature"] - 273.15).fillna(0.0), **params
+    )
+
+
+def heat_demand(
+    cutout: Cutout,
+    threshold: float = 15.0,
+    a: float = 1.0,
+    constant: float = 0.0,
+    hour_shift: float = 0.0,
+    **params,
+):
+    """Convert outside temperature into daily heat demand using the
     degree-day approximation.
 
     Since "daily average temperature" means different things in
@@ -186,24 +151,33 @@ def heat_demand(cutout, threshold=15.0, a=1.0, constant=0.0, hour_shift=0.0, **p
     re-average these based on the number of hours in each month for
     the duplicated day.
 
-    Parameters
-    ----------
-    threshold : float
-            Outside temperature in degrees Celsius above which there is no
-            heat demand.
-    a : float
-            Linear factor relating heat demand to outside temperature.
-    constant : float
-            Constant part of heat demand that does not depend on outside
+    Args:
+        threshold (float): Outside temperature in degrees Celsius above which there is no heat demand.
+        a (float): Linear factor relating heat demand to outside temperature.
+        constant (float): Constant part of heat demand that does not depend on outside
             temperature (e.g. due to water heating).
-    hour_shift : float
-            Time shift relative to UTC for taking daily average
+        hour_shift (float): Time shift relative to UTC for taking daily average
 
-    Note
-    ----
-    You can also specify all of the general conversion arguments
-    documented in the `convert_cutout` function.
+    Returns:
+        xr.DataArray: Heat demand
+
+    Note:
+        You can also specify all of the general conversion arguments
+        documented in the `convert_cutout` function.
     """
+
+    def convert_heat_demand(ds: xr.Dataset, threshold: float, a: float, constant: float, hour_shift: float):
+        # Temperature is in Kelvin; take daily average
+        T = ds["temperature"]
+        T.coords["time"].values += np.timedelta64(dt.timedelta(hours=hour_shift))
+
+        T = ds["temperature"].resample(time="1D").mean(dim="time")
+        threshold += 273.15
+        heat_demand_value = a * (threshold - T)
+
+        heat_demand_value.values[heat_demand_value.values < 0.0] = 0.0
+
+        return constant + heat_demand_value
 
     return cutout.convert_cutout(
         convert_func=convert_heat_demand,
@@ -213,9 +187,6 @@ def heat_demand(cutout, threshold=15.0, a=1.0, constant=0.0, hour_shift=0.0, **p
         hour_shift=hour_shift,
         **params,
     )
-
-
-## solar thermal collectors
 
 
 def convert_solar_thermal(ds, orientation, trigon_model, clearsky_model, c0, c1, t_store):
@@ -405,7 +376,7 @@ def wind(cutout, turbine, smooth=False, **params):
             1074 – 1088. doi:10.1016/j.energy.2015.09.071
     """
 
-    if isinstance(turbine, string_types):
+    if isinstance(turbine, str):
         turbine = get_windturbineconfig(turbine)
 
     if smooth:
@@ -437,7 +408,7 @@ def windspd(cutout, **params):
 
     if "turbine" in params:
         turbine = params.pop("turbine")
-        if isinstance(turbine, string_types):
+        if isinstance(turbine, str):
             turbine = get_windturbineconfig(turbine)
         else:
             raise ValueError(f"Turbine ({turbine}) not found.")
@@ -477,7 +448,7 @@ def windwpd(cutout, **params):
 
     if "turbine" in params:
         turbine = params.pop("turbine")
-        if isinstance(turbine, string_types):
+        if isinstance(turbine, str):
             turbine = get_windturbineconfig(turbine)
         else:
             raise ValueError(f"Turbine ({turbine}) not found.")
@@ -556,7 +527,7 @@ def pv(cutout, panel, orientation, clearsky_model=None, **params):
             Eurosun (ISES Europe Solar Congress).
     """
 
-    if isinstance(panel, string_types):
+    if isinstance(panel, str):
         panel = get_solarpanelconfig(panel)
     if not callable(orientation):
         orientation = get_orientation(orientation)
@@ -586,7 +557,8 @@ def convert_pm25(ds):
     References
     -------
     [1] Buchard, V., da Silva, A. M., Randles, C. A., Colarco, P., Ferrare, R., Hair, J., … Winker, D. (2016).
-    Evaluation of the surface PM2.5 in Version 1 of the NASA MERRA Aerosol Reanalysis over the United States. Atmospheric Environment, 125, 100–111.
+        Evaluation of the surface PM2.5 in Version 1 of the NASA MERRA Aerosol Reanalysis
+        over the United States. Atmospheric Environment, 125, 100-111.
     https://doi.org/10.1016/j.atmosenv.2015.11.004
     """
 

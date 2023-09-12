@@ -42,7 +42,7 @@ Welcome to Geodata's documentation!
 
 .. toctree::
    :maxdepth: 1
-   :caption: Parameterization
+   :caption: Visualization
    :glob:
    :hidden:
 
