@@ -1,29 +1,24 @@
-## Copyright 2016-2017 Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS)
-## Copyright 2022 Xiqiang Liu
+# Copyright 2016-2017 Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS)
+# Copyright 2022-2023 Xiqiang Liu
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import glob
 import logging
 import os
+from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 import xarray as xr
@@ -42,6 +37,7 @@ except ImportError:
 
 # Model and Projection Settings
 projection = "latlong"
+L137_LEVELS = range(131, 138)
 
 
 def _rename_and_clean_coords(ds, add_lon_lat=True):
@@ -62,6 +58,73 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
     if add_lon_lat:
         ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
     return ds
+
+
+def api_complete(
+    toDownload: Iterable,
+    bounds: Iterable,
+    download_vars: Iterable,
+    product: str,
+    product_type: str,
+    downloadedFiles: list,
+):
+    """Sample request:
+
+    c.retrieve('reanalysis-era5-complete', {
+       'date'    : '20130101',
+       'levelist': '1/10/100/137',
+       'levtype' : 'ml',
+       'param'   : '130,  # Full information at https://apps.ecmwf.int/codes/grib/param-db/
+       'stream'  : 'oper',  # Denotes ERA5. Ensemble members are selected by 'enda'
+       'time'    : '00/to/23/by/6',
+       'type'    : 'an',
+       'grid'    : '1.0/1.0',
+       'format'  : 'netcdf',
+    }, 'save_path.nc')  # Output file. Adapt as you wish.
+    """
+
+    if not has_cdsapi:
+        raise RuntimeError(
+            "Need installed cdsapi python package available from "
+            "https://cds.climate.copernicus.eu/api-how-to"
+        )
+
+    if len(toDownload) == 0:
+        logger.info("All ERA5 files for this dataset have been downloaded.")
+    else:
+        logger.info("Preparing to download %s files.", str(len(toDownload)))
+
+        for f in toDownload:
+            filepath = Path(f[1])
+            filepath.parent.mkdir(parents=True, exist_ok=True)
+
+            full_request = {
+                "date": f"{filepath.parent.parent.name}{filepath.parent.name}{filepath.stem}",
+                "levelist": "/".join(str(i) for i in L137_LEVELS),
+                "levtype": "ml",
+                "param": "/".join(str(var) for var in download_vars),
+                "stream": "oper",
+                "time": "00/to/23",
+                "type": "an",
+                "grid": "0.25/0.25",  # NOTE: We want the highest resolution possible
+                "format": "netcdf",
+            }
+
+            if bounds is not None:
+                full_request["area"] = bounds
+
+            full_result = cdsapi.Client().retrieve(
+                product, full_request, target=filepath
+            )
+
+            logger.info(
+                "Downloading metadata request for %s variables to %s",
+                len(full_request["param"]),
+                f,
+            )
+            full_result.download(f[1])
+            logger.info("Successfully downloaded to %s", f[1])
+            downloadedFiles.append((f[0], f[1]))
 
 
 def api_hourly_era5(
@@ -365,6 +428,20 @@ weather_data_config = {
             "fsr",
             "z",
         ],
+    ),
+    "wind_3d_hourly": dict(
+        api_func=api_complete,
+        file_granularity="daily",
+        tasks_func=tasks_monthly_era5,
+        meta_prepare_func=prepare_meta_era5,
+        prepare_func=prepare_month_era5,
+        url="",  # Not used, maintained for compatibility with `daily` granularity
+        template=os.path.join(era5_dir, "wind_3d_hourly/{year}/{day:02d}.nc"),
+        fn=os.path.join(era5_dir, "wind_3d_hourly/{year}/{month:02d}/{day:02d}.nc"),
+        product="reanalysis-era5-complete",
+        product_type="reanalysis",
+        keywords=[131, 132],
+        variables=["u", "v"],
     ),
     "wind_solar_monthly": dict(
         api_func=api_monthly_era5,
