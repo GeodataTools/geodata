@@ -424,16 +424,23 @@ class Cutout:
     pv = pv
 
 
-def ds_reformat_index(ds):
-    """format the dataArray generated from the convert function"""
+def ds_reformat_index(ds: xr.DataArray) -> xr.DataArray:
+    """Format the dataArray generated from the convert function.
+
+    Args:
+        ds (xr.DataArray): dataArray generated from the convert function.
+
+    Returns:
+        xr.DataArray: dataArray with lat and lon as dimensions.
+    """
+
     if "lat" in ds.dims and "lon" in ds.dims:
         return ds.sortby(["lat", "lon"])
     elif "lat" in ds.coords and "lon" in ds.coords:
         return (
             ds.reset_coords(["lon", "lat"], drop=True).rename({"x": "lon", "y": "lat"}).sortby(["lat", "lon"])
         )
-    else:
-        return ds.rename({"x": "lon", "y": "lat"}).sortby(["lat", "lon"])
+    return ds.rename({"x": "lon", "y": "lat"}).sortby(["lat", "lon"])
 
 
 def _find_intercept(list1, list2, start, threshold=0):
