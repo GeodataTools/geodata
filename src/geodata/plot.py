@@ -252,7 +252,7 @@ def heatmap(
     return_fig: bool = False,
     **kwargs,
 ) -> Optional[plt.Figure]:
-    """Take an xrray.DataArray and a time index or string, plot contour/colormesh map for its values.
+    """Take an xarray.DataArray and a time index or string, plot contour/colormesh map for its values.
 
     Args:
         ds (xr.DataArray): The target DataArray object.
@@ -440,42 +440,42 @@ def save_animation(file_name: str):
 
     javascript = (
         """
-	<script type="text/Javascript">
-		function set_value(){
-			elements = document.getElementsByClassName('output_subarea output_html rendered_html output_result')
-			var var_values = ''
-			for (i = 0; i < elements.length; i++){
-				if (elements[i].getElementsByClassName('animation').length != 0){
-				var_values += elements[i].innerHTML;
-			}}
+    <script type="text/Javascript">
+        function set_value(){
+            elements = document.getElementsByClassName('output_subarea output_html rendered_html output_result')
+            var var_values = ''
+            for (i = 0; i < elements.length; i++){
+                if (elements[i].getElementsByClassName('animation').length != 0){
+                var_values += elements[i].innerHTML;
+            }}
 
-			(function(console){
-			/* credit of the console.save function: stackoverflow.com/questions/11849562/*/
-			console.save = function(data, filename){
-				if(!data) {
-					console.error('Console.save: No data')
-					return;
-				}
-				if(!filename) filename = 'console.json'
-				if(typeof data === "object"){
-					data = JSON.stringify(data, undefined, 4)
-				}
-				var blob = new Blob([data], {type: 'text/json'}),
-					e    = document.createEvent('MouseEvents'),
-					a    = document.createElement('a')
-				a.download = filename
-				a.href = window.URL.createObjectURL(blob)
-				a.dataset.downloadurl =  ['text/json', a.download, a.href].join(':')
-				e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
-				a.dispatchEvent(e)
-			 }
-			})(console)
-			console.save(var_values, '"""
+            (function(console){
+            /* credit of the console.save function: stackoverflow.com/questions/11849562/*/
+            console.save = function(data, filename){
+                if(!data) {
+                    console.error('Console.save: No data')
+                    return;
+                }
+                if(!filename) filename = 'console.json'
+                if(typeof data === "object"){
+                    data = JSON.stringify(data, undefined, 4)
+                }
+                var blob = new Blob([data], {type: 'text/json'}),
+                    e    = document.createEvent('MouseEvents'),
+                    a    = document.createElement('a')
+                a.download = filename
+                a.href = window.URL.createObjectURL(blob)
+                a.dataset.downloadurl =  ['text/json', a.download, a.href].join(':')
+                e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null)
+                a.dispatchEvent(e)
+            }
+            })(console)
+            console.save(var_values, '"""  # noqa: E501
         + file_name
         + """')
-		}
-		set_value()
-	</script>
-	"""
+        }
+        set_value()
+    </script>
+    """
     )
     return javascript
