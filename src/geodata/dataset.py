@@ -1,26 +1,19 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2020 Xiqiang Liu.
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
-from __future__ import absolute_import
 
 import logging
 import os
@@ -281,7 +274,15 @@ class Dataset:
             return None
 
     def datasetfn(self, fn, *args):
-        # Construct file name from fn template (cf weather_data_config) and args (yr, mo, day)
+        """Construct file name from template function in `weather_data_config` and args (yr, mo, day)
+
+        Args:
+            fn (str): Template function in `weather_data_config`
+            *args: Year, month, day
+
+        Returns:
+            str: File name
+        """
         if len(args) == 3:
             dataset = dict(year=args[0], month=args[1], day=args[2])
         elif len(args) == 2:
@@ -295,8 +296,16 @@ class Dataset:
         return fn.format_map(dataset)
 
     def datasetfn_opendap(self, fn, variables, *args):
-        # Construct url for OpenDap protocol
-        # 	Depends on datasetfn()
+        """Construct url for OpenDap protocol. Depends on datasetfn()
+
+        Args:
+            fn (str): Template function in `weather_data_config`
+            variables (list): List of variables to download
+            *args: Year, month, day
+
+        Returns:
+            str: URL
+        """
 
         # MERRA2 requires uppercase variable names
         if self.module == "merra2":
@@ -304,7 +313,7 @@ class Dataset:
 
         # TODO: Add lat lon subsetting based on self.bounds
         # opendap URL format requires knowing the indexes in MERRA2 -- not just lat, lon bounds --
-        # e.g., ~/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]
+        # e.g., ~/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]  # noqa: E501
         if self.bounds is not None:
             logger.info("Bounds not used in OpenDAP call. Defaulting to global.")
 
@@ -314,14 +323,11 @@ class Dataset:
         return self.datasetfn(fn, *args)
 
     def get_data(self, trim=True, testing=False):
-        """Download data routine
-        #
-        #	Parameters
-        #	---------
-        #	trim: boolean (default = False)
-        #		If true, run trim_variables function following each download
-        #	testing: boolean (default = False)
-        #		If true, download only first file in download list (e.g., first day of month)
+        """Download data from server.
+
+        Args:
+            trim (bool, optional): Trim variables in file. Defaults to True.
+            testing (bool, optional): Download only first file. Defaults to False.
         """
 
         if testing is True:
@@ -359,18 +365,7 @@ class Dataset:
             self.trim_variables()
 
     def trim_variables(self):
-        """Reduce size of file by trimming variables in file
-        #
-        #	Parameters
-        #	---------
-        #	fn: array of tuples
-        #		if present: use this array of files
-        #	downloadedfiles: boolean
-        #		if True: use downloadedFiles array (of files already on system during dataset construction)
-        #		if False: use savedFiles array (of files downloaded from get_data())
-        #
-        # TODO: create options for non NetCDF4 files (eg pynio)
-        """
+        """Reduce size of file by trimming variables in file."""
 
         for f in self.downloadedFiles:
             file_path = f[1]
@@ -389,6 +384,7 @@ class Dataset:
 
     @property
     def meta_data_config(self):
+        """Metadata configuration for dataset."""
         return dict(
             tasks_func=self.weatherconfig["tasks_func"],
             prepare_func=self.weatherconfig["meta_prepare_func"],
@@ -398,10 +394,12 @@ class Dataset:
 
     @property
     def weather_data_config(self):
+        """Weather data config for dataset."""
         return self.dataset_module.weather_data_config
 
     @property
     def projection(self):
+        """Projection for dataset."""
         return self.dataset_module.projection
 
     @property
@@ -410,19 +408,23 @@ class Dataset:
 
     @property
     def shape(self):
+        """The shape of the Cutout by (y, x)."""
         return len(self.coords["y"]), len(self.coords["x"])
 
     @property
     def extent(self):
+        """The extent of the Cutout by (x_min, x_max, y_min, y_max)."""
         return list(self.coords["x"].values[[0, -1]]) + list(
             self.coords["y"].values[[-1, 0]]
         )
 
     def grid_coordinates(self):
+        """Return grid coordinates of the Cutout."""
         xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
         return np.asarray((np.ravel(xs), np.ravel(ys))).T
 
     def grid_cells(self):
+        """Return grid cells of the Cutout."""
         coords = self.grid_coordinates()
         span = (coords[self.shape[1] + 1] - coords[0]) / 2
         return [box(*c) for c in np.hstack((coords - span, coords + span))]
@@ -435,5 +437,5 @@ class Dataset:
             self.months.start,
             self.months.stop,
             self.datadir,
-            "Prepared" if self.prepared else "Unprepared",
+            "prepared" if self.prepared else "unprepared",
         )
