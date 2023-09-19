@@ -1,4 +1,4 @@
-# Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -13,19 +13,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
-from ._version import __version__
-from .cutout import Cutout
-from .dataset import Dataset
-from .mask import Mask
-from .model import *
-from .plot import *
-
-__author__ = "Michael Davidson (UCSD), William Honaker"
-__copyright__ = "GNU GPL 3 license"
+from .extrapolate import WindExtrapolationModel
