@@ -33,7 +33,24 @@ logger = logging.getLogger(__name__)
 
 
 class Dataset:
-    """TODO: Docstring for Dataset & its constructor needs to be filled in HERE!"""
+    """Dataset is a class that encapsulates any datasets natively supported by geodata.
+    It provides a streamlined workflow for downloading, preprocessing, and storing of these datasets.
+
+    Args:
+        module (str): Name of dataset module
+        weather_data_config (str): The type of weather data configuration to use. For more information, please
+            refer to the documentation for the dataset you are using.
+        years (slice): The years to download.
+            For example, `slice(2000, 2010)` will download all data from 2000 to 2010.
+        months (slice, optional): The months to download.
+            For example, `slice(1, 12)` will download all data from January to December.
+            Defaults to `slice(1, 12)`.
+        opendap (bool, optional): Whether to use OpenDAP protocol for downloading.
+            Defaults to `False`.
+        bounds (Optional[Iterable], optional): The bounds to download.
+            For example, `[-180, 90, 180, -90]` will download all data from the entire globe.
+            If omitted, global data will be downloaded.
+    """
 
     def __init__(
         self,
@@ -379,18 +396,20 @@ class Dataset:
         )
 
     @property
-    def weather_data_config(self):
+    def weather_data_config(self) -> dict:
         """Weather data config for dataset."""
         return self.dataset_module.weather_data_config
 
     @property
-    def projection(self):
+    def projection(self) -> str:
         """Projection for dataset."""
         return self.dataset_module.projection
 
-    @property
-    def coords(self):
-        return self.meta.coords
+    # TODO: meta property/attribute does not exists here!
+    # @property
+    # def coords(self):
+    #     """Coordinates for dataset."""
+    #     return self.meta.coords  # pylint: disable=no-member
 
     @property
     def shape(self):
@@ -398,7 +417,7 @@ class Dataset:
         return len(self.coords["y"]), len(self.coords["x"])
 
     @property
-    def extent(self):
+    def extent(self) -> Iterable[float]:
         """The extent of the Cutout by (x_min, x_max, y_min, y_max)."""
         return list(self.coords["x"].values[[0, -1]]) + list(
             self.coords["y"].values[[-1, 0]]
