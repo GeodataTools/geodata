@@ -53,7 +53,7 @@ def SolarPosition(ds):
 
     L = 280.460 + 0.9856474 * n  # mean longitude (deg)
     g = np.deg2rad(357.528 + 0.9856003 * n)  # mean anomaly (rad)
-    l = np.deg2rad(
+    l = np.deg2rad(  # noqa: E741
         L + 1.915 * np.sin(g) + 0.020 * np.sin(2 * g)
     )  # ecliptic long. (rad)
     ep = np.deg2rad(23.439 - 4e-7 * n)  # obliquity of the ecliptic (rad)

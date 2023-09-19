@@ -483,8 +483,7 @@ def convert_pv(ds, panel, orientation, trigon_model="simple", clearsky_model="si
 
 
 def pv(cutout, panel, orientation, clearsky_model=None, **params):
-    """
-    Convert downward-shortwave, upward-shortwave radiation flux and
+    """Convert downward-shortwave, upward-shortwave radiation flux and
     ambient temperature into a pv generation time-series.
 
     Parameters
