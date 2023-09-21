@@ -19,10 +19,12 @@ Welcome to Geodata's documentation!
 .. toctree::
    :caption: Dataset Specific Tutorials
    :maxdepth: 1
+   :glob:
    :hidden:
 
    datasets/era5/index
    datasets/merra2/index
+   datasets/*
 
 .. toctree::
    :maxdepth: 1

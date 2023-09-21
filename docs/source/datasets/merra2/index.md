@@ -1,4 +1,4 @@
-# MERRA2
+# MERRA2 Related Tutorials
 
 This page explains how you can setup access MERRA2 data from NASA's [GES DISC](https://disc.gsfc.nasa.gov/).
 
