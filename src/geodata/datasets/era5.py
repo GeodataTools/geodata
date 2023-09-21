@@ -436,7 +436,9 @@ weather_data_config = {
         meta_prepare_func=prepare_meta_era5,
         prepare_func=prepare_month_era5,
         url="",  # Not used, maintained for compatibility with `daily` granularity
-        template=os.path.join(era5_dir, "wind_3d_hourly/{year}/{day:02d}.nc"),
+        template=os.path.join(
+            era5_dir, "wind_3d_hourly/{year}/{month:02d}/{day:02d}.nc"
+        ),
         fn=os.path.join(era5_dir, "wind_3d_hourly/{year}/{month:02d}/{day:02d}.nc"),
         product="reanalysis-era5-complete",
         product_type="reanalysis",
