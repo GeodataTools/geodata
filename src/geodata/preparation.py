@@ -27,7 +27,6 @@ import dask
 import numpy as np
 import pandas as pd
 import xarray as xr
-from six.moves import map  # type: ignore
 
 logger = logging.getLogger(__name__)
 

@@ -20,6 +20,7 @@
 Cutout class to handle a subset of a Dataset.
 """
 
+import datetime as dt
 import logging
 import os
 import sys
@@ -33,16 +34,17 @@ import pyproj
 import shapely
 import xarray as xr
 from shapely.geometry import box
+from tqdm.auto import trange
 
 from . import config
 from .convert import (
-    convert_cutout,
-    heat_demand,
-    pv,
-    soil_temperature,
-    solar_thermal,
-    temperature,
-    wind,
+    convert_pv,
+    convert_solar_thermal,
+    convert_wind,
+    get_orientation,
+    get_solarpanelconfig,
+    get_windturbineconfig,
+    windturbine_smooth,
 )
 from .mask import Mask
 from .preparation import (
@@ -100,10 +102,14 @@ class Cutout:
         self.area = None
 
         params_dict = {}
+        if bounds is not None and (xs is not None or ys is not None):
+            raise TypeError("Cannot specify both bounds and xs/ys arguments.")
         if bounds is not None:
             # if passed bounds array instead of xs, ys slices
             x1, y1, x2, y2 = bounds
             params_dict.update(xs=slice(x1, x2), ys=slice(y1, y2))
+        else:
+            params_dict.update(xs=xs, ys=ys)
 
         if years is None:
             raise ValueError("`years` need to be specified")
@@ -482,13 +488,302 @@ class Cutout:
     produce_specific_dataseries = cutout_produce_specific_dataseries
 
     # Conversion and aggregation functions
-    convert_cutout = convert_cutout
-    heat_demand = heat_demand
-    temperature = temperature
-    soil_temperature = soil_temperature
-    solar_thermal = solar_thermal
-    wind = wind
-    pv = pv
+    def _convert_cutout(
+        self, convert_func: callable, show_progress: bool = False, **convert_kwds
+    ):
+        """Convert and aggregate a weather-based renewable generation time-series.
+
+        NOTE: This is a function designed to be used internally instead of being used by
+        the user themself. Instead, this is a gateway function that is called by all
+        the individual time-series generation functions like pv and wind. Thus, all its parameters are also
+        available from these.
+
+        Args:
+            cutout (Cutout): Cutout object
+            convert_func (callable): Function to convert the cutout
+            show_progress (bool): Show progress bar. Set to False by default.
+            **convert_kwds: Keyword arguments passed to convert_func
+
+        Returns:
+            xr.DataArray: Converted cutout
+        """
+
+        if not self.prepared:
+            raise RuntimeError("The cutout has to be prepared first.")
+
+        results = []
+        yearmonths = self.coords["year-month"].to_index()
+
+        if isinstance(show_progress, str):
+            prefix = show_progress
+        else:
+            func_name = (
+                convert_func.__name__[len("convert_") :]
+                if convert_func.__name__.startswith("convert_")
+                else convert_func.__name__
+            )
+            prefix = f"Convert `{func_name}`: "
+
+        for ym in trange(
+            len(yearmonths), desc=prefix, disable=not show_progress, dynamic_ncols=True
+        ):
+            with xr.open_dataset(self.datasetfn(ym)) as ds:
+                if "view" in self.meta.attrs:
+                    if isinstance(self.meta.attrs["view"], str):
+                        self.meta.attrs["view"] = {}
+                        self.meta.attrs.setdefault("view", {})["x"] = slice(
+                            min(self.meta.coords["x"]).values.tolist(),
+                            max(self.meta.coords["x"]).values.tolist(),
+                        )
+                        self.meta.attrs.setdefault("view", {})["y"] = slice(
+                            min(self.meta.coords["y"]).values.tolist(),
+                            max(self.meta.coords["y"]).values.tolist(),
+                        )
+                    ds = ds.sel(**self.meta.attrs["view"])
+
+                da = convert_func(ds, **convert_kwds)
+                results.append(da.load())
+
+        return xr.concat(results, dim="time")
+
+    def heat_demand(
+        self,
+        threshold: float = 15.0,
+        a: float = 1.0,
+        constant: float = 0.0,
+        hour_shift: float = 0.0,
+        **params,
+    ):
+        """Convert outside temperature into daily heat demand using the
+        degree-day approximation.
+
+        Since "daily average temperature" means different things in
+        different time zones and since xarray coordinates do not handle
+        time zones gracefully like pd.DateTimeIndex, you can provide an
+        hour_shift to redefine when the day starts.
+
+        E.g. for Moscow in winter, hour_shift = 4, for New York in winter,
+        hour_shift = -5
+
+        This time shift applies across the entire spatial scope of ds for
+        all times. More fine-grained control will be built in a some
+        point, i.e. space- and time-dependent time zones.
+
+        WARNING: Because the original data is provided every month, at the
+        month boundaries there is untidiness if you use a time shift. The
+        resulting xarray will have duplicates in the index for the parts
+        of the day in each month at the boundary. You will have to
+        re-average these based on the number of hours in each month for
+        the duplicated day.
+
+        Args:
+            threshold (float): Outside temperature in degrees Celsius above which there is no heat demand.
+            a (float): Linear factor relating heat demand to outside temperature.
+            constant (float): Constant part of heat demand that does not depend on outside
+                temperature (e.g. due to water heating).
+            hour_shift (float): Time shift relative to UTC for taking daily average
+
+        Returns:
+            xr.DataArray: Heat demand
+
+        Note:
+            You can also specify all of the general conversion arguments
+            documented in the `convert_cutout` function.
+        """
+
+        def convert_heat_demand(
+            ds: xr.Dataset,
+            threshold: float,
+            a: float,
+            constant: float,
+            hour_shift: float,
+        ):
+            # Temperature is in Kelvin; take daily average
+            T = ds["temperature"]
+            T.coords["time"].values += np.timedelta64(dt.timedelta(hours=hour_shift))
+
+            T = ds["temperature"].resample(time="1D").mean(dim="time")
+            threshold += 273.15
+            heat_demand_value = a * (threshold - T)
+
+            heat_demand_value.values[heat_demand_value.values < 0.0] = 0.0
+
+            return constant + heat_demand_value
+
+        return self.convert_cutout(
+            convert_func=convert_heat_demand,
+            threshold=threshold,
+            a=a,
+            constant=constant,
+            hour_shift=hour_shift,
+            **params,
+        )
+
+    def temperature(self, **params):
+        """Convert temperature in Cutout to outside temperature.
+
+        Returns:
+            xr.DataArray: Outside temperature
+        """
+        return self._convert_cutout(
+            convert_func=lambda ds: ds["temperature"] - 273.15, **params
+        )
+
+    def soil_temperature(self, **params):
+        """Return soil temperature (useful for e.g. heat pump T-dependent
+        coefficient of performance).
+
+        Args:
+            cutout (Cutout): Cutout object
+
+        Returns:
+            xr.DataArray: Soil temperature
+        """
+        return self.convert_cutout(
+            convert_func=lambda ds: (ds["soil temperature"] - 273.15).fillna(0.0),
+            **params,
+        )
+
+    def solar_thermal(
+        self,
+        orientation: Optional[Union[dict, str, callable]] = None,
+        trigon_model: str = "simple",
+        clearsky_model: Literal["simple", "enhanced"] = "simple",
+        c0: float = 0.8,
+        c1: float = 3.0,
+        t_store: float = 80.0,
+        **params,
+    ):
+        """Convert downward short-wave radiation flux and outside temperature
+        into time series for solar thermal collectors.
+
+        Mathematical model and defaults for c0, c1 based on model in [1].
+
+        Args:
+            orientation (Union[dict, str, callable]): Panel orientation with slope and azimuth
+                (units of degrees), or 'latitude_optimal'.
+            trigon_model (str): Type of trigonometry model
+            clearsky_model (str): Type of clearsky model for diffuse irradiation. Either
+                `simple' or `enhanced'.
+            c0 (float): Parameter for model in [1] This defaults to 0.8.
+            c1 (float): Parameter for model in [1] This defaults to 3.0.
+            t_store (float): Store temperature in degree Celsius
+
+        Note:
+            You can also specify all of the general conversion arguments
+            documented in the `convert_cutout` function.
+
+        References:
+            [1] Henning and Palzer, Renewable and Sustainable Energy Reviews 30
+                (2014) 1003-1018
+        """
+
+        if orientation is None:
+            orientation = {"slope": 45.0, "azimuth": 180.0}
+
+        if not callable(orientation):
+            orientation = get_orientation(orientation)
+
+        return self.convert_cutout(
+            convert_func=convert_solar_thermal,
+            orientation=orientation,
+            trigon_model=trigon_model,
+            clearsky_model=clearsky_model,
+            c0=c0,
+            c1=c1,
+            t_store=t_store,
+            **params,
+        )
+
+    def wind(
+        self, turbine: Union[str, dict], smooth: Union[bool, dict] = False, **params
+    ):
+        """
+        Generate wind generation time-series
+
+        - loads turbine dict based on passed parameters  	(resource.get_windturbineconfig)
+        - optionally, smooths turbine power curve 			(resource.windturbine_smooth)
+        - calls convert_wind								(convert.convert_cutout)
+
+        Args:
+            turbine (Union[str, dict]): Name of a turbine known by the reatlas client or a
+                turbineconfig dictionary with the keys 'hub_height' for the
+                hub height and 'V', 'POW' defining the power curve.
+            smooth (Union[bool, dict]): If True smooth power curve with a gaussian kernel as
+                determined for the Danish wind fleet to Delta_v = 1.27 and
+                sigma = 2.s29. A dict allows to tune these values.
+
+        Note:
+            You can also specify all of the general conversion arguments
+            documented in the `convert_cutout` function.
+
+        References:
+            [1] Andresen G B, Søndergaard A A and Greiner M 2015 Energy 93, Part 1
+                1074 - 1088. doi:10.1016/j.energy.2015.09.071
+        """
+
+        if isinstance(turbine, str):
+            turbine = get_windturbineconfig(turbine)
+
+        if smooth:
+            turbine = windturbine_smooth(turbine, params=smooth)
+
+        return self.convert_cutout(convert_func=convert_wind, turbine=turbine, **params)
+
+    def pv(
+        self,
+        panel: Union[str, dict],
+        orientation: Union[str, dict, callable],
+        clearsky_model: Optional[str] = None,
+        **params,
+    ):
+        """Convert downward-shortwave, upward-shortwave radiation flux and
+        ambient temperature into a pv generation time-series.
+
+        Args:
+        panel (Union[str, dict]): Panel name known to the reatlas client or a panel config
+            dictionary with the parameters for the electrical model in [3].
+        orientation (Union[str, dict, callback]): Panel orientation can be chosen from either
+            'latitude_optimal', a constant orientation {'slope': 0.0,
+            'azimuth': 0.0} or a callback function with the same signature
+            as the callbacks generated by the
+            `geodata.pv.orientation.make_*' functions.
+        clearsky_model (Optional[str]): Either the 'simple' or the 'enhanced' Reindl clearsky
+            model. The default choice of None will choose dependending on
+            data availability, since the 'enhanced' model also
+            incorporates ambient air temperature and relative humidity.
+
+        Returns:
+            xr.DataArray: Time-series or capacity factors based on additional general
+                conversion arguments.
+
+        Note:
+            You can also specify all of the general conversion arguments
+            documented in the `convert_cutout` function.
+
+        References:
+            [1] Soteris A. Kalogirou. Solar Energy Engineering: Processes and Systems,
+                pages 49-117,469-516. Academic Press, 2009. ISBN 0123745012.
+            [2] D.T. Reindl, W.A. Beckman, and J.A. Duffie. Diffuse fraction correla-
+                tions. Solar Energy, 45(1):1 - 7, 1990.
+            [3] Hans Georg Beyer, Gerd Heilscher and Stefan Bofinger. A Robust Model
+                for the MPP Performance of Different Types of PV-Modules Applied for
+                the Performance Check of Grid Connected Systems, Freiburg, June 2004.
+                Eurosun (ISES Europe Solar Congress).
+        """
+
+        if isinstance(panel, str):
+            panel = get_solarpanelconfig(panel)
+        if not callable(orientation):
+            orientation = get_orientation(orientation)
+
+        return self.convert_cutout(
+            convert_func=convert_pv,
+            panel=panel,
+            orientation=orientation,
+            clearsky_model=clearsky_model,
+            **params,
+        )
 
 
 def ds_reformat_index(ds: xr.DataArray) -> xr.DataArray:

@@ -207,64 +207,18 @@ def convert_solar_thermal(ds, orientation, trigon_model, clearsky_model, c0, c1,
     return (output).where(output > 0.0).fillna(0.0)
 
 
-def solar_thermal(
-    cutout,
-    orientation=None,
-    trigon_model="simple",
-    clearsky_model="simple",
-    c0=0.8,
-    c1=3.0,
-    t_store=80.0,
-    **params,
-):
-    """
-    Convert downward short-wave radiation flux and outside temperature
-    into time series for solar thermal collectors.
-
-    Mathematical model and defaults for c0, c1 based on model in [1].
-
-    Parameters
-    ----------
-    cutout : cutout
-    orientation : dict or str or function
-            Panel orientation with slope and azimuth (units of degrees), or
-            'latitude_optimal'.
-    trigon_model : str
-            Type of trigonometry model
-    clearsky_model : str or None
-            Type of clearsky model for diffuse irradiation. Either
-            `simple' or `enhanced'.
-    c0, c1 : float
-            Parameters for model in [1] (defaults to 0.8 and 3., respectively)
-    t_store : float
-            Store temperature in degree Celsius
-
-    Note
-    ----
-    You can also specify all of the general conversion arguments
-    documented in the `convert_cutout` function.
-
-    References
-    ----------
-    [1] Henning and Palzer, Renewable and Sustainable Energy Reviews 30
-            (2014) 1003-1018
-    """
-    if orientation is None:
-        orientation = {"slope": 45.0, "azimuth": 180.0}
-
-    if not callable(orientation):
-        orientation = get_orientation(orientation)
-
-    return cutout.convert_cutout(
-        convert_func=convert_solar_thermal,
-        orientation=orientation,
+def convert_pv(ds, panel, orientation, trigon_model="simple", clearsky_model="simple"):
+    solar_position = SolarPosition(ds)
+    surface_orientation = SurfaceOrientation(ds, solar_position, orientation)
+    irradiation = TiltedIrradiation(
+        ds,
+        solar_position,
+        surface_orientation,
         trigon_model=trigon_model,
         clearsky_model=clearsky_model,
-        c0=c0,
-        c1=c1,
-        t_store=t_store,
-        **params,
     )
+    solar_panel = SolarPanelModel(ds, irradiation, panel)
+    return solar_panel
 
 
 ## wind
@@ -346,45 +300,6 @@ def convert_windwpd(ds, hub_height, **params):
     return xr.DataArray(0.5 * ds["rhoa"] * wnd_hub**3, coords=wnd_hub.coords)
 
 
-def wind(cutout, turbine, smooth=False, **params):
-    """
-    Generate wind generation time-series
-
-    - loads turbine dict based on passed parameters  	(resource.get_windturbineconfig)
-    - optionally, smooths turbine power curve 			(resource.windturbine_smooth)
-    - calls convert_wind								(convert.convert_cutout)
-
-    Parameters
-    ----------
-    turbine : str or dict
-            Name of a turbine known by the reatlas client or a
-            turbineconfig dictionary with the keys 'hub_height' for the
-            hub height and 'V', 'POW' defining the power curve.
-    smooth : bool or dict
-            If True smooth power curve with a gaussian kernel as
-            determined for the Danish wind fleet to Delta_v = 1.27 and
-            sigma = 2.29. A dict allows to tune these values.
-
-    Note
-    ----
-    You can also specify all of the general conversion arguments
-    documented in the `convert_cutout` function.
-
-    References
-    ----------
-    [1] Andresen G B, Søndergaard A A and Greiner M 2015 Energy 93, Part 1
-            1074 – 1088. doi:10.1016/j.energy.2015.09.071
-    """
-
-    if isinstance(turbine, str):
-        turbine = get_windturbineconfig(turbine)
-
-    if smooth:
-        turbine = windturbine_smooth(turbine, params=smooth)
-
-    return cutout.convert_cutout(convert_func=convert_wind, turbine=turbine, **params)
-
-
 def windspd(cutout, **params):
     """
     Generate wind speed time-series
@@ -463,84 +378,6 @@ def windwpd(cutout, **params):
     params["hub_height"] = hub_height
 
     return cutout.convert_cutout(convert_func=convert_windwpd, **params)
-
-
-## solar PV
-
-
-def convert_pv(ds, panel, orientation, trigon_model="simple", clearsky_model="simple"):
-    solar_position = SolarPosition(ds)
-    surface_orientation = SurfaceOrientation(ds, solar_position, orientation)
-    irradiation = TiltedIrradiation(
-        ds,
-        solar_position,
-        surface_orientation,
-        trigon_model=trigon_model,
-        clearsky_model=clearsky_model,
-    )
-    solar_panel = SolarPanelModel(ds, irradiation, panel)
-    return solar_panel
-
-
-def pv(cutout, panel, orientation, clearsky_model=None, **params):
-    """Convert downward-shortwave, upward-shortwave radiation flux and
-    ambient temperature into a pv generation time-series.
-
-    Parameters
-    ----------
-    panel : str or dict
-            Panel name known to the reatlas client or a panel config
-            dictionary with the parameters for the electrical model in [3].
-    orientation : str, dict or callback
-            Panel orientation can be chosen from either
-            'latitude_optimal', a constant orientation {'slope': 0.0,
-            'azimuth': 0.0} or a callback function with the same signature
-            as the callbacks generated by the
-            `geodata.pv.orientation.make_*' functions.
-    clearsky_model : str or None
-            Either the 'simple' or the 'enhanced' Reindl clearsky
-            model. The default choice of None will choose dependending on
-            data availability, since the 'enhanced' model also
-            incorporates ambient air temperature and relative humidity.
-
-    Returns
-    -------
-    pv : xr.DataArray
-            Time-series or capacity factors based on additional general
-            conversion arguments.
-
-    Note
-    ----
-    You can also specify all of the general conversion arguments
-    documented in the `convert_cutout` function.
-
-    References
-    ----------
-    [1] Soteris A. Kalogirou. Solar Energy Engineering: Processes and Systems,
-            pages 49–117,469–516. Academic Press, 2009. ISBN 0123745012.
-    [2] D.T. Reindl, W.A. Beckman, and J.A. Duffie. Diffuse fraction correla-
-            tions. Solar Energy, 45(1):1 – 7, 1990.
-    [3] Hans Georg Beyer, Gerd Heilscher and Stefan Bofinger. A Robust Model
-            for the MPP Performance of Different Types of PV-Modules Applied for
-            the Performance Check of Grid Connected Systems, Freiburg, June 2004.
-            Eurosun (ISES Europe Solar Congress).
-    """
-
-    if isinstance(panel, str):
-        panel = get_solarpanelconfig(panel)
-    if not callable(orientation):
-        orientation = get_orientation(orientation)
-
-    return cutout.convert_cutout(
-        convert_func=convert_pv,
-        panel=panel,
-        orientation=orientation,
-        clearsky_model=clearsky_model,
-        **params,
-    )
-
-
-## Air pollution
 
 
 def convert_pm25(ds):
