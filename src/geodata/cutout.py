@@ -1,5 +1,5 @@
-# Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi.
 # Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi.
 # Copyright 2023 Xiqiang Liu.
 
 # This program is free software; you can redistribute it and/or
@@ -490,7 +490,7 @@ class Cutout:
     # Conversion and aggregation functions
     def _convert_cutout(
         self, convert_func: callable, show_progress: bool = False, **convert_kwds
-    ):
+    ) -> xr.DataArray:
         """Convert and aggregate a weather-based renewable generation time-series.
 
         NOTE: This is a function designed to be used internally instead of being used by
@@ -499,7 +499,6 @@ class Cutout:
         available from these.
 
         Args:
-            cutout (Cutout): Cutout object
             convert_func (callable): Function to convert the cutout
             show_progress (bool): Show progress bar. Set to False by default.
             **convert_kwds: Keyword arguments passed to convert_func
@@ -619,29 +618,32 @@ class Cutout:
             **params,
         )
 
-    def temperature(self, **params):
+    def temperature(self, **convert_params):
         """Convert temperature in Cutout to outside temperature.
 
+        Args:
+            convert_params: Keyword arguments passed to `convert_cutout` function
+
         Returns:
-            xr.DataArray: Outside temperature
+            xr.DataArray: Data of the Cutout with temperature converted to outside temperatures.
         """
         return self._convert_cutout(
-            convert_func=lambda ds: ds["temperature"] - 273.15, **params
+            convert_func=lambda ds: ds["temperature"] - 273.15, **convert_params
         )
 
-    def soil_temperature(self, **params):
+    def soil_temperature(self, **convert_params):
         """Return soil temperature (useful for e.g. heat pump T-dependent
         coefficient of performance).
 
         Args:
-            cutout (Cutout): Cutout object
+            convert_params: Keyword arguments passed to `convert_cutout` function
 
         Returns:
-            xr.DataArray: Soil temperature
+            xr.DataArray: Data of the Cutout with temperature converted to soil temperatures.
         """
         return self.convert_cutout(
             convert_func=lambda ds: (ds["soil temperature"] - 273.15).fillna(0.0),
-            **params,
+            **convert_params,
         )
 
     def solar_thermal(
@@ -675,7 +677,7 @@ class Cutout:
 
         References:
             [1] Henning and Palzer, Renewable and Sustainable Energy Reviews 30
-                (2014) 1003-1018
+            (2014) 1003-1018
         """
 
         if orientation is None:
@@ -719,7 +721,7 @@ class Cutout:
 
         References:
             [1] Andresen G B, Søndergaard A A and Greiner M 2015 Energy 93, Part 1
-                1074 - 1088. doi:10.1016/j.energy.2015.09.071
+            1074 - 1088. doi:10.1016/j.energy.2015.09.071
         """
 
         if isinstance(turbine, str):
@@ -755,7 +757,7 @@ class Cutout:
 
         Returns:
             xr.DataArray: Time-series or capacity factors based on additional general
-                conversion arguments.
+            conversion arguments.
 
         Note:
             You can also specify all of the general conversion arguments
@@ -763,13 +765,13 @@ class Cutout:
 
         References:
             [1] Soteris A. Kalogirou. Solar Energy Engineering: Processes and Systems,
-                pages 49-117,469-516. Academic Press, 2009. ISBN 0123745012.
+            pages 49-117,469-516. Academic Press, 2009. ISBN 0123745012.
             [2] D.T. Reindl, W.A. Beckman, and J.A. Duffie. Diffuse fraction correla-
-                tions. Solar Energy, 45(1):1 - 7, 1990.
+            tions. Solar Energy, 45(1):1 - 7, 1990.
             [3] Hans Georg Beyer, Gerd Heilscher and Stefan Bofinger. A Robust Model
-                for the MPP Performance of Different Types of PV-Modules Applied for
-                the Performance Check of Grid Connected Systems, Freiburg, June 2004.
-                Eurosun (ISES Europe Solar Congress).
+            for the MPP Performance of Different Types of PV-Modules Applied for
+            the Performance Check of Grid Connected Systems, Freiburg, June 2004.
+            Eurosun (ISES Europe Solar Congress).
         """
 
         if isinstance(panel, str):
@@ -793,7 +795,7 @@ def ds_reformat_index(ds: xr.DataArray) -> xr.DataArray:
         ds (xr.DataArray): dataArray generated from the convert function.
 
     Returns:
-        xr.DataArray: dataArray with lat and lon as dimensions.
+        xr.DataArray: DataArray with lat and lon as dimensions.
     """
 
     if "lat" in ds.dims and "lon" in ds.dims:
