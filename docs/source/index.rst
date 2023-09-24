@@ -34,13 +34,13 @@ Welcome to Geodata's documentation!
 
    mask/*
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Parameterization
-   :glob:
-   :hidden:
+.. .. toctree::
+..    :maxdepth: 1
+..    :caption: Parameterization
+..    :glob:
+..    :hidden:
 
-   parameterizations/*
+..    parameterizations/*
 
 .. toctree::
    :maxdepth: 1
@@ -49,6 +49,13 @@ Welcome to Geodata's documentation!
    :hidden:
 
    visualization/*
+
+.. .. toctree::
+..    :maxdepth: 1
+..    :caption: Application with Geodata
+..    :glob:
+
+..    application/*
 
 .. toctree::
    :maxdepth: 2
