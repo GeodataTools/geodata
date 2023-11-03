@@ -255,11 +255,8 @@ Generate PM2.5 time series according to [1]:
 ### Example Code and Result
 
 ```
-ds_pm25 = geodata.convert.pv(
-    cutout
-    )
-
-ds_pm25.to_dataframe(name = 'pm25')
+pm25_concentration = geodata.convert.pm25(cutout)
+pm25_concentration.to_dataframe(name='pm25')
 ```
 
 # Example Output
