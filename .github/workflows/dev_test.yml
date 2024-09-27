@@ -44,11 +44,11 @@ jobs:
       - name: Configure CDS API Key (Windows)
         run: |
           echo "${{ secrets.CDS_API_KEY }}" > $env:USERPROFILE\cdsapi.b64
-          certutil -decode $env:USERPROFILE\cdsapi.b64 $env:USERPROFILE\.cdsapirc 
+          certutil -decode $env:USERPROFILE\cdsapi.b64 $env:USERPROFILE\.cdsapirc
           echo "${{ secrets.NETRC_INFO }}" > $env:USERPROFILE\.netrc
         if: ${{ matrix.os == 'windows-latest' }}
       - name: Test with pytest
         run: |
           pip install pytest
           pip install -e ".[download]"
-          pytest dev_tests/
+          pytest tests/dev/
