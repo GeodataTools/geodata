@@ -1,17 +1,17 @@
-## Copyright 2022 Xiqiang Liu
+# Copyright 2022 Xiqiang Liu
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 
@@ -24,11 +24,11 @@ logging.basicConfig(level=logging.INFO)
 
 
 def get_data_configs() -> list[str]:
-    return ["wind_solar_monthly"]
+    return ["surface_flux_monthly"]
 
 
 def get_bounds() -> list[list[int]]:
-    return [[50, 0, 48, 3]]
+    return [[30, -10, 60, 10]]
 
 
 def get_years() -> list[slice]:
@@ -36,7 +36,7 @@ def get_years() -> list[slice]:
 
 
 def get_months() -> list[slice]:
-    return [slice(1, 2)]
+    return [slice(1, 3)]
 
 
 def get_xs() -> list[slice]:
@@ -55,17 +55,13 @@ def get_smooth() -> bool:
     return True
 
 
-def get_panel() -> str:
-    return "KANEKA"
+def get_var_height() -> str:
+    return "lml"
 
 
-def get_orientation() -> str:
-    return "latitude_optimal"
-
-
-def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
+def get_merra2(data_config: str, bound: list[int], year: slice, month: slice):
     dataset = geodata.Dataset(
-        module="era5",
+        module="merra2",
         weather_data_config=data_config,
         years=year,
         months=month,
@@ -78,8 +74,8 @@ def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
 
 def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slice):
     cutout = geodata.Cutout(
-        name="era5-europe-test-2005-01",
-        module="era5",
+        name="merra2-sample-01",
+        module="merra2",
         weather_data_config=data_config,
         xs=x,
         ys=y,
@@ -90,22 +86,22 @@ def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slic
     return cutout
 
 
-def create_wind_output(cutout: geodata.Cutout, turbine, smooth):
-    ds_wind = geodata.convert.wind(cutout, turbine, smooth)
+def create_wind_output(cutout: geodata.Cutout, turbine, smooth, var_height):
+    ds_wind = geodata.convert.wind(cutout, turbine, smooth, var_height=var_height)
     df_wind = ds_wind.to_dataframe(name="wind")
     return df_wind
 
 
-def create_windspd_output(cutout: geodata.Cutout, turbine):
-    ds_windspd = geodata.convert.wind(cutout, turbine)
+def create_windspd_output(cutout: geodata.Cutout, turbine, var_height):
+    ds_windspd = geodata.convert.windspd(cutout, turbine=turbine, var_height=var_height)
     df_windspd = ds_windspd.to_dataframe(name="windspd")
     return df_windspd
 
 
-def create_pv_output(cutout: geodata.Cutout, panel, orientation):
-    ds_pv = geodata.convert.pv(cutout, panel, orientation)
-    df_pv = ds_pv.to_dataframe(name="pv")
-    return df_pv
+def create_windwpd_output(cutout: geodata.Cutout, turbine, var_height):
+    ds_windwpd = geodata.convert.windwpd(cutout, turbine=turbine, var_height=var_height)
+    df_windwpd = ds_windwpd.to_dataframe(name="windwpd")
+    return df_windwpd
 
 
 def test_download():
@@ -115,7 +111,7 @@ def test_download():
     bounds = get_bounds()
 
     for config, year, month, bound in zip(configs, years, months, bounds):
-        dataset = get_era5(config, bound, year, month)
+        dataset = get_merra2(config, bound, year, month)
         assert dataset.prepared
 
 
@@ -126,7 +122,7 @@ def test_trim():
     bounds = get_bounds()
 
     for config, year, month, bound in zip(configs, years, months, bounds):
-        dataset = get_era5(config, bound, year, month)
+        dataset = get_merra2(config, bound, year, month)
         dataset.trim_variables()
         for f in dataset.downloadedFiles:
             file_path = f[1]
@@ -157,8 +153,13 @@ def test_wind_output():
         cutout = create_cutout(config, x, y, year, month)
         turbine = get_turbine()
         smooth = get_smooth()
-        df_wind = create_wind_output(cutout, turbine, smooth)
-        assert df_wind.dtypes.to_dict() == {'lon': np.dtype('float32'), 'lat': np.dtype('float32'), 'wind': np.dtype('float64')}
+        var_height = get_var_height()
+        df_wind = create_wind_output(cutout, turbine, smooth, var_height)
+        assert df_wind.dtypes.to_dict() == {
+            "lon": np.dtype("float64"),
+            "lat": np.dtype("float64"),
+            "wind": np.dtype("float64"),
+        }
 
 
 def test_windspd_output():
@@ -171,11 +172,16 @@ def test_windspd_output():
     for config, year, month, x, y in zip(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
         turbine = get_turbine()
-        df_windspd = create_windspd_output(cutout, turbine)
-        assert df_windspd.dtypes.to_dict() == {'lon': np.dtype('float32'), 'lat': np.dtype('float32'), 'windspd': np.dtype('float64')}
+        var_height = get_var_height()
+        df_windspd = create_windspd_output(cutout, turbine, var_height)
+        assert df_windspd.dtypes.to_dict() == {
+            "lon": np.dtype("float64"),
+            "lat": np.dtype("float64"),
+            "windspd": np.dtype("float32"),
+        }
 
 
-def test_pv_output():
+def test_windwpd_output():
     configs = get_data_configs()
     years = get_years()
     months = get_months()
@@ -184,7 +190,11 @@ def test_pv_output():
 
     for config, year, month, x, y in zip(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
-        panel = get_panel()
-        orientation = get_orientation()
-        df_pv = create_pv_output(cutout, panel, orientation)
-        assert df_pv.dtypes.to_dict() == {'lat': np.dtype('float32'), 'lon': np.dtype('float32'), 'pv': np.dtype('float64')}
+        turbine = get_turbine()
+        var_height = get_var_height()
+        df_windwpd = create_windwpd_output(cutout, turbine, var_height)
+        assert df_windwpd.dtypes.to_dict() == {
+            "lon": np.dtype("float64"),
+            "lat": np.dtype("float64"),
+            "windwpd": np.dtype("float32"),
+        }

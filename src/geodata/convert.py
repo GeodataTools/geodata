@@ -90,7 +90,6 @@ def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
 
     for ym in maybe_progressbar(yearmonths):
         with xr.open_dataset(cutout.datasetfn(ym)) as ds:
-
             if "view" in cutout.meta.attrs:
                 if isinstance(cutout.meta.attrs["view"], str):
                     cutout.meta.attrs["view"] = {}

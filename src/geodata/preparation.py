@@ -226,7 +226,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
     meta_kwds.update(dataset_params)
 
     # Assign task function here?
-    tasks_func = meta_kwds["tasks_func"]  # pylint: disable=unused-variable
+    tasks_func = meta_kwds["tasks_func"]  # noqa: F841
     # test before removing
 
     # Get metadata

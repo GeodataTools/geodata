@@ -126,7 +126,7 @@ class Cutout:
                 if {"xs", "ys"}.intersection(cutoutparams):
                     # Passed some subsetting bounds
                     self.meta = meta = self.get_meta_view(**cutoutparams)
-                    if not meta is None:
+                    if meta is not None:
                         # Subset is available
                         self.prepared = True
                         logger.info("Cutout subset prepared: %s", self)
@@ -159,7 +159,7 @@ class Cutout:
                     "Arguments `xs`, `ys` and `years` need to be specified for a cutout."
                 )
 
-            if not meta is None:
+            if meta is not None:
                 # if meta.nc exists, close and delete it
                 meta.close()
                 os.remove(self.datasetfn())
@@ -472,7 +472,6 @@ def _find_intercept(list1, list2, start, threshold=0):
     find_intercept is a helper function to find the best start point for doing coarsening
     in order to make the coordinates of the coarsen as close to the target as possible.
     """
-    min_pos = 0  # pylint: disable=unused-variable
     min_res = 0
     init = 0
     for i in range(len(list1) - start):
@@ -483,7 +482,6 @@ def _find_intercept(list1, list2, start, threshold=0):
             return i
         if resid > min_res:
             min_res = resid
-            min_pos = i
         else:
             min_res = resid
             break
@@ -545,7 +543,7 @@ def calc_grid_area(lis_lats_lons):
     for i in range(len(ll)):
         var.append("lat_" + str(i + 1))
     st = ""
-    for v, l in zip(var, ll):
+    for v, l in zip(var, ll):  # noqa: E741
         st = st + str(v) + "=" + str(l) + " " + "+"
     st = (
         st
@@ -560,7 +558,7 @@ def calc_grid_area(lis_lats_lons):
     tx = "+proj=aea +" + st
     pa = pyproj.Proj(tx)
 
-    x, y = pa(lons, lats)  # pylint: disable=unpacking-non-sequence
+    x, y = pa(lons, lats)
     cop = {"type": "Polygon", "coordinates": [zip(x, y)]}
 
     return shapely.geometry.shape(cop).area / 1000000
