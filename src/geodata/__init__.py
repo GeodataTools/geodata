@@ -22,4 +22,5 @@ from .plot import *  # noqa: F403
 __author__ = "Michael Davidson (UCSD), William Honaker"
 __copyright__ = "GNU GPL 3 license"
 
+
 __all__ = ["Cutout", "Dataset", "Mask", "__version__"]
