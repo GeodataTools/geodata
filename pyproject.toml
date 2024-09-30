@@ -54,3 +54,16 @@ test = [
 
 [tool.isort]
 profile = "black"
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+ignore = [
+    "N815",  # Variable name doesn't conform to snake_case naming style
+    "D100",  # Missing module docstring
+    "D101",  # Missing class docstring
+    "D103",  # Missing function or method docstring
+    "E501",  # Line too long
+]
+exclude = ["*.ipynb"]

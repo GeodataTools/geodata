@@ -1,17 +1,17 @@
-## Copyright 2022 Xiqiang Liu
+# Copyright 2022 Xiqiang Liu
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 
@@ -155,7 +155,11 @@ def test_wind_output():
         smooth = get_smooth()
         var_height = get_var_height()
         df_wind = create_wind_output(cutout, turbine, smooth, var_height)
-        assert df_wind.dtypes.to_dict() == {'lon': np.dtype('float64'), 'lat': np.dtype('float64'), 'wind': np.dtype('float64')}
+        assert df_wind.dtypes.to_dict() == {
+            "lon": np.dtype("float64"),
+            "lat": np.dtype("float64"),
+            "wind": np.dtype("float64"),
+        }
 
 
 def test_windspd_output():
@@ -170,7 +174,11 @@ def test_windspd_output():
         turbine = get_turbine()
         var_height = get_var_height()
         df_windspd = create_windspd_output(cutout, turbine, var_height)
-        assert df_windspd.dtypes.to_dict() == {'lon': np.dtype('float64'), 'lat': np.dtype('float64'), 'windspd': np.dtype('float32')}
+        assert df_windspd.dtypes.to_dict() == {
+            "lon": np.dtype("float64"),
+            "lat": np.dtype("float64"),
+            "windspd": np.dtype("float32"),
+        }
 
 
 def test_windwpd_output():
@@ -185,4 +193,8 @@ def test_windwpd_output():
         turbine = get_turbine()
         var_height = get_var_height()
         df_windwpd = create_windwpd_output(cutout, turbine, var_height)
-        assert df_windwpd.dtypes.to_dict() == {'lon': np.dtype('float64'), 'lat': np.dtype('float64'), 'windwpd': np.dtype('float32')}
+        assert df_windwpd.dtypes.to_dict() == {
+            "lon": np.dtype("float64"),
+            "lat": np.dtype("float64"),
+            "windwpd": np.dtype("float32"),
+        }

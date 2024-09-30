@@ -19,6 +19,7 @@ GEODATA
 
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
+
 import logging
 
 import numpy as np
@@ -186,9 +187,7 @@ def winddir(ds):
     return ds["winddir"]
 
 
-def _log_law_flux(
-    ds, to_height, from_height, from_name, psifn, Lfn=L_vph
-):  # pylint: disable=unused-argument
+def _log_law_flux(ds, to_height, from_height, from_name, psifn, Lfn=L_vph):  # pylint: disable=unused-argument
     """Compute logarithmic (integration) law given stability correction fn in terms of Obukhov length (derived from heat flux) [1]
     Called by: log_law_flux_**
 
@@ -290,9 +289,9 @@ def extrapolate_wind_speed(
     # Sanitize roughness for logarithm: 0.0002 corresponds to open water [2]
     ds["roughness"].values[ds["roughness"].values <= 0.0] = 0.0002
 
-    if not from_height is None:
+    if from_height is not None:
         # passed a from_height
-        if not var_height is None:
+        if var_height is not None:
             raise AssertionError(
                 "Cannot pass both from_height and var_height to extrapolate_wind_speed"
             )
@@ -304,7 +303,7 @@ def extrapolate_wind_speed(
             wnd_spd.attrs["long_name"] + ", " + f"from fixed height = {from_height}"
         )
 
-    elif not var_height is None:
+    elif var_height is not None:
         # passed a variable height (eg lml)
         # set variable names
         from_height = f"h{var_height}"
