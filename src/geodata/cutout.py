@@ -35,7 +35,7 @@ import xarray as xr
 from shapely.geometry import box
 from six import iteritems
 
-from . import config  # pylint: disable=E0611
+from . import config
 from .convert import (
     convert_cutout,
     heat_demand,
@@ -510,7 +510,7 @@ def coarsen(ori, tar, func="mean"):
     if func == "mean":
         coarsen = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
-            .coarsen(  # pylint: disable=redefined-outer-name
+            .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
                 side={"lat": "left", "lon": "left"},
                 boundary="pad",

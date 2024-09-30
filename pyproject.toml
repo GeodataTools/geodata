@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Geospatial Data Collection and Pre-Analysis Tools"
 authors = [
     {name = "Michael Davidson", email = "mrdavidson@ucsd.edu"},
-    {name = "Xiqiang Liu", email = "9440183+xiqiangliu@users.noreply.github.com"},
+    {name = "Xiqiang Liu", email = "9440183+xiqiangliu@users.noreply.github.com"}
 ]
 dependencies = [
     "numpy<2",
@@ -59,11 +59,4 @@ profile = "black"
 line-length = 88
 
 [tool.ruff.lint]
-ignore = [
-    "N815",  # Variable name doesn't conform to snake_case naming style
-    "D100",  # Missing module docstring
-    "D101",  # Missing class docstring
-    "D103",  # Missing function or method docstring
-    "E501",  # Line too long
-]
 exclude = ["*.ipynb"]

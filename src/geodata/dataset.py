@@ -331,7 +331,7 @@ class Dataset:
             else:
                 self.toDownload = [self.toDownload[0]]
                 self.totalFiles = [self.totalFiles[0]]
-                self.testDataset = True  # pylint: disable=attribute-defined-outside-init
+                self.testDataset = True
 
         api_func = self.weatherconfig["api_func"]
 
@@ -406,7 +406,7 @@ class Dataset:
 
     @property
     def coords(self):
-        return self.meta.coords  # pylint: disable=no-member
+        return self.meta.coords
 
     @property
     def shape(self):

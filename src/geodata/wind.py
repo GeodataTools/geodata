@@ -187,13 +187,13 @@ def winddir(ds):
     return ds["winddir"]
 
 
-def _log_law_flux(ds, to_height, from_height, from_name, psifn, Lfn=L_vph):  # pylint: disable=unused-argument
+def _log_law_flux(ds, to_height, from_height, from_name, psifn, Lfn=L_vph):
     """Compute logarithmic (integration) law given stability correction fn in terms of Obukhov length (derived from heat flux) [1]
     Called by: log_law_flux_**
 
     [1] Sharan, M., & Aditi. (2009).
             Performance of various similarity functions for nondimensional wind and temperature profiles in the surface layer in stable conditions.
-            Atmospheric Research, 94(2), 246–253.
+            Atmospheric Research, 94(2), 246-253.
             https://doi.org/10.1016/j.atmosres.2009.05.014
     """
     vonk = 0.4  # Von Karman constant

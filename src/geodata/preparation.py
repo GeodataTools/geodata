@@ -150,7 +150,7 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
         def datasetfn_with_id(ym):
             # returns a filename with incrementing id at end eg `201101-01.nc`
             base, ext = os.path.splitext(cutout.datasetfn(ym))
-            return base + "-{}".format(i) + ext  # pylint: disable=cell-var-from-loop
+            return base + "-{}".format(i) + ext
 
         t["datasetfns"] = {ym: datasetfn_with_id(ym) for ym in yearmonths.tolist()}
 
@@ -295,7 +295,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 def cutout_get_meta_view(
     cutout, xs=None, ys=None, years=slice(None), months=slice(None), **dataset_params
-):  # pylint: disable=unused-argument
+):
     # called in cutout as `get_meta_view()`
     # 	Create subset of metadata based on xs, ys, years, months
     # 	Returns None if any of the dimensions of the subset are empty
@@ -338,7 +338,7 @@ def cutout_get_meta_view(
 def _prepare_gebco_height(xs, ys, gebco_fn=None):
     # gebco bathymetry heights for underwater
     if gebco_fn is None:
-        from .config import gebco_path  # pylint: disable=import-outside-toplevel
+        from .config import gebco_path
 
         gebco_fn = gebco_path
 

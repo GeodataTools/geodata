@@ -19,12 +19,11 @@ import matplotlib.animation as anim
 import matplotlib.pyplot as plt
 
 from .cutout import ds_reformat_index
-from .mask import show
+from .mask import show  #  # noqa: F401
 
 plt.rcParams["animation.html"] = "jshtml"
 
 logger = logging.getLogger(__name__)
-show = show  # pylint: disable=self-assigning-variable
 
 
 def ds_ts_aggregate(ds, agg_method):
