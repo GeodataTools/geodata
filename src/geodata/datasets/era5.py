@@ -296,7 +296,6 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 
 
 def prepare_month_era5(fn, year, month, xs, ys):
-
     # Reference of the quantities
     # https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
     # (shortName) | (name)                                      | (paramId)
@@ -416,7 +415,7 @@ weather_data_config = {
             "fdir",
             "fsr",
             "z",
-        ]
+        ],
     ),
     "wind_solar_monthly": dict(
         api_func=api_monthly_era5,
