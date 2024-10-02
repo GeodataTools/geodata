@@ -1,22 +1,15 @@
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 import xarray as xr
@@ -60,7 +53,7 @@ def SolarPosition(ds):
 
     L = 280.460 + 0.9856474 * n  # mean longitude (deg)
     g = np.deg2rad(357.528 + 0.9856003 * n)  # mean anomaly (rad)
-    l = np.deg2rad(
+    l = np.deg2rad(  # noqa: E741
         L + 1.915 * np.sin(g) + 0.020 * np.sin(2 * g)
     )  # ecliptic long. (rad)
     ep = np.deg2rad(23.439 - 4e-7 * n)  # obliquity of the ecliptic (rad)
@@ -68,9 +61,7 @@ def SolarPosition(ds):
     ra = np.arctan2(np.cos(ep) * np.sin(l), np.cos(l))  # right ascencion (rad)
     lmst = (
         6.697375 + (ds["time.hour"] + ds["time.minute"] / 60.0) + 0.0657098242 * n
-    ) * 15.0 + ds[
-        "lon"
-    ]  # local mean sidereal time (deg)
+    ) * 15.0 + ds["lon"]  # local mean sidereal time (deg)
     h = (np.deg2rad(lmst) - ra + np.pi) % (2 * np.pi) - np.pi  # hour angle (rad)
 
     dec = np.arcsin(np.sin(ep) * np.sin(l))  # declination (rad)
@@ -82,17 +73,15 @@ def SolarPosition(ds):
         (np.sin(lat) * np.sin(dec) + np.cos(lat) * np.cos(dec) * np.cos(h)).clip(
             min=-1.0, max=1.0
         )
-    ).rename(
-        "altitude"
-    )  # pylint: disable=no-member
+    ).rename("altitude")
 
     az = np.arccos(
         (
             (np.sin(dec) * np.cos(lat) - np.cos(dec) * np.sin(lat) * np.cos(h))
             / np.cos(alt)
         ).clip(min=-1.0, max=1.0)
-    )  # pylint: disable=no-member
-    az = az.where(h <= 0, 2 * np.pi - az).rename("azimuth")  # pylint: disable=no-member
+    )
+    az = az.where(h <= 0, 2 * np.pi - az).rename("azimuth")
 
     if "influx_toa" in ds:
         atmospheric_insolation = ds["influx_toa"].rename("atmospheric insolation")

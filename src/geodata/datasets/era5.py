@@ -1,18 +1,18 @@
-## Copyright 2016-2017 Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS)
-## Copyright 2022 Xiqiang Liu
+# Copyright 2016-2017 Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS)
+# Copyright 2022 Xiqiang Liu
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 """
@@ -44,11 +44,19 @@ except ImportError:
 projection = "latlong"
 
 
-def _rename_and_clean_coords(ds, add_lon_lat=True):
+def _rename_and_clean_coords(ds: xr.Dataset, add_lon_lat: bool = True):
     """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
 
     Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
+
+    Args:
+        ds (xarray.Dataset): Dataset to rename
+        add_lon_lat (bool, optional): Add lon/lat columns. Defaults to True.
+
+    Returns:
+        xarray.Dataset: Dataset with renamed coordinates
     """
+
     # Rename latitude / lat -> y, longitude / lon -> x
     if "latitude" in list(ds.coords):
         ds = ds.rename({"latitude": "y"})
@@ -61,11 +69,12 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 
     if add_lon_lat:
         ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
+
     return ds
 
 
 def api_hourly_era5(
-    toDownload, bounds, download_vars, product, product_type, downloadedFiles
+    toDownload: list, bounds, download_vars, product, product_type, downloadedFiles
 ):
     if not has_cdsapi:
         raise RuntimeError(
@@ -296,7 +305,6 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 
 
 def prepare_month_era5(fn, year, month, xs, ys):
-
     # Reference of the quantities
     # https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
     # (shortName) | (name)                                      | (paramId)
@@ -389,7 +397,7 @@ weather_data_config = {
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
         product="reanalysis-era5-single-levels",
         product_type="reanalysis",
-        variables=[
+        keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
@@ -403,6 +411,20 @@ weather_data_config = {
             "forecast_surface_roughness",
             "geopotential",
         ],
+        variables=[
+            "u100",
+            "v100",
+            "t2m",
+            "ro",
+            "stl4",
+            "ssr",
+            "sp",
+            "ssrd",
+            "tisr",
+            "fdir",
+            "fsr",
+            "z",
+        ],
     ),
     "wind_solar_monthly": dict(
         api_func=api_monthly_era5,
@@ -414,7 +436,7 @@ weather_data_config = {
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
         product="reanalysis-era5-single-levels-monthly-means",
         product_type="monthly_averaged_reanalysis",
-        variables=[
+        keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
@@ -427,6 +449,20 @@ weather_data_config = {
             "total_sky_direct_solar_radiation_at_surface",
             "forecast_surface_roughness",
             "geopotential",
+        ],
+        variables=[
+            "u100",
+            "v100",
+            "t2m",
+            "ro",
+            "stl4",
+            "ssr",
+            "sp",
+            "ssrd",
+            "tisr",
+            "fdir",
+            "fsr",
+            "z",
         ],
     ),
 }

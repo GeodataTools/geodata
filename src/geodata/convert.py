@@ -1,26 +1,20 @@
-## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
-from __future__ import absolute_import
+"""Various conversion functions for Geodata."""
 
 import datetime as dt
 import logging
@@ -29,6 +23,7 @@ from operator import itemgetter
 import numpy as np
 import xarray as xr
 from six import string_types
+from tqdm.auto import tqdm
 
 from . import wind as windm
 from .pv.irradiation import TiltedIrradiation
@@ -36,7 +31,6 @@ from .pv.orientation import SurfaceOrientation, get_orientation
 from .pv.solar_panel_model import SolarPanelModel
 from .pv.solar_position import SolarPosition
 from .resource import get_solarpanelconfig, get_windturbineconfig, windturbine_smooth
-from .utils import make_optional_progressbar
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +62,8 @@ def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
     convert_func : Function
             Callback like convert_wind, convert_pv
     """
-    assert cutout.prepared, "The cutout has to be prepared first."
+    if not cutout.prepared:
+        raise RuntimeError("The cutout has to be prepared first.")
 
     results = []
 
@@ -82,15 +77,11 @@ def convert_cutout(cutout, convert_func, show_progress=False, **convert_kwds):
             if convert_func.__name__.startswith("convert_")
             else convert_func.__name__
         )
-        prefix = "Convert `{}`: ".format(func_name)
+        prefix = f"Convert `{func_name}`: "
 
-    maybe_progressbar = make_optional_progressbar(
-        show_progress, prefix, len(yearmonths)
-    )
-
-    for ym in maybe_progressbar(yearmonths):
+    pbar = tqdm if show_progress else lambda x, desc: x
+    for ym in pbar(yearmonths, desc=prefix):
         with xr.open_dataset(cutout.datasetfn(ym)) as ds:
-
             if "view" in cutout.meta.attrs:
                 if isinstance(cutout.meta.attrs["view"], str):
                     cutout.meta.attrs["view"] = {}

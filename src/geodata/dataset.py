@@ -1,17 +1,17 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2020 Michael Davidson (UCSD), William Honaker.
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 """
@@ -19,8 +19,6 @@ GEODATA
 
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
-
-from __future__ import absolute_import
 
 import logging
 import os
@@ -33,15 +31,13 @@ import numpy as np
 import xarray as xr
 from shapely.geometry import box
 
-from . import config, datasets  # pylint: disable=unused-import
+from . import config, datasets  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
 
 class Dataset:
-    def __init__(
-        self, **datasetparams
-    ):  # pylint: disable=too-many-branches,too-many-statements
+    def __init__(self, **datasetparams):
         if "module" not in datasetparams:
             raise ValueError("`module` needs to be specified")
         if "weather_data_config" not in datasetparams:
@@ -109,10 +105,7 @@ class Dataset:
         step = months.step if months.step else 1
         mos = range(months.start, months.stop + step, step)
 
-        if (
-            self.weatherconfig["file_granularity"] == "daily"
-            or self.weatherconfig["file_granularity"] == "dailymeans"
-        ):
+        if self.weatherconfig["file_granularity"] in {"daily", "dailymeans"}:
             # Separate files for each day (eg MERRA)
             # Check for complete set of files of year, month, day
             mo_tuples = [(yr, mo, monthrange(yr, mo)[1]) for yr in yrs for mo in mos]
@@ -266,7 +259,6 @@ class Dataset:
                     self.downloadedFiles.append((self.config, filename))
 
         if not self.prepared:
-
             if {"xs", "ys"}.difference(datasetparams):
                 logger.warning(
                     "Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global."
@@ -334,25 +326,21 @@ class Dataset:
             else:
                 self.toDownload = [self.toDownload[0]]
                 self.totalFiles = [self.totalFiles[0]]
-                self.testDataset = (
-                    True  # pylint: disable=attribute-defined-outside-init
-                )
+                self.testDataset = True
 
         api_func = self.weatherconfig["api_func"]
 
         if self.module == "era5":
-
             api_func(
                 self.toDownload,
                 self.bounds,
-                self.weatherconfig["variables"],
+                self.weatherconfig["keywords"],
                 self.weatherconfig["product"],
                 self.weatherconfig["product_type"],
                 self.downloadedFiles,
             )
 
         elif self.module == "merra2":
-
             api_func(
                 self.toDownload,
                 self.weatherconfig["file_granularity"],
@@ -413,7 +401,7 @@ class Dataset:
 
     @property
     def coords(self):
-        return self.meta.coords  # pylint: disable=no-member
+        return self.meta.coords
 
     @property
     def shape(self):

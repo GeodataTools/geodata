@@ -15,7 +15,7 @@ Find documentation about how to use the **geodata** package here.
      - [Creating Cutouts](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_download.md#preparing-the-cutout)
   - [Outputting Data with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md)
      - [Data Configs and Outputs](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#merra2-configs-and-outputs)
-     - [Generating Wind Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-wind-outputs-with-merra2-data)
+     - [Generating Wind Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-wind-outputs-with-merra2-data) (For an updated version, see "Geospatial Modeling" section below)
      - [Generating Solar Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-solar-outputs-with-merra2-data)
      - [Generating Aerosol Outputs with MERRA2](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#generating-aerosol-outputs-with-merra2-data)
      - [Example Output](https://github.com/east-winds/geodata/blob/master/doc/merra2/merra2_outputs.md#example-output)
@@ -37,3 +37,7 @@ Find documentation about how to use the **geodata** package here.
   - [Mask Creation Workflow](https://github.com/east-winds/geodata/blob/master/doc/mask/mask_creation_workflow.md)
   - [Mask on Cutout Workflow](https://github.com/east-winds/geodata/blob/master/doc/mask/mask_on_cutout_workflow.md)
   - [Troubleshooting information](https://github.com/east-winds/geodata/blob/master/doc/mask/mask_troubleshoot.md)
+
+- Geospatial Modeling
+   - Wind
+      - [Modelling Wind Speed Using Geodata With MERRA2 Datasets](https://github.com/GeodataTools/geodata/blob/master/doc/modeling/wind/merra2.md)
