@@ -25,7 +25,7 @@ dependencies = [
     "progressbar2>=4.5.0",
     "geopandas>=1.0.1",
     "pyyaml>=6.0.2",
-    "dask>=2024.9.0",
+    "dask>=2024.9.0"
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -39,16 +39,12 @@ download = [
 notebook = [
     "notebook>=7.2.2",
 ]
-[tool.pdm]
-distribution = false
 
-[tool.pdm.dev-dependencies]
-lint = [
+[tool.uv]
+dev-dependencies = [
     "black>=24.8.0",
     "isort>=5.13.2",
     "ruff>=0.6.8",
-]
-test = [
     "pytest>=8.3.3",
 ]
 
