@@ -155,7 +155,8 @@ def api_hourly_era5(
             }
 
             if bounds is not None:
-                full_request["area"] = bounds
+                # NOTE: cdsapi uses (long2, lat2, long1, lat1) format
+                full_request["area"] = bounds[::-1]
 
             full_result = cdsapi.Client().retrieve(product, full_request)
 
@@ -203,8 +204,7 @@ def api_monthly_era5(
 
             if bounds is not None:
                 # cdsapi uses (long2, lat2, long1, lat1) format
-                x1, y1, x2, y2 = bounds
-                full_request["area"] = (y2, x2, y1, x1)
+                full_request["area"] = bounds[::-1]
 
             full_result = cdsapi.Client().retrieve(product, full_request)
 
@@ -284,6 +284,7 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
     # https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
 
     fns = glob.iglob(template.format(year=year, month=month))
+
     try:
         with xr.open_mfdataset(fns, combine="by_coords") as ds0:
             ds = ds0.coords.to_dataset()
@@ -350,7 +351,6 @@ def prepare_month_era5(fn, year, month, xs, ys):
         )
 
         ds["runoff"] = ds["runoff"].clip(min=0.0)
-
         yield (year, month), ds
 
 
