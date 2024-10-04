@@ -168,7 +168,6 @@ def TiltedIrradiation(
     clearsky_model,
     altitude_threshold=1.0,
 ):
-
     influx_toa = solar_position["atmospheric insolation"]
 
     def clip(influx, influx_max):

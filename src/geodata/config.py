@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 DATASET_ROOT_PATH = Path(
     os.environ.get("GEODATA_ROOT", Path.home() / ".local" / "geodata")
 ).resolve()
+SRC_ROOT = Path(__file__).parent.resolve()
 
 
 gebco_path = DATASET_ROOT_PATH / "gebco"

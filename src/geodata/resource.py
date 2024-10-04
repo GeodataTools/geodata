@@ -20,16 +20,14 @@ GEODATA
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
-from __future__ import absolute_import
-
 import logging
 from operator import itemgetter
 
 import numpy as np
 import yaml
-from pkg_resources import resource_stream
 from scipy.signal import fftconvolve
-from six import string_types
+from geodata.config import SRC_ROOT
+
 
 logger = logging.getLogger(name=__name__)
 
@@ -38,20 +36,23 @@ def get_windturbineconfig(turbine):
     """Load the 'turbine'.yaml file from local disk and provide a turbine dict."""
 
     res_name = "resources/windturbine/" + turbine + ".yaml"
-    turbineconf = yaml.safe_load(resource_stream(__name__, res_name))
+    with open(SRC_ROOT / res_name, "r") as resource_file:
+        turbineconf = yaml.safe_load(resource_file)
     V, POW, hub_height = itemgetter("V", "POW", "HUB_HEIGHT")(turbineconf)
     return dict(V=np.array(V), POW=np.array(POW), hub_height=hub_height, P=np.max(POW))
 
 
 def get_solarpanelconfig(panel):
     res_name = "resources/solarpanel/" + panel + ".yaml"
-    return yaml.safe_load(resource_stream(__name__, res_name))
+    with open(SRC_ROOT / res_name, "r") as resource_file:
+        panelconf = yaml.safe_load(resource_file)
+    return panelconf
 
 
 def solarpanel_rated_capacity_per_unit(panel):
     # unit is m^2 here
 
-    if isinstance(panel, string_types):
+    if isinstance(panel, str):
         panel = get_solarpanelconfig(panel)
 
     model = panel.get("model", "huld")
@@ -65,7 +66,7 @@ def solarpanel_rated_capacity_per_unit(panel):
 
 
 def windturbine_rated_capacity_per_unit(turbine):
-    if isinstance(turbine, string_types):
+    if isinstance(turbine, str):
         turbine = get_windturbineconfig(turbine)
 
     return turbine["P"]

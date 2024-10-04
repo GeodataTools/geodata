@@ -106,7 +106,6 @@ def _rename_and_clean_coords(ds, add_lon_lat=True):
 
 
 def api_merra2(toDownload, fileGranularity, downloadedFiles):
-
     if len(toDownload) == 0:
         logger.info("All MERRA2 files for this dataset have been downloaded.")
     else:
@@ -130,7 +129,7 @@ def api_merra2(toDownload, fileGranularity, downloadedFiles):
             except HTTPError as http_err:
                 logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
                 error_files.append(f[1])
-            except Exception as err:  # pylint: disable=broad-except
+            except Exception as err:
                 logger.warning("Other error occurred: %s", err)
                 error_files.append(f[1])
 
@@ -152,7 +151,7 @@ def api_merra2(toDownload, fileGranularity, downloadedFiles):
                             "HTTP error occurred: %s", http_err
                         )  # Python 3.6
                         error_files.append(f[k])
-                    except Exception as err:  # pylint: disable=broad-except
+                    except Exception as err:
                         logger.warning("Other error occurred: %s", err)
                         error_files.append(f[k])
                     # ds_toadd = xr.open_dataset(target_temp)
@@ -225,7 +224,7 @@ def prepare_month_surface_flux(fn, year, month, xs, ys):
             # 	z0m=roughness
             # 	wind variables not in wndXXm format
             ds = ds.rename({"z0m": "roughness"})
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.warning("Unable to rename variables in %s. Exception: %s", fn, e)
 
         ds["wndlml"] = np.sqrt(ds["ulml"] ** 2 + ds["vlml"] ** 2).assign_attrs(
@@ -270,7 +269,7 @@ def prepare_dailymeans_surface_flux(fn, year, month, xs, ys):
             # 	z0m=roughness
             # 	wind variables not in wndXXm format
             ds = ds.rename({"t2mmean": "temperature", "tprecmax": "precipitation"})
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.warning("Unable to rename variables in %s. Exception: %s", fn, e)
 
         # ['HOURNORAIN', 'T2MMAX', 'T2MMEAN', 'T2MMIN', 'TPRECMAX']
@@ -304,7 +303,7 @@ def prepare_slv_radiation(fn, year, month, xs, ys):
                     "t2m": "temperature",
                 }
             )
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:
             logger.warning("Unable to rename variables in %s. Exception: %s", fn, e)
         yield (year, month), ds
 

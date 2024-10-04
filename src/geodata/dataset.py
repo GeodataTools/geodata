@@ -33,15 +33,13 @@ import numpy as np
 import xarray as xr
 from shapely.geometry import box
 
-from . import config, datasets  # pylint: disable=unused-import
+from . import config, datasets  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
 
 class Dataset:
-    def __init__(
-        self, **datasetparams
-    ):  # pylint: disable=too-many-branches,too-many-statements
+    def __init__(self, **datasetparams):
         if "module" not in datasetparams:
             raise ValueError("`module` needs to be specified")
         if "weather_data_config" not in datasetparams:
@@ -266,7 +264,6 @@ class Dataset:
                     self.downloadedFiles.append((self.config, filename))
 
         if not self.prepared:
-
             if {"xs", "ys"}.difference(datasetparams):
                 logger.warning(
                     "Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global."
@@ -334,25 +331,21 @@ class Dataset:
             else:
                 self.toDownload = [self.toDownload[0]]
                 self.totalFiles = [self.totalFiles[0]]
-                self.testDataset = (
-                    True  # pylint: disable=attribute-defined-outside-init
-                )
+                self.testDataset = True
 
         api_func = self.weatherconfig["api_func"]
 
         if self.module == "era5":
-
             api_func(
                 self.toDownload,
                 self.bounds,
-                self.weatherconfig["variables"],
+                self.weatherconfig["keywords"],
                 self.weatherconfig["product"],
                 self.weatherconfig["product_type"],
                 self.downloadedFiles,
             )
 
         elif self.module == "merra2":
-
             api_func(
                 self.toDownload,
                 self.weatherconfig["file_granularity"],
@@ -413,7 +406,7 @@ class Dataset:
 
     @property
     def coords(self):
-        return self.meta.coords  # pylint: disable=no-member
+        return self.meta.coords
 
     @property
     def shape(self):

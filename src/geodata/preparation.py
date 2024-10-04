@@ -1,26 +1,18 @@
-## Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
-from __future__ import absolute_import
 
 import calendar
 import logging
@@ -150,7 +142,7 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
         def datasetfn_with_id(ym):
             # returns a filename with incrementing id at end eg `201101-01.nc`
             base, ext = os.path.splitext(cutout.datasetfn(ym))
-            return base + "-{}".format(i) + ext  # pylint: disable=cell-var-from-loop
+            return base + "-{}".format(i) + ext
 
         t["datasetfns"] = {ym: datasetfn_with_id(ym) for ym in yearmonths.tolist()}
 
@@ -226,7 +218,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
     meta_kwds.update(dataset_params)
 
     # Assign task function here?
-    tasks_func = meta_kwds["tasks_func"]  # pylint: disable=unused-variable
+    tasks_func = meta_kwds["tasks_func"]  # noqa: F841
     # test before removing
 
     # Get metadata
@@ -295,7 +287,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
 def cutout_get_meta_view(
     cutout, xs=None, ys=None, years=slice(None), months=slice(None), **dataset_params
-):  # pylint: disable=unused-argument
+):
     # called in cutout as `get_meta_view()`
     # 	Create subset of metadata based on xs, ys, years, months
     # 	Returns None if any of the dimensions of the subset are empty
@@ -338,7 +330,7 @@ def cutout_get_meta_view(
 def _prepare_gebco_height(xs, ys, gebco_fn=None):
     # gebco bathymetry heights for underwater
     if gebco_fn is None:
-        from .config import gebco_path  # pylint: disable=import-outside-toplevel
+        from .config import gebco_path
 
         gebco_fn = gebco_path
 

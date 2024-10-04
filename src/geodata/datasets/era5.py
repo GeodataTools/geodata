@@ -92,70 +92,14 @@ def api_hourly_era5(
                 "format": "netcdf",
                 "year": query_year,
                 "month": query_month,
-                "day": [
-                    "01",
-                    "02",
-                    "03",
-                    "04",
-                    "05",
-                    "06",
-                    "07",
-                    "08",
-                    "09",
-                    "10",
-                    "11",
-                    "12",
-                    "13",
-                    "14",
-                    "15",
-                    "16",
-                    "17",
-                    "18",
-                    "19",
-                    "20",
-                    "21",
-                    "22",
-                    "23",
-                    "24",
-                    "25",
-                    "26",
-                    "27",
-                    "28",
-                    "29",
-                    "30",
-                    "31",
-                ],
-                "time": [
-                    "00:00",
-                    "01:00",
-                    "02:00",
-                    "03:00",
-                    "04:00",
-                    "05:00",
-                    "06:00",
-                    "07:00",
-                    "08:00",
-                    "09:00",
-                    "10:00",
-                    "11:00",
-                    "12:00",
-                    "13:00",
-                    "14:00",
-                    "15:00",
-                    "16:00",
-                    "17:00",
-                    "18:00",
-                    "19:00",
-                    "20:00",
-                    "21:00",
-                    "22:00",
-                    "23:00",
-                ],
+                "day": [f"{d:02d}" for d in range(1, 32)],
+                "time": [f"{h:02d}:00" for h in range(0, 24)],
                 "variable": download_vars,
             }
 
             if bounds is not None:
-                full_request["area"] = bounds
+                # NOTE: cdsapi uses (long2, lat2, long1, lat1) format
+                full_request["area"] = bounds[::-1]
 
             full_result = cdsapi.Client().retrieve(product, full_request)
 
@@ -203,8 +147,7 @@ def api_monthly_era5(
 
             if bounds is not None:
                 # cdsapi uses (long2, lat2, long1, lat1) format
-                x1, y1, x2, y2 = bounds
-                full_request["area"] = (y2, x2, y1, x1)
+                full_request["area"] = bounds[::-1]
 
             full_result = cdsapi.Client().retrieve(product, full_request)
 
@@ -284,6 +227,7 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
     # https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
 
     fns = glob.iglob(template.format(year=year, month=month))
+
     try:
         with xr.open_mfdataset(fns, combine="by_coords") as ds0:
             ds = ds0.coords.to_dataset()
@@ -296,7 +240,6 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 
 
 def prepare_month_era5(fn, year, month, xs, ys):
-
     # Reference of the quantities
     # https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
     # (shortName) | (name)                                      | (paramId)
@@ -350,8 +293,13 @@ def prepare_month_era5(fn, year, month, xs, ys):
             }
         )
 
-        ds["runoff"] = ds["runoff"].clip(min=0.0)
+        # New ERA5 format for hourly datasets
+        # See https://forum.ecmwf.int/t/new-time-format-in-era5-netcdf-files/3796
+        # TODO: We can remove this if we refactor geodata's convert module in the future
+        if "valid_time" in ds.coords:
+            ds = ds.rename({"valid_time": "time"})
 
+        ds["runoff"] = ds["runoff"].clip(min=0.0)
         yield (year, month), ds
 
 
@@ -389,7 +337,7 @@ weather_data_config = {
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
         product="reanalysis-era5-single-levels",
         product_type="reanalysis",
-        variables=[
+        keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
@@ -403,6 +351,20 @@ weather_data_config = {
             "forecast_surface_roughness",
             "geopotential",
         ],
+        variables=[
+            "u100",
+            "v100",
+            "t2m",
+            "ro",
+            "stl4",
+            "ssr",
+            "sp",
+            "ssrd",
+            "tisr",
+            "fdir",
+            "fsr",
+            "z",
+        ],
     ),
     "wind_solar_monthly": dict(
         api_func=api_monthly_era5,
@@ -414,7 +376,7 @@ weather_data_config = {
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
         product="reanalysis-era5-single-levels-monthly-means",
         product_type="monthly_averaged_reanalysis",
-        variables=[
+        keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
@@ -427,6 +389,20 @@ weather_data_config = {
             "total_sky_direct_solar_radiation_at_surface",
             "forecast_surface_roughness",
             "geopotential",
+        ],
+        variables=[
+            "u100",
+            "v100",
+            "t2m",
+            "ro",
+            "stl4",
+            "ssr",
+            "sp",
+            "ssrd",
+            "tisr",
+            "fdir",
+            "fsr",
+            "z",
         ],
     ),
 }

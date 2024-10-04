@@ -135,3 +135,6 @@ example_notebooks/data
 
 # interal cluster scripts/configs
 scripts/cluster
+
+# PDM
+.pdm-python

@@ -49,7 +49,6 @@ except ImportError:
 SHAPELY_NEW_API = tuple(int(i) for i in shapely.__version__.split(".")) > (1, 8, 0)
 
 # Exclude for function compatibility reasons
-# pylint: disable=unused-argument
 
 
 class Mask:
@@ -202,10 +201,8 @@ class Mask:
             layer_name = [layer_name]
 
         # add the layers, using the _add_layer() method
-        # pylint: disable=consider-using-enumerate
         for i in range(len(layer_path)):
             self._add_layer(layer_path[i], layer_name[i], **kwargs)
-        # pylint: enable=consider-using-enumerate
 
     def remove_layer(self, name):
         """Remove a layer in the mask given layer name."""
@@ -271,14 +268,12 @@ class Mask:
         """Find the coords that bound region that all layers contain"""
 
         layer_bound = self.get_bounds(layers=layers)
-        # pylint: disable=consider-using-dict-items,consider-using-generator
         min_left, min_bottom = (
             max([layer_bound[b][num] for b in layer_bound]) for num in [0, 1]
         )
         min_right, min_top = (
             min([layer_bound[b][num] for b in layer_bound]) for num in [2, 3]
         )
-        # pylint: enable=consider-using-dict-items,consider-using-generator
 
         return (min_left, min_bottom, min_right, min_top)
 
@@ -408,7 +403,7 @@ class Mask:
             temp_layers.pop(reference_layer)
             merged_lst += list(temp_layers.values())
             arr, aff = merge(merged_lst, method=_sum_method, **kwargs)
-            [r.close() for r in merged_lst]  # pylint: disable=expression-not-assigned
+            [r.close() for r in merged_lst]
 
         return_ras = create_temp_tif(arr[0], aff)
 
@@ -560,13 +555,11 @@ class Mask:
         dest_crs (str): the destination CRS, by default it is 'EPSG:4326' lat lon coordinate system
         """
 
-        # pylint: disable=protected-access
         if hasattr(shapes, "_geometry_column_name"):
             shapes = shapes._geometry_column_name.to_dict()
 
         elif hasattr(shapes, "_name") and shapes._name == "geometry":
             shapes = shapes.to_dict()
-        # pylint: disable=protected-access
 
         # convert CRS for shapes
         if src_crs != dst_crs:
@@ -718,9 +711,7 @@ class Mask:
             os.mkdir(layer_path)
         else:  # if directory do not exist, remove all the previously saved content
             for f in os.listdir(layer_path):
-                if (
-                    f.split(".")[0] not in self.layers
-                ):  # pylint: disable=consider-iterating-dictionary
+                if f.split(".")[0] not in self.layers:
                     os.remove(os.path.join(layer_path, f))
         # update layer
         if self.layers:
