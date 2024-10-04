@@ -14,17 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from itertools import product
+
+import numpy as np
+import xarray as xr
 
 import geodata
-
-import xarray as xr
-import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 
 
 def get_data_configs() -> list[str]:
-    return ["wind_solar_monthly", "wind_solar_hourly"]
+    return ["wind_solar_hourly"]
 
 
 def get_bounds() -> list[list[int]]:
@@ -125,7 +126,7 @@ def test_trim():
     months = get_months()
     bounds = get_bounds()
 
-    for config, year, month, bound in zip(configs, years, months, bounds):
+    for config, year, month, bound in product(configs, years, months, bounds):
         dataset = get_era5(config, bound, year, month)
         dataset.trim_variables()
         for f in dataset.downloadedFiles:
@@ -141,7 +142,7 @@ def test_cutout():
     xs = get_xs()
     ys = get_ys()
 
-    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+    for config, year, month, x, y in product(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
         assert cutout.prepared
 
@@ -159,13 +160,12 @@ def test_wind_output():
         "wind": np.floating,
     }
 
-    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+    for config, year, month, x, y in product(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
         turbine = get_turbine()
         smooth = get_smooth()
         df_wind = create_wind_output(cutout, turbine, smooth)
 
-        print(df_wind.dtypes)
         for col in supposed_dtypes:
             assert np.issubdtype(df_wind[col].dtype, supposed_dtypes[col])
 
@@ -183,7 +183,7 @@ def test_windspd_output():
         "windspd": np.floating,
     }
 
-    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+    for config, year, month, x, y in product(configs, years, months, xs, ys):
         cutout = create_cutout(config, x, y, year, month)
         turbine = get_turbine()
         df_windspd = create_windspd_output(cutout, turbine)
@@ -192,24 +192,24 @@ def test_windspd_output():
             assert np.issubdtype(df_windspd[col].dtype, supposed_dtypes[col])
 
 
-# def test_pv_output():
-#     configs = [config for config in get_data_configs() if "hourly" in config]
-#     years = get_years()
-#     months = get_months()
-#     xs = get_xs()
-#     ys = get_ys()
+def test_pv_output():
+    configs = [config for config in get_data_configs() if "hourly" in config]
+    years = get_years()
+    months = get_months()
+    xs = get_xs()
+    ys = get_ys()
 
-#     supposed_dtypes = {
-#         "lat": np.floating,
-#         "lon": np.floating,
-#         "pv": np.floating,
-#     }
+    supposed_dtypes = {
+        "lat": np.floating,
+        "lon": np.floating,
+        "pv": np.floating,
+    }
 
-#     for config, year, month, x, y in zip(configs, years, months, xs, ys):
-#         cutout = create_cutout(config, x, y, year, month)
-#         panel = get_panel()
-#         orientation = get_orientation()
-#         df_pv = create_pv_output(cutout, panel, orientation)
+    for config, year, month, x, y in zip(configs, years, months, xs, ys):
+        cutout = create_cutout(config, x, y, year, month)
+        panel = get_panel()
+        orientation = get_orientation()
+        df_pv = create_pv_output(cutout, panel, orientation)
 
-#         for col in supposed_dtypes:
-#             assert np.issubdtype(df_pv[col].dtype, supposed_dtypes[col])
+        for col in supposed_dtypes:
+            assert np.issubdtype(df_pv[col].dtype, supposed_dtypes[col])

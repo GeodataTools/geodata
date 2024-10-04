@@ -92,65 +92,8 @@ def api_hourly_era5(
                 "format": "netcdf",
                 "year": query_year,
                 "month": query_month,
-                "day": [
-                    "01",
-                    "02",
-                    "03",
-                    "04",
-                    "05",
-                    "06",
-                    "07",
-                    "08",
-                    "09",
-                    "10",
-                    "11",
-                    "12",
-                    "13",
-                    "14",
-                    "15",
-                    "16",
-                    "17",
-                    "18",
-                    "19",
-                    "20",
-                    "21",
-                    "22",
-                    "23",
-                    "24",
-                    "25",
-                    "26",
-                    "27",
-                    "28",
-                    "29",
-                    "30",
-                    "31",
-                ],
-                "time": [
-                    "00:00",
-                    "01:00",
-                    "02:00",
-                    "03:00",
-                    "04:00",
-                    "05:00",
-                    "06:00",
-                    "07:00",
-                    "08:00",
-                    "09:00",
-                    "10:00",
-                    "11:00",
-                    "12:00",
-                    "13:00",
-                    "14:00",
-                    "15:00",
-                    "16:00",
-                    "17:00",
-                    "18:00",
-                    "19:00",
-                    "20:00",
-                    "21:00",
-                    "22:00",
-                    "23:00",
-                ],
+                "day": [f"{d:02d}" for d in range(1, 32)],
+                "time": [f"{h:02d}:00" for h in range(0, 24)],
                 "variable": download_vars,
             }
 
@@ -349,6 +292,12 @@ def prepare_month_era5(fn, year, month, xs, ys):
                 "fsr": "roughness",
             }
         )
+
+        # New ERA5 format for hourly datasets
+        # See https://forum.ecmwf.int/t/new-time-format-in-era5-netcdf-files/3796
+        # TODO: We can remove this if we refactor geodata's convert module in the future
+        if "valid_time" in ds.coords:
+            ds = ds.rename({"valid_time": "time"})
 
         ds["runoff"] = ds["runoff"].clip(min=0.0)
         yield (year, month), ds
