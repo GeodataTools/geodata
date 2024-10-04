@@ -79,7 +79,7 @@ def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
 
 def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slice):
     cutout = geodata.Cutout(
-        name=f"{data_config}-europe-test-{year.start}-{month.start}",
+        name=f"era-{data_config}-{year.start}-{month.start}",
         module="era5",
         weather_data_config=data_config,
         xs=x,

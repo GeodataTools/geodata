@@ -24,7 +24,12 @@ logging.basicConfig(level=logging.INFO)
 
 
 def get_data_configs() -> list[str]:
-    return ["surface_flux_monthly"]
+    return [
+        "surface_flux_monthly",
+        "slv_radiation_monthly",
+        "surface_flux_hourly",
+        "slv_radiation_hourly",
+    ]
 
 
 def get_bounds() -> list[list[int]]:
@@ -36,7 +41,7 @@ def get_years() -> list[slice]:
 
 
 def get_months() -> list[slice]:
-    return [slice(1, 3)]
+    return [slice(1, 1)]
 
 
 def get_xs() -> list[slice]:
@@ -68,13 +73,13 @@ def get_merra2(data_config: str, bound: list[int], year: slice, month: slice):
         bounds=bound,
     )
     if not dataset.prepared:
-        dataset.get_data()
+        dataset.get_data(testing=True)
     return dataset
 
 
 def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slice):
     cutout = geodata.Cutout(
-        name="merra2-sample-01",
+        name=f"merra2-{data_config}-{year.start}-{month.start}",
         module="merra2",
         weather_data_config=data_config,
         xs=x,
