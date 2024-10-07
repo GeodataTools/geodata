@@ -92,19 +92,19 @@ def create_cutout(data_config: str, x: slice, y: slice, year: slice, month: slic
 
 
 def create_wind_output(cutout: geodata.Cutout, turbine, smooth):
-    ds_wind = geodata.convert.wind(cutout, turbine, smooth)
+    ds_wind = cutout.wind(turbine, smooth)
     df_wind = ds_wind.to_dataframe(name="wind")
     return df_wind
 
 
 def create_windspd_output(cutout: geodata.Cutout, turbine):
-    ds_windspd = geodata.convert.wind(cutout, turbine)
+    ds_windspd = cutout.wind(turbine)
     df_windspd = ds_windspd.to_dataframe(name="windspd")
     return df_windspd
 
 
 def create_pv_output(cutout: geodata.Cutout, panel, orientation):
-    ds_pv = geodata.convert.pv(cutout, panel, orientation)
+    ds_pv = cutout.pv(panel, orientation)
     df_pv = ds_pv.to_dataframe(name="pv")
     return df_pv
 

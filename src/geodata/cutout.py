@@ -26,6 +26,7 @@ import os
 import sys
 from collections.abc import Iterable
 from functools import partial
+from operator import itemgetter
 from pathlib import Path
 from typing import Literal, Optional, Union
 
@@ -34,13 +35,16 @@ import pyproj
 import shapely
 import xarray as xr
 from shapely.geometry import box
-from tqdm.auto import trange
+from tqdm.auto import tqdm
 
 from . import config
 from .convert import (
     convert_pv,
     convert_solar_thermal,
     convert_wind,
+    convert_windspd,
+    convert_windwpd,
+    convert_pm25,
     get_orientation,
     get_solarpanelconfig,
     get_windturbineconfig,
@@ -81,11 +85,12 @@ class Cutout:
 
     def __init__(
         self,
+        module: Literal["era5", "merra2"],
         weather_data_config: str,
+        years: Union[Iterable, slice],
         name: Optional[str] = None,
         cutout_dir: Union[str, Path] = config.cutout_dir,
         bounds: Optional[Iterable] = None,
-        years: Optional[Union[Iterable, slice]] = None,
         months: Optional[slice] = None,
         xs: Optional[slice] = None,
         ys: Optional[slice] = None,
@@ -101,18 +106,21 @@ class Cutout:
         self.shape_mask = None
         self.area = None
 
-        params_dict = {}
+        params_dict = {
+            "module": module,
+            "years": years,
+            "months": months,
+            "xs": xs,
+            "ys": ys,
+        }
+
         if bounds is not None and (xs is not None or ys is not None):
             raise TypeError("Cannot specify both bounds and xs/ys arguments.")
         if bounds is not None:
             # if passed bounds array instead of xs, ys slices
             x1, y1, x2, y2 = bounds
             params_dict.update(xs=slice(x1, x2), ys=slice(y1, y2))
-        else:
-            params_dict.update(xs=xs, ys=ys)
 
-        if years is None:
-            raise ValueError("`years` need to be specified")
         if not isinstance(years, slice):
             if isinstance(years, Iterable):
                 params_dict.update(years=slice(years[0], years[-1]))
@@ -180,6 +188,9 @@ class Cutout:
 
         if not self.prepared:
             # Still need to prepare cutout
+            import pdb
+
+            pdb.set_trace()
             if "module" not in params_dict:
                 raise TypeError("Module is required to create cutout.")
             # load module from geodata library
@@ -523,8 +534,8 @@ class Cutout:
             )
             prefix = f"Convert `{func_name}`: "
 
-        for ym in trange(
-            len(yearmonths), desc=prefix, disable=not show_progress, dynamic_ncols=True
+        for ym in tqdm(
+            yearmonths, desc=prefix, disable=not show_progress, dynamic_ncols=True
         ):
             with xr.open_dataset(self.datasetfn(ym)) as ds:
                 if "view" in self.meta.attrs:
@@ -609,7 +620,7 @@ class Cutout:
 
             return constant + heat_demand_value
 
-        return self.convert_cutout(
+        return self._convert_cutout(
             convert_func=convert_heat_demand,
             threshold=threshold,
             a=a,
@@ -641,7 +652,7 @@ class Cutout:
         Returns:
             xr.DataArray: Data of the Cutout with temperature converted to soil temperatures.
         """
-        return self.convert_cutout(
+        return self._convert_cutout(
             convert_func=lambda ds: (ds["soil temperature"] - 273.15).fillna(0.0),
             **convert_params,
         )
@@ -686,7 +697,7 @@ class Cutout:
         if not callable(orientation):
             orientation = get_orientation(orientation)
 
-        return self.convert_cutout(
+        return self._convert_cutout(
             convert_func=convert_solar_thermal,
             orientation=orientation,
             trigon_model=trigon_model,
@@ -697,6 +708,8 @@ class Cutout:
             **params,
         )
 
+    # NOTE: The following wind-related functions will be deprecated in the future
+    # in favor of the wind modeling module.
     def wind(
         self, turbine: Union[str, dict], smooth: Union[bool, dict] = False, **params
     ):
@@ -730,7 +743,87 @@ class Cutout:
         if smooth:
             turbine = windturbine_smooth(turbine, params=smooth)
 
-        return self.convert_cutout(convert_func=convert_wind, turbine=turbine, **params)
+        return self._convert_cutout(
+            convert_func=convert_wind, turbine=turbine, **params
+        )
+
+    def windspd(self, **params):
+        """
+        Generate wind speed time-series
+
+        convert.convert_cutout → convert.convert_windspd
+
+        Parameters
+        ----------
+        **params
+                Must have 1 of:
+                        turbine : str or dict
+                                Name of a turbine
+                        hub_height : num
+                                Extrapolation height
+
+                Can also specify all of the general conversion arguments
+                documented in the `convert_cutout` function.
+                        e.g. var_height='lml'
+
+        """
+
+        if "turbine" in params:
+            turbine = params.pop("turbine")
+            if isinstance(turbine, str):
+                turbine = get_windturbineconfig(turbine)
+            else:
+                raise ValueError(f"Turbine ({turbine}) not found.")
+            hub_height = itemgetter("hub_height")(turbine)
+        elif "hub_height" in params:
+            hub_height = params.pop("hub_height")
+        elif "to_height" in params:
+            hub_height = params.pop("to_height")
+        else:
+            raise ValueError("Either a turbine or hub_height must be specified.")
+
+        params["hub_height"] = hub_height
+
+        return self._convert_cutout(convert_func=convert_windspd, **params)
+
+    def windwpd(self, **params):
+        """
+        Generate wind power density time-series
+
+        convert.convert_cutout → convert.convert_windwpd
+
+        Parameters
+        ----------
+        **params
+                Must have 1 of:
+                        turbine : str or dict
+                                Name of a turbine
+                        hub_height : num
+                                Extrapolation height
+
+                Can also specify all of the general conversion arguments
+                documented in the `convert_cutout` function.
+                        e.g. var_height='lml'
+
+        """
+
+        if "turbine" in params:
+            turbine = params.pop("turbine")
+            if isinstance(turbine, str):
+                turbine = get_windturbineconfig(turbine)
+            else:
+                raise ValueError(f"Turbine ({turbine}) not found.")
+            hub_height = itemgetter("hub_height")(turbine)
+        elif "hub_height" in params:
+            hub_height = params.pop("hub_height")
+        elif "to_height" in params:
+            hub_height = params.pop("to_height")
+        else:
+            raise ValueError("Either a turbine or hub_height must be specified.")
+
+        params["hub_height"] = hub_height
+
+        return self._convert_cutout(convert_func=convert_windwpd, **params)
 
     def pv(
         self,
@@ -779,13 +872,30 @@ class Cutout:
         if not callable(orientation):
             orientation = get_orientation(orientation)
 
-        return self.convert_cutout(
+        return self._convert_cutout(
             convert_func=convert_pv,
             panel=panel,
             orientation=orientation,
             clearsky_model=clearsky_model,
             **params,
         )
+
+    def pm25(self, **params):
+        """
+        Generate PM2.5 time series 	[ug / m3]
+        (see convert_pm25 for details)
+
+        Parameters
+        ----------
+        **params : None needed currently.
+
+        Returns
+        -------
+        pm25 : xr.DataArray
+
+        """
+
+        return self._convert_cutout(convert_func=convert_pm25, **params)
 
 
 def ds_reformat_index(ds: xr.DataArray) -> xr.DataArray:
