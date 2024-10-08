@@ -13,7 +13,7 @@
 
 name: dev-test
 
-on: [push]
+on: [pull-request]
 
 jobs:
   pytest:

@@ -1,6 +1,6 @@
 # Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
-# Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi.
-# Copyright 2023 Xiqiang Liu.
+# Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi
+# Copyright 2023-2024 Xiqiang Liu
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -37,14 +37,16 @@ import xarray as xr
 from shapely.geometry import box
 from tqdm.auto import tqdm
 
+from geodata import Dataset
+
 from . import config
 from .convert import (
+    convert_pm25,
     convert_pv,
     convert_solar_thermal,
     convert_wind,
     convert_windspd,
     convert_windwpd,
-    convert_pm25,
     get_orientation,
     get_solarpanelconfig,
     get_windturbineconfig,
@@ -65,29 +67,27 @@ class Cutout:
     """Cutout class to handle a subset of a Dataset.
 
     Args:
+        module (Literal["era5", "merra2"]): name of the dataset module to use.
         weather_data_config (str): name of the weather data config to use.
-        name (Optional[str]): name of the cutout. Optional. If not specified,
             the name will be automatically generated.
+        years (slice): years of the cutout.
+        name (Optional[str]): name of the cutout. Optional. If not specified,
         cutout_dir (str): path to the cutout directory. Defaults to config.cutout_dir.
         bounds (Optional[Iterable]): bounds of the cutout. Optional. If not specified,
             the bounds will be automatically generated.
-        years (Optional[slice]): years of the cutout. Optional. If not specified,
-            the years will be automatically generated.
         months (Optional[slice]): months of the cutout. Optional. If not specified,
             the months will be automatically generated.
         xs (Optional[slice]): longitude coordinates of the cutout. Optional. If not specified,
             the x coordinates will be automatically generated.
         ys (Optional[slice]): latitude coordinates of the cutout. Optional. If not specified,
             the y coordinates will be automatically generated.
-
-
     """
 
     def __init__(
         self,
         module: Literal["era5", "merra2"],
         weather_data_config: str,
-        years: Union[Iterable, slice],
+        years: slice,
         name: Optional[str] = None,
         cutout_dir: Union[str, Path] = config.cutout_dir,
         bounds: Optional[Iterable] = None,
@@ -101,7 +101,7 @@ class Cutout:
         self.empty = False
         self.meta_append = 0
         self.config = weather_data_config
-        self.meta = meta = None
+        self.meta = None
         self.merged_mask = None
         self.shape_mask = None
         self.area = None
@@ -121,14 +121,6 @@ class Cutout:
             x1, y1, x2, y2 = bounds
             params_dict.update(xs=slice(x1, x2), ys=slice(y1, y2))
 
-        if not isinstance(years, slice):
-            if isinstance(years, Iterable):
-                params_dict.update(years=slice(years[0], years[-1]))
-            else:
-                raise TypeError(
-                    "Unrecognized years parameter given. Only slice or array accepted."
-                )
-
         if months is None:
             logger.info("No months specified, defaulting to 1-12")
             params_dict.update(months=slice(1, 12))
@@ -136,12 +128,12 @@ class Cutout:
         if os.path.isdir(self.cutout_dir):
             # If cutout dir exists, check completness of files
             if os.path.isfile(self.datasetfn()):  # open existing meta file
-                self.meta = meta = xr.open_dataset(self.datasetfn()).stack(
+                self.meta = xr.open_dataset(self.datasetfn()).stack(
                     **{"year-month": ("year", "month")}
                 )
 
             if (
-                meta is not None
+                self.meta is not None
                 and "years" in params_dict
                 and "months" in params_dict
                 and all(
@@ -155,22 +147,22 @@ class Cutout:
                 )
             ):
                 # All files are accounted for. Checking basic data and coverage
-
-                if "module" not in meta.attrs:
+                if "module" not in self.meta.attrs:
                     raise TypeError("No module given in meta file of cutout.")
-                # load dataset module based on file metadata
 
-                self.dataset_module = sys.modules[
-                    "geodata.datasets." + meta.attrs["module"]
+                # load dataset module based on file metadata
+                self.dataset_module: Dataset = sys.modules[
+                    "geodata.datasets." + self.meta.attrs["module"]
                 ]
-                params_dict["module"] = meta.attrs["module"]
+                params_dict["module"] = self.meta.attrs["module"]
 
                 logger.info("All cutout (%s, %s) files available.", name, cutout_dir)
 
+                # At least one of xs, ys is in params_dict
                 if {"xs", "ys"}.intersection(params_dict):
                     # Passed some subsetting bounds
-                    self.meta = meta = self.get_meta_view(**params_dict)
-                    if meta is not None:
+                    self.meta = self.get_meta_view(**params_dict)
+                    if self.meta is not None:
                         # Subset is available
                         self.prepared = True
                         logger.info("Cutout subset prepared: %s", self)
@@ -199,12 +191,12 @@ class Cutout:
 
             if {"xs", "ys", "years"}.difference(params_dict):
                 raise TypeError(
-                    "Arguments `xs`, `ys` and `years` need to be specified for a cutout."
+                    "Arguments `xs`, `ys`, and `years` need to be specified for a cutout."
                 )
 
-            if meta is not None:
+            if self.meta is not None:
                 # if meta.nc exists, close and delete it
-                meta.close()
+                self.meta.close()
                 os.remove(self.datasetfn())
 
             ## Main preparation call for metadata
@@ -247,7 +239,8 @@ class Cutout:
 
     @property
     def meta_data_config(self):
-        """Metadata configuration for the Cutout."""
+        """Metadata configuration for the Cutout"""
+
         return dict(
             tasks_func=self.dataset_module.weather_data_config[self.config][
                 "tasks_func"
@@ -753,15 +746,15 @@ class Cutout:
         Parameters
         ----------
         **params
-                Must have 1 of:
-                        turbine : str or dict
-                                Name of a turbine
-                        hub_height : num
-                                Extrapolation height
+            Must have 1 of:
+                turbine : str or dict
+                        Name of a turbine
+                hub_height : num
+                        Extrapolation height
 
-                Can also specify all of the general conversion arguments
-                documented in the `convert_cutout` function.
-                        e.g. var_height='lml'
+            Can also specify all of the general conversion arguments
+            documented in the `convert_cutout` function.
+                e.g. var_height='lml'
 
         """
 
