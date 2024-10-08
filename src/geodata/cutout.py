@@ -188,9 +188,6 @@ class Cutout:
 
         if not self.prepared:
             # Still need to prepare cutout
-            import pdb
-
-            pdb.set_trace()
             if "module" not in params_dict:
                 raise TypeError("Module is required to create cutout.")
             # load module from geodata library
