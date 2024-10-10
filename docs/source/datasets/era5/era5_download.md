@@ -1,6 +1,6 @@
 # Download ERA5 Dataset and Create ERA5 Cutouts
 
-A short guide to using **geodata** to downloading and creating cutouts from ERA5 data from the [Copernicus Data Store](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview).
+A short guide to using **geodata** to downloading and creating cutouts from ERA5 data from the [Copernicus Data Store](https://cds.climate.copernicus.eu/).
 
 ## Download Dataset
 
@@ -61,7 +61,7 @@ and returns a `dataset` object indicating whether the data is "prepared."
 <Dataset era5 years=2005-2005 months=1-2 datadir=/home/user/.local/geodata/era5 Prepared>
 ```
 
-A "prepared" dataset indicates that the directories for storing the data - which take the form `/era5/{years}/{months}` for every unique time period in the data - have been created and are populated with downloaded data.  
+A "prepared" dataset indicates that the directories for storing the data - which take the form `/era5/{years}/{months}` for every unique time period in the data - have been created and are populated with downloaded data.
 
 ```python
 if not dataset.prepared:
@@ -95,7 +95,7 @@ To prepare a cutout, the following must be specified for `geodata.Cutout()`:
 
 * The cutout name
 * The source dataset
-* Time range 
+* Time range
 * Geographic range as represented by `x` and `y` coordinates.
 
 The example in the code block above uses ERA5 data, as specified by the `module=era5` parameter.
@@ -215,4 +215,3 @@ Which will return the selected download settings for the ERA5 data.
    'forecast_surface_roughness',
    'orography']}}
 ```
-

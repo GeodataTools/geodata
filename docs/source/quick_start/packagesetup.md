@@ -7,7 +7,7 @@ Make sure that you have the following **required** software set up:
 * [Python 3](https://www.python.org/downloads/)
 
 * Package Management System
-  - [conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda) 
+  - [conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda)
   - [pip](https://pip.pypa.io/en/stable/installation/)
 
 ## Downloading Geodata
@@ -27,12 +27,19 @@ To configure where to store downloaded and processed files, define an environmen
 export GEODATA_ROOT=<YOUR_PATH_HERE>
 ```
 
+```{note}
+If you are using a Windows machine, you can set the environment variable by running the following command in the command prompt:
+
+```bash
+setx GEODATA_ROOT <YOUR PATH HERE>
+```
+
 If you are running geodata in a Jupyter Notebook, you could define the variable by adding and running the following cell:
 ```
 %setenv GEODATA_ROOT <YOUR PATH HERE>
 ```
 
-If you do not define this variable, all datasets and cutouts will be stored under `~/.local/geodata` by default. 
+If you do not define this variable, all datasets and cutouts will be stored under `~/.local/geodata` by default.
 
 ## Building Geodata
 
@@ -114,12 +121,12 @@ Run the following commands to download **pipwin** and acquire the dependencies: 
 
 ```
 pip install pipwin
-pipwin install shapely 
-pipwin install gdal 
-pipwin install fiona 
-pipwin install pyproj 
-pipwin install six 
-pipwin install rtree 
+pipwin install shapely
+pipwin install gdal
+pipwin install fiona
+pipwin install pyproj
+pipwin install six
+pipwin install rtree
 ```
 
 You may need to also install the **wheel** package `pip install wheel` to facilitate building the wheels.
