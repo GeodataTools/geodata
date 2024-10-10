@@ -11,9 +11,9 @@
 #
 # Finally, set the secret CDS_API_KEY to the encoded string to complete the process.
 
-name: dev-test
+name: pr-test
 
-on: [push]
+on: [pull_request]
 
 jobs:
   pytest:
@@ -52,4 +52,4 @@ jobs:
           pip install pytest
           pip install setuptools
           pip install -e ".[download]"
-          pytest tests/dev/
+          pytest tests/pr/
