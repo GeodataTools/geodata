@@ -15,7 +15,7 @@
 Convert wind speeds for turbine to wind energy generation.
 
 ```python
-geodata.convert.wind(cutout: geodata.Cutout, turbine: str | dict[str, str], smooth: bool = False)
+cutout.wind(turbine: str | dict[str, str], smooth: bool = False)
 ```
 
 #### Parameters
@@ -29,7 +29,7 @@ geodata.convert.wind(cutout: geodata.Cutout, turbine: str | dict[str, str], smoo
 #### Example Code
 
 ```python
-ds_wind = geodata.convert.wind(cutout, turbine="Suzlon_S82_1.5_MW", smooth=True)
+ds_wind = cutout.wind(turbine="Suzlon_S82_1.5_MW", smooth=True)
 ds_wind.to_dataframe(name="wind")
 ```
 
@@ -51,12 +51,8 @@ geodata.convert.windspd(cutout: geodata.Cutout, **params)
 *Note*: You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
 #### Example Code
 
-```
-ds_windspd = geodata.convert.windspd(
-                cutout,
-                turbine='Vestas_V66_1750kW'
-            )
-
+```python
+ds_windspd = cutout.windspd(turbine='Vestas_V66_1750kW')
 ds_windspd.to_dataframe(name = 'windspd')
 ```
 
@@ -65,13 +61,8 @@ ds_windspd.to_dataframe(name = 'windspd')
 
 Convert downward-shortwave, upward-shortwave radiation flux and ambient temperature into a pv generation time-series.
 
-```
-geodata.convert.pv(
-    cutout,
-    panel,
-    orientation,
-    clearsky_model
-    )
+```python
+cutout.pv(panel, orientation, clearsky_model)
 ```
 
 #### Parameters
@@ -83,13 +74,8 @@ geodata.convert.pv(
 
 #### Example Code and Result
 
-```
-ds_pv = geodata.convert.pv(
-    cutout,
-    panel="KANEKA",
-    orientation = "latitude_optimal"
-    )
-
+```python
+ds_pv = geodata.convert.pv(panel="KANEKA", orientation = "latitude_optimal")
 ds_pv.to_dataframe(name = 'pv')
 ```
 
@@ -102,26 +88,26 @@ With the full list of supported ERA5 outputs above, we can see an example of gen
 
 Let's assume we've created an ERA5 cutout along the following lines:
 
-```
+```python
 cutout = geodata.Cutout(name="era5-europe-example",
-                       module="era5",
-                       weather_data_config="era5_monthly",
-                       xs=slice(30, 41.56244222),
-                       ys=slice(33.56459975, 35),
-                       years=slice(2011, 2011),
-                       months=slice(1,1))
-cutout.prepare();
+    module="era5",
+    weather_data_config="era5_monthly",
+    xs=slice(30, 41.56244222),
+    ys=slice(33.56459975, 35),
+    years=slice(2011, 2011),
+    months=slice(1,1)
+)
 ```
 
-We can now use this cutout to generate datasets.
+Note that unlike datasets, we don't need explicitly prepare a cutout. Geodata will prepare the cutout automatically if it's not ready. We can now use this cutout to generate datasets.
 
 ### Creating a Solar photovoltaic (pv) generation time-series
 
 To create a pv generation time-series, we can use the following code with our ERA5 cutout:
 
 
-```
-ds = geodata.convert.pv(cutout, panel="KANEKA", orientation = "latitude_optimal")
+```python
+ds = cutout.pv(panel="KANEKA", orientation="latitude_optimal")
 ```
 
 Some information about the parameters:
@@ -148,24 +134,19 @@ Coordinates:
 
 To convert this array to a more conventional dataframe, we can run:
 
-```
+```python
 df = ds.to_dataframe(name='pv')
 ```
 
-which converts the xarray dataset into a pandas dataframe.  
+which converts the xarray dataset into a pandas dataframe.
 
 
 The result is a dataset with an observation for each time period (in this ERA5 case, hourly) and geographic point with the calculated pv generation for each observation.
 
 Finally, we can run something like:
 
-```
+```python
 df.to_csv('era5_pv_data.csv')
 ```
 
 to output the data to csv for use in other applications.
-
-
-
-
-

@@ -19,14 +19,14 @@ In this section, we provide a list of currently possible **geodata** configs and
 * `surface_flux_hourly`: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
 * `surface_flux_monthly`: [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
 * `surface_flux_dailymeans`: [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
-* `slv_radiation_hourly`: 
+* `slv_radiation_hourly`:
     - [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXSLV_5.12.4/summary)
     - [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
 * `slv_radiation_monthly`:
     - [MERRA2 monthly mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary)
     - [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
 * `surface_aerosol_hourly`: [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
-* `slv_flux_hourly`: 
+* `slv_flux_hourly`:
 
 
 ### Variable Configurations
@@ -48,7 +48,7 @@ MERRA2 surface flux data currently supports the following variable configs:
 * eflux: total_latent_energy_flux (W m-2)
 
 **Solar** (`slv_radiation_hourly`, `slv_radiation_monthly`)
-* albedo: surface albedo 
+* albedo: surface albedo
 * swgdn: surface incoming shortwave flux  (W m-2)
 * swtdn: toa incoming shortwave flux  (W m-2)
 * t2m: 2-meter air temperature (K)
@@ -101,10 +101,9 @@ MERRA2 surface flux data currently supports the following outputs:
 Convert wind speeds for turbine to wind energy generation.
 
 ```python
-geodata.convert.wind(
-    cutout, 
-    turbine, 
-    smooth=False, 
+cutout.wind(
+    turbine,
+    smooth=False,
     var_height
 )
 ```
@@ -115,13 +114,13 @@ geodata.convert.wind(
 * `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
 * `smooth` - **bool or dict** - If `True`, smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
 
-*Note* - 
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). 
+*Note* -
+You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
 
 ### Example Code
 
 ```python
-ds_wind = geodata.convert.wind(cutout, turbine="Suzlon_S82_1.5_MW", smooth=True, var_height="lml")
+ds_wind = cutout.wind(turbine="Suzlon_S82_1.5_MW", smooth=True, var_height="lml")
 ds_wind.to_dataframe(name="wind")
 ```
 
@@ -131,7 +130,7 @@ Extract wind speeds at given height (ms-1)
 
 
 ```python
-geodata.convert.windspd(cutout, **params)
+cutout.windspd(**params)
 ```
 
 ### Parameters
@@ -140,13 +139,13 @@ geodata.convert.windspd(cutout, **params)
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
     - `hub-height` - **num** - Extrapolation height (m)
-*Note* - 
-You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`). 
+*Note* -
+You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
 
 ### Example Code
 
 ```python
-ds_windspd = geodata.convert.windspd(cutout, turbine="Vestas_V66_1750kW", var_height="lml")
+ds_windspd = cutout.windspd(turbine="Vestas_V66_1750kW", var_height="lml")
 ds_windspd.to_dataframe(name="windspd")
 ```
 
@@ -156,7 +155,7 @@ Extract wind power density at given height, according to:
 **WPD = 0.5 * Density * Windspd^3**
 
 ```python
-geodata.convert.windwpd(cutout, **params)
+cutout.windwpd(**params)
 ```
 
 ### Parameters
@@ -165,19 +164,19 @@ geodata.convert.windwpd(cutout, **params)
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
     - `hub-height` - **num** Extrapolation height (m)
-*Note* - 
+*Note* -
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
 
 ### Example Code
 
 ```python
-ds_windwpd = geodata.convert.windwpd(cutout, turbine="Suzlon_S82_1.5_MW", var_height="lml")
+ds_windwpd = cutout.windwpd(turbine="Suzlon_S82_1.5_MW", var_height="lml")
 ds_windwpd.to_dataframe(name="windwpd")
 ```
 
 ## Generating Solar Outputs with MERRA2 Data
 **geodata** currently supports the following solar outputs using the following configs:
-* `slv_radiation_hourly`: 
+* `slv_radiation_hourly`:
     - [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
     - [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
 * `slv_radiation_monthly`:
@@ -201,7 +200,7 @@ Convert downward-shortwave, upward-shortwave radiation flux and
 #### Example Code and Result
 
 ```python
-ds_pv = geodata.convert.pv(cutout, panel="KANEKA", orientation="latitude_optimal")
+ds_pv = cutout.pv(panel="KANEKA", orientation="latitude_optimal")
 ds_pv.to_dataframe(name="pv")
 
 ```
@@ -224,6 +223,6 @@ Generate PM2.5 time series according to [1]:
 #### Example Code and Result
 
 ```python
-ds_pm25 = geodata.convert.pv(cutout)
+ds_pm25 = cutout.pm25()
 ds_pm25.to_dataframe(name = 'pm25')
 ```
