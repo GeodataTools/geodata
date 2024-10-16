@@ -37,7 +37,6 @@ import xarray as xr
 from shapely.geometry import box
 from tqdm.auto import tqdm
 
-from geodata import Dataset
 
 from . import config
 from .convert import (
@@ -151,6 +150,8 @@ class Cutout:
                     raise TypeError("No module given in meta file of cutout.")
 
                 # load dataset module based on file metadata
+                from geodata import Dataset
+
                 self.dataset_module: Dataset = sys.modules[
                     "geodata.datasets." + self.meta.attrs["module"]
                 ]

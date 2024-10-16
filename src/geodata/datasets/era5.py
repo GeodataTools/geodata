@@ -113,9 +113,7 @@ def api_complete(
             if bounds is not None:
                 full_request["area"] = bounds
 
-            full_result = cdsapi.Client().retrieve(
-                product, full_request, target=filepath
-            )
+            full_result = cdsapi.Client().retrieve(product, full_request)
 
             logger.info(
                 "Downloading metadata request for %s variables to %s",
