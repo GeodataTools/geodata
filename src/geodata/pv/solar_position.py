@@ -73,15 +73,15 @@ def SolarPosition(ds):
         (np.sin(lat) * np.sin(dec) + np.cos(lat) * np.cos(dec) * np.cos(h)).clip(
             min=-1.0, max=1.0
         )
-    ).rename("altitude")
+    ).rename("altitude")  # pylint: disable=no-member
 
     az = np.arccos(
         (
             (np.sin(dec) * np.cos(lat) - np.cos(dec) * np.sin(lat) * np.cos(h))
             / np.cos(alt)
         ).clip(min=-1.0, max=1.0)
-    )
-    az = az.where(h <= 0, 2 * np.pi - az).rename("azimuth")
+    )  # pylint: disable=no-member
+    az = az.where(h <= 0, 2 * np.pi - az).rename("azimuth")  # pylint: disable=no-member
 
     if "influx_toa" in ds:
         atmospheric_insolation = ds["influx_toa"].rename("atmospheric insolation")

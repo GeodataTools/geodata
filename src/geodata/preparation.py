@@ -27,7 +27,6 @@ import dask
 import numpy as np
 import pandas as pd
 import xarray as xr
-from six.moves import map  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -246,8 +245,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
         offset_end = end - (month_start + pd.offsets.MonthBegin())
         step = (second - start).components.hours
         ds.coords["time"] = pd.date_range(
-            start=pd.Timestamp("{}-{}".format(years.start, months.start))
-            + offset_start,
+            start=pd.Timestamp("{}-{}".format(years.start, months.start)) + offset_start,
             end=(month_start + pd.offsets.MonthBegin() + offset_end),
             freq="h" if step == 1 else ("%dh" % step),
         )
@@ -308,14 +306,7 @@ def cutout_get_meta_view(
         .stack(**{"year-month": ("year", "month")})
     )
 
-    meta = meta.sel(
-        time=slice(
-            *(
-                "{:04}-{:02}".format(*ym)
-                for ym in meta["year-month"][[0, -1]].to_index()
-            )
-        )
-    )
+    meta = meta.sel(time=slice(*("{:04}-{:02}".format(*ym) for ym in meta["year-month"][[0, -1]].to_index())))
 
     # Check if returned non-zero subset
     # 	Future work: can check if whole subset is available
