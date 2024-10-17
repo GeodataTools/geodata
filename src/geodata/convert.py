@@ -18,6 +18,7 @@
 This module contains various functions used to perform conversion in Geodata.
 """
 
+import datetime as dt
 import logging
 from operator import itemgetter
 
@@ -31,7 +32,6 @@ from .pv.irradiation import TiltedIrradiation
 from .pv.orientation import SurfaceOrientation, get_orientation  # noqa: F401
 from .pv.solar_panel_model import SolarPanelModel
 from .pv.solar_position import SolarPosition
-from .resource import get_solarpanelconfig, get_windturbineconfig, windturbine_smooth
 
 logger = logging.getLogger(__name__)
 
