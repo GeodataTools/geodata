@@ -61,7 +61,6 @@ class WindBaseModel(BaseModel):
     """
 
     type: str = "wind"
-    SUPPROTED_WEATHER_DATA_CONFIGS = ["slv_flux_hourly"]
     _prepare_fn: Callable[[xr.Dataset], xr.Dataset]
 
     def _prepare_dataset(self) -> list[tuple[str, Path]]:

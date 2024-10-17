@@ -41,7 +41,7 @@ class BaseModel(abc.ABC):
         **kwargs: Additional keyword arguments to pass to the model.
     """
 
-    SUPPROTED_WEATHER_DATA_CONFIGS: tuple[str]
+    SUPPORTED_WEATHER_DATA_CONFIGS: tuple[str]
     metadata_keys: set[str] = {
         "name",
         "module",
@@ -54,7 +54,7 @@ class BaseModel(abc.ABC):
     }
 
     def __init__(self, source: Union[geodata.Dataset, geodata.Cutout], **kwargs):
-        if source.config not in self.SUPPROTED_WEATHER_DATA_CONFIGS:
+        if source.config not in self.SUPPORTED_WEATHER_DATA_CONFIGS:
             raise ValueError(
                 f"Weather data config {source.config} is not supported by this model."
             )
