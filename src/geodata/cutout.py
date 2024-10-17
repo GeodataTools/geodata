@@ -46,6 +46,9 @@ from .convert import (
     convert_windspd,
     convert_windwpd,
     get_orientation,
+)
+
+from .resource import (
     get_solarpanelconfig,
     get_windturbineconfig,
     windturbine_smooth,

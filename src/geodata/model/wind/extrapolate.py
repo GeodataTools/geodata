@@ -44,7 +44,7 @@ def _compute_wind_speed_ext(
     Returns:
         tuple[np.ndarray, np.ndarray]: Tuple of coefficients (alpha, beta) and residuals.
     """
-    # pylint: disable=not-an-iterable
+
     coeffs = np.empty(shape=heights.shape[:-1] + (2,))
     residuals = np.empty_like(speeds)
     for time in prange(heights.shape[0]):
@@ -58,7 +58,6 @@ def _compute_wind_speed_ext(
 
                 coeffs[time, lat, lon] = coeff
                 residuals[time, lat, lon] = residual
-    # pylint: enable=not-an-iterable
 
     return coeffs, residuals
 
@@ -87,6 +86,8 @@ class WindExtrapolationModel(WindBaseModel):
         >>> model.prepare()
         >>> model.estimate(height=12, xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
     """
+
+    SUPPORTED_WEATHER_DATA_CONFIGS = {"slv_flux_hourly"}
 
     def _prepare_fn(
         self,
@@ -149,7 +150,6 @@ class WindExtrapolationModel(WindBaseModel):
 
         return ds[["coeffs", "residuals"]] if compute_residuals else ds[["coeffs"]]
 
-    # pylint: disable=arguments-differ
     def _estimate_dataset(
         self,
         height: int,
@@ -190,5 +190,3 @@ class WindExtrapolationModel(WindBaseModel):
 
     def _estimate_cutout(self, xs: slice, ys: slice, ts: slice) -> xr.Dataset:
         raise NotImplementedError
-
-    # pylint: enable=arguments-differ

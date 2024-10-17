@@ -14,5 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from .extrapolate import WindExtrapolationModel
+from .interpolate import WindInterpolationModel
 
-__all__ = ["WindExtrapolationModel"]
+__all__ = ["WindExtrapolationModel", "WindInterpolationModel"]
