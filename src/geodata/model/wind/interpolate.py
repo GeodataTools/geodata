@@ -92,9 +92,6 @@ class WindInterpolationModel(WindBaseModel):
         ds["c"] = ds["u"].copy(data=c.reshape(orig_shape))
         ds.attrs["t"] = t
 
-        import pdb
-
-        pdb.set_trace()
         return ds[["c"]]
 
     def _estimate_dataset(
@@ -106,7 +103,17 @@ class WindInterpolationModel(WindBaseModel):
         ys: Optional[slice] = None,
         use_real_data: Optional[bool] = False,
     ) -> xr.Dataset:
-        pass
+        params = xr.open_mfdataset(self.files).transpose("model_level", ...)
+        spline_params = sinterp.BSpline(
+            params.attrs.get("t"), params.get("c").values, k=3
+        )
+
+        params = params.drop_dims("model_level")
+        speeds = xr.DataArray(
+            spline_params(height), dims=params.dims, coords=params.coords
+        )
+
+        return speeds
 
     def _estimate_cutout(
         self,
