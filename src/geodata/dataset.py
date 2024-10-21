@@ -267,7 +267,7 @@ class Dataset:
                     self.downloadedFiles.append((self.config, filename))
 
         if not self.prepared:
-            if xs is not None or ys is not None:
+            if xs is None or ys is None:
                 logger.warning(
                     "Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global."
                 )

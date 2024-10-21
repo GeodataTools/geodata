@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import calendar
 import glob
 import logging
 import os
@@ -98,8 +99,11 @@ def api_complete(
             filepath = Path(f[1])
             filepath.parent.mkdir(parents=True, exist_ok=True)
 
+            query_year = str(f[2])
+            query_month = f"{f[3]:02d}"
+
             full_request = {
-                "date": f"{filepath.parent.parent.name}{filepath.parent.name}{filepath.stem}",
+                "date": f"{query_year}{query_month}01/to/{query_year}{query_month}{calendar.monthrange(f[2], f[3])[1]}",
                 "levelist": "/".join(str(i) for i in L137_LEVELS),
                 "levtype": "ml",
                 "param": "/".join(str(var) for var in download_vars),
@@ -429,15 +433,12 @@ weather_data_config = {
     ),
     "wind_3d_hourly": dict(
         api_func=api_complete,
-        file_granularity="daily",
+        file_granularity="monthly",
         tasks_func=tasks_monthly_era5,
         meta_prepare_func=prepare_meta_era5,
         prepare_func=prepare_month_era5,
-        url="",  # Not used, maintained for compatibility with `daily` granularity
-        template=os.path.join(
-            era5_dir, "wind_3d_hourly/{year}/{month:02d}/{day:02d}.nc"
-        ),
-        fn=os.path.join(era5_dir, "wind_3d_hourly/{year}/{month:02d}/{day:02d}.nc"),
+        template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
+        fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
         product="reanalysis-era5-complete",
         product_type="reanalysis",
         keywords=[131, 132],
