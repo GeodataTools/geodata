@@ -20,6 +20,7 @@ import scipy.interpolate as sinterp
 import xarray as xr
 
 from ...logging import logger
+from ...utils import get_daterange
 from ._base import WindBaseModel
 
 # See https://confluence.ecmwf.int/display/UDOC/L137+model+level+definitions
@@ -66,24 +67,22 @@ class WindInterpolationModel(WindBaseModel):
             "model_level" in ds.coords
         ), "Dataset does not contain model levels. Please double-check the dataset."
 
-        ds = ds.transpose("model_level", ...).sortby(
-            "model_level", ascending=False
-        )  # Model levels are sorted in descending order
-
-        variables = [var for var in ds if var.replace("u", "v") in ds and var == "u"]
-        heights = np.array(
+        ds.coords["model_level"] = np.array(
             [LEVEL_TO_HEIGHT[int(level)] for level in ds["model_level"].values]
         )
+        ds = (
+            ds.rename({"model_level": "height"})
+            .transpose("height", ...)
+            .sortby("height")
+        )
 
-        logger.debug("Selected variables: %s", variables)
-        logger.debug("Shape of heights: %s", heights.shape)
+        logger.debug("Shape of heights: %s", ds["height"].shape)
 
         speeds = (ds["u"] ** 2 + ds["v"] ** 2) ** 0.5
         orig_shape = speeds.shape
-        speeds = speeds.values.reshape(len(heights), -1)
-
+        speeds = speeds.values.reshape(len(ds["height"]), -1)
         spline_params: sinterp.BSpline = sinterp.make_interp_spline(
-            heights, speeds, k=3
+            ds["height"], speeds, k=3
         )
         t, c = spline_params.t, spline_params.c
 
@@ -97,18 +96,38 @@ class WindInterpolationModel(WindBaseModel):
     def _estimate_dataset(
         self,
         height: int,
-        years: slice,
+        years: Optional[slice] = None,
         months: Optional[slice] = None,
         xs: Optional[slice] = None,
         ys: Optional[slice] = None,
         use_real_data: Optional[bool] = False,
     ) -> xr.Dataset:
-        params = xr.open_mfdataset(self.files).transpose("model_level", ...)
+        params = xr.open_mfdataset(self.files).transpose("height", ...)
+
+        if not (xs is None or ys is None):
+            params = params.sel(latitude=ys, longitude=xs)
+
+        if not (years is None or months is None):
+            if months is None:
+                months = slice(1, 13)
+            params = params.sel(
+                valid_time=get_daterange(years, months),
+            )
+
+        if float(height) in LEVEL_TO_HEIGHT.values() and use_real_data:
+            params = params.sel(height=height)
+            return (
+                ((params["u"] ** 2 + params["v"] ** 2) ** 0.5)
+                .drop("height")
+                .drop("model_level")
+            )
+
+        params = params[["c"]]
         spline_params = sinterp.BSpline(
             params.attrs.get("t"), params.get("c").values, k=3
         )
 
-        params = params.drop_dims("model_level")
+        params = params.drop_dims("height")
         speeds = xr.DataArray(
             spline_params(height), dims=params.dims, coords=params.coords
         )

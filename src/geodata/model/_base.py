@@ -235,7 +235,7 @@ class BaseModel(abc.ABC):
 
         nc4_rel_path = nc4_path.relative_to(self._path)
         for fp in self.metadata["files_orig"]:
-            fp_prepared = str(nc4_rel_path / Path(fp).with_suffix(".params.nc4").name)
+            fp_prepared = str(nc4_rel_path / Path(fp).with_suffix(".params.nc4"))
 
             if (
                 fp not in self.metadata["files_orig"]
