@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+import pandas as pd
 import progressbar as pgb
 
 
@@ -32,7 +33,9 @@ def make_optional_progressbar(show, prefix, max_value):
         ]
         if not prefix.endswith(": "):
             prefix = prefix.strip() + ": "
-        maybe_progressbar = pgb.ProgressBar(prefix=prefix, widgets=widgets, max_value=max_value)
+        maybe_progressbar = pgb.ProgressBar(
+            prefix=prefix, widgets=widgets, max_value=max_value
+        )
     else:
         maybe_progressbar = lambda x: x  # noqa: E731
 
@@ -53,3 +56,26 @@ def dummy_njit(f=None, *args, **kwargs):
         return f
 
     return decorator
+
+
+def get_daterange(years: slice, months: slice):
+    """Get the date range covering the entire years and months range.
+
+    Args:
+        years (slice): The years range.
+        months (slice): The months range.
+
+    Returns:
+        pd.
+    """
+
+    assert years.start <= years.stop, "Start year must be less than stop year."
+    assert months.start <= months.stop, "Start month must be less than stop month."
+
+    return pd.date_range(
+        start=pd.Timestamp(f"{years.start}-{months.start}-1"),
+        end=pd.Timestamp(
+            f"{years.stop}-{months.stop}-{pd.Timestamp(f'{years.stop}-{months.stop}-1').days_in_month}"
+        ),
+        freq="d",
+    )
