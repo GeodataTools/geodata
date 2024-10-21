@@ -158,7 +158,7 @@ class WindExtrapolationModel(WindBaseModel):
         xs: Optional[slice] = None,
         ys: Optional[slice] = None,
         use_real_data: Optional[bool] = False,
-    ) -> xr.Dataset:
+    ) -> xr.DataArray:
         assert height > 0, "Height must be greater than 0."
 
         if months is None:
@@ -188,5 +188,5 @@ class WindExtrapolationModel(WindBaseModel):
         result = alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
         return result.drop_vars("coeff")  # remove unnecessary coordinate
 
-    def _estimate_cutout(self, xs: slice, ys: slice, ts: slice) -> xr.Dataset:
+    def _estimate_cutout(self, xs: slice, ys: slice, ts: slice) -> xr.DataArray:
         raise NotImplementedError

@@ -328,7 +328,7 @@ class BaseModel(abc.ABC):
         xs: Optional[slice] = None,
         ys: Optional[slice] = None,
         use_real_data: Optional[bool] = False,
-    ) -> xr.Dataset:
+    ) -> xr.DataArray:
         """Estimate the wind speed from a dataset.
 
         Args:
@@ -340,7 +340,7 @@ class BaseModel(abc.ABC):
             use_real_data (bool, optional): If available, use real data for estimation. Defaults to False.
 
         Returns:
-            xr.Dataset: Dataset with wind speed.
+            xr.DataArray: Dataset with wind speed.
         """
 
     @abc.abstractmethod
@@ -352,7 +352,7 @@ class BaseModel(abc.ABC):
         xs: Optional[slice] = None,
         ys: Optional[slice] = None,
         use_real_data: Optional[bool] = False,
-    ) -> xr.Dataset:
+    ) -> xr.DataArray:
         """Estimate the wind speed from a cutout.
 
         Args:
@@ -364,7 +364,7 @@ class BaseModel(abc.ABC):
             use_real_data (bool, optional): If available, use real data for estimation. Defaults to False.
 
         Returns:
-            xr.Dataset: Dataset with wind speed.
+            xr.DataArray: Dataset with wind speed.
         """
 
     @property
