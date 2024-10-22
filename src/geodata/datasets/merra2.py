@@ -147,9 +147,7 @@ def api_merra2(toDownload, fileGranularity, downloadedFiles):
                         with open(target_temp, "wb") as fout:
                             fout.write(result.content)
                     except HTTPError as http_err:
-                        logger.warning(
-                            "HTTP error occurred: %s", http_err
-                        )  # Python 3.6
+                        logger.warning("HTTP error occurred: %s", http_err)  # Python 3.6
                         error_files.append(f[k])
                     except Exception as err:
                         logger.warning("Other error occurred: %s", err)
@@ -159,9 +157,7 @@ def api_merra2(toDownload, fileGranularity, downloadedFiles):
                     # os.close(fd_temp)
                     # os.unlink(target_temp)
 
-                ds_main = xr.open_mfdataset(
-                    [fn[1] for fn in temp_files], combine="by_coords"
-                )
+                ds_main = xr.open_mfdataset([fn[1] for fn in temp_files], combine="by_coords")
                 ds_main.to_netcdf(f[1])
                 ds_main.close()
                 # ds_toadd.close()  # close last xr open file
@@ -346,9 +342,7 @@ def tasks_daily_merra2(xs, ys, yearmonths, prepare_func, **meta_attrs):
             ys=ys,
             year=year,
             month=month,
-            fn=fn.format(
-                year=year, month=month, day=day, spinup=spinup_year(year, month)
-            ),
+            fn=fn.format(year=year, month=month, day=day, spinup=spinup_year(year, month)),
         )
         for year, month in yearmonths
         for day in range(1, monthrange(year, month)[1] + 1, 1)
@@ -385,9 +379,7 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_month_surface_flux,
-        template=os.path.join(
-            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4"
-        ),
+        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_flx_Nx.*.nc4"),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4",
         url_opendap="https://goldsmr4.gesdisc.eosdis.nasa.gov/opendap/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4.nc4",
         fn=os.path.join(
@@ -415,9 +407,7 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_month_surface_flux,
-        template=os.path.join(
-            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_flx_Nx.*.nc4"
-        ),
+        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_flx_Nx.*.nc4"),
         url=[
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4",
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4",
@@ -476,9 +466,7 @@ weather_data_config = {
         prepare_func=prepare_month_surface_flux,
         template=os.path.join(merra2_dir, "{year}/MERRA2_*.tavgM_2d_flx_Nx.*.nc4"),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2_MONTHLY/M2TMNXFLX.5.12.4/{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4",
-        fn=os.path.join(
-            merra2_dir, "{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4"
-        ),
+        fn=os.path.join(merra2_dir, "{year}/MERRA2_{spinup}.tavgM_2d_flx_Nx.{year}{month:0>2}.nc4"),
         variables=[
             "ustar",
             "z0m",
@@ -500,9 +488,7 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_dailymeans_surface_flux,
-        template=os.path.join(
-            merra2_dir, "{year}/{month:0>2}/MERRA2_*.statD_2d_slv_Nx.*.nc4"
-        ),
+        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.statD_2d_slv_Nx.*.nc4"),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2SDNXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.statD_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4",
         fn=os.path.join(
             merra2_dir,
@@ -516,9 +502,7 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_slv_radiation,
-        template=os.path.join(
-            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_rad_Nx.*.nc4"
-        ),
+        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_slv_rad_Nx.*.nc4"),
         url=[
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXSLV.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_slv_Nx.{year}{month:0>2}{day:0>2}.nc4",
             "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXRAD.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_rad_Nx.{year}{month:0>2}{day:0>2}.nc4",
@@ -557,9 +541,7 @@ weather_data_config = {
         tasks_func=tasks_daily_merra2,
         meta_prepare_func=prepare_meta_merra2,
         prepare_func=prepare_month_aerosol,
-        template=os.path.join(
-            merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_aer_Nx.*.nc4"
-        ),
+        template=os.path.join(merra2_dir, "{year}/{month:0>2}/MERRA2_*.tavg1_2d_aer_Nx.*.nc4"),
         url="https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXAER.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_aer_Nx.{year}{month:0>2}{day:0>2}.nc4",
         fn=os.path.join(
             merra2_dir,
