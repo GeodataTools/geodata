@@ -147,13 +147,23 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
 
         t["datasetfns"] = {ym: datasetfn_with_id(ym) for ym in yearmonths.tolist()}
 
-    logger.info(
-        "%d tasks have been collected. Starting running them on %s.",
-        len(tasks),
-        f"{nprocesses} processes" if nprocesses is not None else "all processors",
-    )
+    # TODO: Using multiple processes will cause issues with geodata currently
+    # because geodata write the metadata dataframe to the cutout directory
+    # in every instantiation of a new Cutout object in an unprepared state.
+    # By running multiple processes, the metadata file will be overwritten
+    # and there are no locking mechanism currently in place.
+    # As the result, we will run the tasks in a single process for now.
+    # In the future, we can consider doing it in a multiprocessing scheme as long as
+    # we can ensure that the metadata file is being processed in places other than
+    # the constructor.
 
-    pool = Pool(processes=nprocesses)
+    # logger.info(
+    #     "%d tasks have been collected. Starting running them on %s.",
+    #     len(tasks),
+    #     f"{nprocesses} processes" if nprocesses is not None else "all processors",
+    # )
+
+    pool = Pool(processes=1)
     try:
         pool.map(cutout_do_task, tasks)
     except Exception as e:
