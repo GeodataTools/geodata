@@ -14,6 +14,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+import json
+
+import numpy as np
 import pandas as pd
 import progressbar as pgb
 
@@ -79,3 +82,16 @@ def get_daterange(years: slice, months: slice):
         ),
         freq="d",
     )
+
+
+class NpEncoder(json.JSONEncoder):
+    """Custom JSON encoder for NumPy data types, as the default JSON encoder does not handle them."""
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)

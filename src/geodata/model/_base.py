@@ -29,6 +29,7 @@ from ..config import model_dir
 from ..cutout import Cutout
 from ..dataset import Dataset
 from ..logging import logger
+from ..utils import NpEncoder
 
 
 class BaseModel(abc.ABC):
@@ -188,21 +189,29 @@ class BaseModel(abc.ABC):
         return metadata
 
     def extract_cutout_metadata(self, cutout: Cutout) -> dict:
-        # NOTE: WIP, do not use.
         logger.info("Using cutout %s", cutout.name)
 
         metadata = {}
 
         metadata["name"] = cutout.name
-        metadata["module"] = cutout.dataset_module
+        metadata["module"] = cutout.meta.attrs["module"]
         metadata["from_dataset"] = False
+        metadata["weather_data_config"] = cutout.config
 
         if isinstance(cutout.years, slice):
             metadata["years"] = cutout.years.start, cutout.years.stop
         if isinstance(cutout.months, slice):
             metadata["months"] = cutout.months.start, cutout.months.stop
 
-        # TODO: nc4 files consistency check needed
+        metadata["files_prepared"] = {}
+        metadata["files_orig"] = {}
+        for yearmonth in cutout.coords["year-month"].to_index():
+            fp = cutout.datasetfn(yearmonth)
+            with open(fp, "rb") as f:
+                metadata["files_orig"][str(Path(fp).relative_to(self._ref_path))] = (
+                    hashlib.sha256(f.read()).hexdigest()
+                )
+
         return metadata
 
     @property
@@ -292,7 +301,7 @@ class BaseModel(abc.ABC):
                 ).hexdigest()
 
         with open(self._path / "meta.json", "w", encoding="utf-8") as f:
-            json.dump(self.metadata, f, indent=4)
+            json.dump(self.metadata, f, indent=4, cls=NpEncoder)
 
         logger.info("Finished preparing model.")
 

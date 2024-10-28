@@ -36,14 +36,19 @@ LEVEL_TO_HEIGHT = {
 
 
 class WindInterpolationModel(WindBaseModel):
-    """Wind speed estimation based on the an interpolation model.
+    """Wind speed estimation based on a spline interpolation of the wind speed at different heights.
+
+    This model uses the ERA5 3D dataset to estimate wind speed at a given height using
+    spline interpolation.
+
     Example:
-        >>> from geodata import Dataset
-        >>> from geodata.model.wind import WindInterpolationModel
-        >>> dataset = Dataset(module="era5", weather_data_config="wind_3d_hourly", years=slice(2010, 2010), months=slice(1,2))
-        >>> model = WindExtrapolationModel(dataset)
-        >>> model.prepare()
-        >>> model.estimate(height=12, xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
+
+    >>> from geodata import Dataset
+    >>> from geodata.model.wind import WindInterpolationModel
+    >>> dataset = Dataset(module="era5", weather_data_config="wind_3d_hourly", years=slice(2010, 2010), months=slice(1, 2))
+    >>> model = WindExtrapolationModel(dataset)
+    >>> model.prepare()
+    >>> model.estimate(height=12, xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
     """
 
     SUPPORTED_WEATHER_DATA_CONFIGS = {"wind_3d_hourly"}

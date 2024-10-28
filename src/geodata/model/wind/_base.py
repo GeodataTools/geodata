@@ -87,21 +87,18 @@ class WindBaseModel(BaseModel):
             ds_path.parent.mkdir(parents=True, exist_ok=True)
             ds.to_netcdf(ds_path)
 
-            prepared_files.append(
-                str(ds_path.relative_to(self._path)),
-            )
+            prepared_files.append(str(ds_path.relative_to(self._path)))
 
         return prepared_files
 
     def _prepare_cutout(self) -> list[tuple[str, Path]]:
         """Prepare the model from a cutout."""
 
-        # TODO: Needs rework to conform to new model interface!!!
-        logger.info("Preparing the model from dataset.")
-
+        logger.info("Preparing the model from cutout.")
         prepared_files = []
-        for config, file_path in tqdm(self.source.downloadedFiles):
-            orig_ds_path = Path(file_path)
+
+        for yearmonth in tqdm(self.source.coords["year-month"].to_index()):
+            orig_ds_path = Path(self.source.datasetfn(yearmonth))
 
             ds = xr.open_dataset(orig_ds_path)
             try:
@@ -117,14 +114,9 @@ class WindBaseModel(BaseModel):
                 ".params.nc4"
             )
             ds_path = self._path / "nc4" / ds_path
+            ds_path.parent.mkdir(parents=True, exist_ok=True)
             ds.to_netcdf(ds_path)
 
-            # (config, parameter_filepath, original_dataset_filepath)
-            prepared_files.append(
-                (
-                    config,
-                    str(ds_path.relative_to(self._path)),
-                )
-            )
+            prepared_files.append(str(ds_path.relative_to(self._path)))
 
         return prepared_files
