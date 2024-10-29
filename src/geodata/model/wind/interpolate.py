@@ -214,4 +214,32 @@ class WindInterpolationModel(WindBaseModel):
         ys: Optional[slice] = None,
         use_real_data: Optional[bool] = False,
     ) -> xr.Dataset:
-        pass
+        params = xr.open_mfdataset(self.files).transpose("height", ...)
+
+        if not (xs is None or ys is None):
+            params = params.sel(latitude=ys, longitude=xs)
+
+        if not (years is None or months is None):
+            if months is None:
+                months = slice(1, 13)
+            params = params.sel(
+                valid_time=get_daterange(years, months),
+            )
+
+        if float(height) in LEVEL_TO_HEIGHT.values() and use_real_data:
+            params = params.sel(height=height)
+            return (
+                ((params["u"] ** 2 + params["v"] ** 2) ** 0.5)
+                .drop("height")
+                .drop("model_level")
+            )
+
+        params = params[["c"]]
+        spline_params = sinterp.BSpline(
+            params.attrs.get("t"), params.get("c").values, k=3
+        )
+
+        params = params.drop_dims("height")
+        return xr.DataArray(
+            spline_params(height), dims=params.dims, coords=params.coords
+        )

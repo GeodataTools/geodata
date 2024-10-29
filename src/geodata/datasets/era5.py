@@ -407,6 +407,23 @@ def tasks_monthly_era5(xs, ys, yearmonths, prepare_func, **meta_attrs):
     ]
 
 
+def prepare_3d_era5(fn, year, month, xs, ys):
+    if not os.path.isfile(fn):
+        return None
+    with xr.open_dataset(fn) as ds:
+        logger.info("Opening %s", fn)
+        ds = _rename_and_clean_coords(ds)
+        ds = subset_x_y_era5(ds, xs, ys)
+
+        # New ERA5 format for hourly datasets
+        # See https://forum.ecmwf.int/t/new-time-format-in-era5-netcdf-files/3796
+        # TODO: We can remove this if we refactor geodata's convert module in the future
+        if "valid_time" in ds.coords:
+            ds = ds.rename({"valid_time": "time"})
+
+        yield (year, month), ds
+
+
 weather_data_config = {
     "wind_solar_hourly": dict(
         api_func=api_hourly_era5,
@@ -452,7 +469,7 @@ weather_data_config = {
         file_granularity="monthly",
         tasks_func=tasks_monthly_era5,
         meta_prepare_func=prepare_meta_era5,
-        prepare_func=prepare_month_era5,
+        prepare_func=prepare_3d_era5,
         template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
         fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
         product="reanalysis-era5-complete",
