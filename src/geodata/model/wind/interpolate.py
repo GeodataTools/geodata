@@ -13,11 +13,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from typing import Optional
+from typing import Hashable, Optional
 
 import numpy as np
 import scipy.interpolate as sinterp
 import xarray as xr
+from xarray.namedarray.pycompat import array_type as dask_array_type
 
 from ...logging import logger
 from ...utils import get_daterange
@@ -33,6 +34,82 @@ LEVEL_TO_HEIGHT = {
     136: 30.96,
     137: 10.0,
 }
+
+
+def _memoryview_safe(x: np.ndarray) -> np.ndarray:
+    """Make array safe to run in a Cython memoryview-based kernel. These
+    kernels typically break down with the error ``ValueError: buffer source
+    array is read-only`` when running in dask distributed.
+
+    Borrowed from https://github.com/crusaderky/xarray_extras/blob/main/xarray_extras/kernels/interpolate.py
+    """
+    if not x.flags.writeable:
+        if not x.flags.owndata:
+            x = x.copy(order="C")
+        x.setflags(write=True)
+    return x
+
+
+def _make_interp_coeff(*args, **kwargs):
+    """Dummy function to handle interpolation coefficients."""
+    return sinterp.make_interp_spline(*args, **kwargs).c
+
+
+def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
+    """Modified version of scipy.interpolate.splrep for xarray DataArray.
+    Borrowed from https://github.com/crusaderky/xarray_extras/blob/main/xarray_extras/kernels/interpolate.py
+
+    Args:
+        a (xr.DataArray): Input data array.
+        dim (Hashable): Dimension to interpolate along.
+        k (int, optional): Degree of the spline. Defaults to 3.
+
+    Returns:
+        xr.Dataset: Dataset containing spline parameters.
+    """
+
+    # Make sure that dim is on axis 0
+    a = a.transpose(dim, ...)
+    x: np.ndarray = a.coords[dim].values
+
+    if x.dtype.kind == "M":
+        # Same treatment will be applied to x_new.
+        # Allow x_new.dtype==M8[D] and x.dtype==M8[ns], or vice versa
+        x = x.astype("M8[ns]").astype(float)
+
+    t = sinterp._bsplines._not_a_knot(x, k=k)
+
+    if isinstance(a.data, dask_array_type("dask")):
+        from dask.array import map_blocks
+
+        if len(a.data.chunks[0]) > 1:
+            raise NotImplementedError(
+                "Unsupported: multiple chunks on interpolation dim"
+            )
+
+        c = map_blocks(
+            _make_interp_coeff,
+            x,
+            a.data,
+            k=k,
+            t=t,
+            check_finite=False,
+            dtype=float,
+        )
+    else:
+        c = _make_interp_coeff(x, a.data, k=k, t=t, check_finite=False)
+
+    return xr.Dataset(
+        data_vars={
+            "c": (a.dims, c),
+        },
+        coords=a.coords,
+        attrs={
+            "spline_dim": dim,
+            "k": k,
+            "t": t,
+        },
+    )
 
 
 class WindInterpolationModel(WindBaseModel):
@@ -82,21 +159,12 @@ class WindInterpolationModel(WindBaseModel):
         )
 
         logger.debug("Shape of heights: %s", ds["height"].shape)
-
         speeds = (ds["u"] ** 2 + ds["v"] ** 2) ** 0.5
-        orig_shape = speeds.shape
-        speeds = speeds.values.reshape(len(ds["height"]), -1)
-        spline_params: sinterp.BSpline = sinterp.make_interp_spline(
-            ds["height"], speeds, k=3
-        )
-        t, c = spline_params.t, spline_params.c
 
         if half_precision:
-            c = c.astype(np.float32)
-        ds["c"] = ds["u"].copy(data=c.reshape(orig_shape))
-        ds.attrs["t"] = t
+            speeds = speeds.astype(np.float32)
 
-        return ds[["c"]]
+        return _splrep(speeds, "height")
 
     def _estimate_dataset(
         self,
@@ -133,11 +201,9 @@ class WindInterpolationModel(WindBaseModel):
         )
 
         params = params.drop_dims("height")
-        speeds = xr.DataArray(
+        return xr.DataArray(
             spline_params(height), dims=params.dims, coords=params.coords
         )
-
-        return speeds
 
     def _estimate_cutout(
         self,

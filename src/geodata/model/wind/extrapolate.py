@@ -188,5 +188,40 @@ class WindExtrapolationModel(WindBaseModel):
         result = alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
         return result.drop_vars("coeff")  # remove unnecessary coordinate
 
-    def _estimate_cutout(self, xs: slice, ys: slice, ts: slice) -> xr.DataArray:
-        raise NotImplementedError
+    def _estimate_cutout(
+        self,
+        height: int,
+        years: slice,
+        months: Optional[slice] = None,
+        xs: Optional[slice] = None,
+        ys: Optional[slice] = None,
+        use_real_data: Optional[bool] = False,
+    ) -> xr.DataArray:
+        assert height > 0, "Height must be greater than 0."
+
+        if months is None:
+            months = slice(1, 12)
+
+        start_time = pd.Timestamp(year=years.start, month=months.start, day=1)
+        end_time = pd.Timestamp(
+            year=years.stop, month=months.stop, day=31, hour=23, minute=59, second=59
+        )
+
+        ds = xr.open_mfdataset(self.files)
+
+        if xs is None:
+            xs = ds.coords["x"]
+        if ys is None:
+            ys = ds.coords["y"]
+
+        ds = ds.sel(x=xs, y=ys, time=slice(start_time, end_time))
+
+        if height in HEIGHTS.values() and use_real_data:
+            logger.info("Using real data for estimation at height %d", height)
+            return (ds[f"u{height}m"] ** 2 + ds[f"v{height}m"] ** 2) ** 0.5
+
+        alpha = ds["coeffs"][..., 0]
+        beta = ds["coeffs"][..., 1]
+
+        result = alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
+        return result.drop_vars("coeff")  # remove unnecessary coordinate
