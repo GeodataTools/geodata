@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -11,9 +11,13 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+import json
+
+import numpy as np
+import pandas as pd
 import progressbar as pgb
 
 
@@ -45,7 +49,7 @@ def dummy_njit(f=None, *args, **kwargs):
     """Dummy decorator for numba.njit. Handles the case when numba is not installed.
 
     Args:
-        f (function): Function to be decorated. If None, returns a an identity decorator.
+        f (function): Function to be decorated. If None, returns identity.
     """
 
     def decorator(func):
@@ -53,5 +57,41 @@ def dummy_njit(f=None, *args, **kwargs):
 
     if callable(f):
         return f
-    else:
-        return decorator
+
+    return decorator
+
+
+def get_daterange(years: slice, months: slice):
+    """Get the date range covering the entire years and months range.
+
+    Args:
+        years (slice): The years range.
+        months (slice): The months range.
+
+    Returns:
+        pd.
+    """
+
+    assert years.start <= years.stop, "Start year must be less than stop year."
+    assert months.start <= months.stop, "Start month must be less than stop month."
+
+    return pd.date_range(
+        start=pd.Timestamp(f"{years.start}-{months.start}-1"),
+        end=pd.Timestamp(
+            f"{years.stop}-{months.stop}-{pd.Timestamp(f'{years.stop}-{months.stop}-1').days_in_month}"
+        ),
+        freq="d",
+    )
+
+
+class NpEncoder(json.JSONEncoder):
+    """Custom JSON encoder for NumPy data types, as the default JSON encoder does not handle them."""
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NpEncoder, self).default(obj)

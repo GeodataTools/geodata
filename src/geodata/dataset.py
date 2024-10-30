@@ -1,17 +1,18 @@
-## Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2020 Michael Davidson (UCSD), William Honaker.
+# Copyright 2020, 2023 Xiqiang Liu.
 
-## This program is free software; you can redistribute it and/or
-## modify it under the terms of the GNU General Public License as
-## published by the Free Software Foundation; either version 3 of the
-## License, or (at your option) any later version.
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
 
-## This program is distributed in the hope that it will be useful,
-## but WITHOUT ANY WARRANTY; without even the implied warranty of
-## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-## GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 
-## You should have received a copy of the GNU General Public License
-## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
 """
@@ -20,14 +21,14 @@ GEODATA
 Geospatial Data Collection and "Pre-Analysis" Tools
 """
 
-from __future__ import absolute_import
-
+import importlib
 import logging
 import os
 import shutil
-import sys
 from calendar import monthrange
+from collections.abc import Iterable
 from tempfile import mkstemp
+from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -39,39 +40,48 @@ logger = logging.getLogger(__name__)
 
 
 class Dataset:
-    def __init__(self, **datasetparams):
-        if "module" not in datasetparams:
-            raise ValueError("`module` needs to be specified")
-        if "weather_data_config" not in datasetparams:
-            raise ValueError("`weather_data_config` needs to be specified")
-        self.module = datasetparams.pop("module")
-        self.config = datasetparams.pop("weather_data_config")
-        self.dataset_module = sys.modules["geodata.datasets." + self.module]
+    """Dataset is a class that encapsulates any datasets natively supported by geodata.
+    It provides a streamlined workflow for downloading, preprocessing, and storing of these datasets.
+
+    Args:
+        module (str): Name of dataset module
+        weather_data_config (str): The type of weather data configuration to use. For more information, please
+            refer to the documentation for the dataset you are using.
+        years (slice): The years to download.
+            For example, `slice(2000, 2010)` will download all data from 2000 to 2010.
+        months (slice, optional): The months to download.
+            For example, `slice(1, 12)` will download all data from January to December.
+            Defaults to `slice(1, 12)`.
+        opendap (bool, optional): Whether to use OpenDAP protocol for downloading.
+            Defaults to `False`.
+        bounds (Optional[Iterable], optional): The bounds to download.
+            For example, `[-180, 90, 180, -90]` will download all data from the entire globe.
+            If omitted, global data will be downloaded.
+    """
+
+    def __init__(
+        self,
+        module: str,
+        weather_data_config: str,
+        years: slice,
+        months: Optional[slice] = None,
+        opendap: bool = False,
+        bounds: Optional[Iterable] = None,
+    ):
+        self.module = module
+        self.config = weather_data_config
+        self.dataset_module = importlib.import_module(f"geodata.datasets.{self.module}")
         self.weatherconfig = self.weather_data_config[self.config]
+        self.datadir: str = self.dataset_module.datadir
+        self.opendap = opendap
 
-        if "datadir" in datasetparams:
-            logger.info(
-                "Manual data directory entry not supported. Change in config.py file."
-            )
-        # 	self.datadir = datasetparams.pop('datadir')
-        # else:
-        self.datadir = self.dataset_module.datadir
+        self.years = years
 
-        if "years" not in datasetparams:
-            raise ValueError("`years` need to be specified")
-        self.years = years = datasetparams["years"]
-
-        if "months" not in datasetparams:
+        self.months = slice(1, 12)
+        if months is None:
             logger.info("No months specified, defaulting to 1-12")
-            self.months = months = slice(1, 12)
         else:
-            self.months = months = datasetparams["months"]
-
-        if "opendap" in datasetparams:
-            self.opendap = opendap = datasetparams["opendap"]
-            logger.info("OpenDap download: %s", self.opendap)
-        else:
-            self.opendap = opendap = False
+            self.months = months
 
         self.prepared = False
         self.toDownload = []
@@ -79,18 +89,19 @@ class Dataset:
         self.totalFiles = []
         incomplete_count = 0
 
-        if "bounds" in datasetparams:
-            self.bounds = datasetparams["bounds"]
-            if isinstance(self.bounds, list) and len(self.bounds) == 4:
-                x1, y1, x2, y2 = datasetparams["bounds"]
-                datasetparams.update(xs=slice(x1, x2), ys=slice(y2, y1))
+        xs, ys = None, None
+        if bounds is not None:
+            self.bounds = bounds
+            if isinstance(self.bounds, Iterable) and len(self.bounds) == 4:
+                x1, y1, x2, y2 = bounds
+                xs = slice(x1, x2)
+                ys = slice(y2, y1)
             else:
                 raise ValueError(
                     "Specified bounds parameter should be list with North, West, South, East coordinates."
                 )
-                ## additional checks here later
         else:
-            logger.info("Using global bounds.")
+            logger.info("Bounds was not specified, default to global bounds.")
             self.bounds = None
 
         if os.path.isdir(self.datadir):
@@ -107,10 +118,7 @@ class Dataset:
         step = months.step if months.step else 1
         mos = range(months.start, months.stop + step, step)
 
-        if (
-            self.weatherconfig["file_granularity"] == "daily"
-            or self.weatherconfig["file_granularity"] == "dailymeans"
-        ):
+        if self.weatherconfig["file_granularity"] in {"daily", "dailymeans"}:
             # Separate files for each day (eg MERRA)
             # Check for complete set of files of year, month, day
             mo_tuples = [(yr, mo, monthrange(yr, mo)[1]) for yr in yrs for mo in mos]
@@ -143,7 +151,8 @@ class Dataset:
                         else:
                             if opendap:
                                 logger.warning(
-                                    "OpenDAP URL not specified for given dataset. Defaulting to standard download."
+                                    "OpenDAP URL not specified for given dataset. "
+                                    "Defaulting to standard download."
                                 )
 
                             self.toDownload.append(
@@ -198,7 +207,8 @@ class Dataset:
                         else:
                             if opendap:
                                 logger.warning(
-                                    "OpenDAP URL not specified for given dataset. Defaulting to standard download."
+                                    "OpenDAP URL not specified for given dataset. "
+                                    "Defaulting to standard download."
                                 )
 
                             self.toDownload.append(
@@ -264,24 +274,25 @@ class Dataset:
                     self.downloadedFiles.append((self.config, filename))
 
         if not self.prepared:
-            if {"xs", "ys"}.difference(datasetparams):
+            if xs is None or ys is None:
                 logger.warning(
                     "Arguments `xs` and `ys` not used in preparing dataset. Defaulting to global."
                 )
 
             logger.info("%s files not completed.", incomplete_count)
-            ## Main preparation call for metadata
-            # 	preparation.cutout_get_meta
-            # 	cutout.meta_data_config
-            # 	dataset_module.meta_data_config (e.g. prepare_meta_era5)
-            # self.meta = self.get_meta(**datasetparams)
-            return None
         else:
             logger.info("Directory complete.")
-            return None
 
     def datasetfn(self, fn, *args):
-        # Construct file name from fn template (cf weather_data_config) and args (yr, mo, day)
+        """Construct file name from template function in `weather_data_config` and args (yr, mo, day)
+
+        Args:
+            fn (str): Template function in `weather_data_config`
+            *args: Year, month, day
+
+        Returns:
+            str: File name
+        """
         if len(args) == 3:
             dataset = dict(year=args[0], month=args[1], day=args[2])
         elif len(args) == 2:
@@ -295,8 +306,16 @@ class Dataset:
         return fn.format_map(dataset)
 
     def datasetfn_opendap(self, fn, variables, *args):
-        # Construct url for OpenDap protocol
-        # 	Depends on datasetfn()
+        """Construct url for OpenDap protocol. Depends on datasetfn()
+
+        Args:
+            fn (str): Template function in `weather_data_config`
+            variables (list): List of variables to download
+            *args: Year, month, day
+
+        Returns:
+            str: URL
+        """
 
         # MERRA2 requires uppercase variable names
         if self.module == "merra2":
@@ -304,7 +323,7 @@ class Dataset:
 
         # TODO: Add lat lon subsetting based on self.bounds
         # opendap URL format requires knowing the indexes in MERRA2 -- not just lat, lon bounds --
-        # e.g., ~/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]
+        # e.g., ~/MERRA2/M2T1NXSLV.5.12.4/2021/01/MERRA2_400.tavg1_2d_slv_Nx.20210101.nc4.nc4?T2M[0:23][180:360][288:575],time,lat[180:360],lon[288:575]  # noqa: E501
         if self.bounds is not None:
             logger.info("Bounds not used in OpenDAP call. Defaulting to global.")
 
@@ -314,14 +333,11 @@ class Dataset:
         return self.datasetfn(fn, *args)
 
     def get_data(self, trim=True, testing=False):
-        """Download data routine
-        #
-        #	Parameters
-        #	---------
-        #	trim: boolean (default = False)
-        #		If true, run trim_variables function following each download
-        #	testing: boolean (default = False)
-        #		If true, download only first file in download list (e.g., first day of month)
+        """Download data from server.
+
+        Args:
+            trim (bool, optional): Trim variables in file. Defaults to True.
+            testing (bool, optional): Download only first file. Defaults to False.
         """
 
         if testing is True:
@@ -359,18 +375,7 @@ class Dataset:
             self.trim_variables()
 
     def trim_variables(self):
-        """Reduce size of file by trimming variables in file
-        #
-        #	Parameters
-        #	---------
-        #	fn: array of tuples
-        #		if present: use this array of files
-        #	downloadedfiles: boolean
-        #		if True: use downloadedFiles array (of files already on system during dataset construction)
-        #		if False: use savedFiles array (of files downloaded from get_data())
-        #
-        # TODO: create options for non NetCDF4 files (eg pynio)
-        """
+        """Reduce size of file by trimming variables in file."""
 
         for f in self.downloadedFiles:
             file_path = f[1]
@@ -389,6 +394,7 @@ class Dataset:
 
     @property
     def meta_data_config(self):
+        """Metadata configuration for dataset."""
         return dict(
             tasks_func=self.weatherconfig["tasks_func"],
             prepare_func=self.weatherconfig["meta_prepare_func"],
@@ -397,32 +403,40 @@ class Dataset:
         )
 
     @property
-    def weather_data_config(self):
+    def weather_data_config(self) -> dict:
+        """Weather data config for dataset."""
         return self.dataset_module.weather_data_config
 
     @property
-    def projection(self):
+    def projection(self) -> str:
+        """Projection for dataset."""
         return self.dataset_module.projection
 
-    @property
-    def coords(self):
-        return self.meta.coords
+    # TODO: meta property/attribute does not exists here!
+    # @property
+    # def coords(self):
+    #     """Coordinates for dataset."""
+    #     return self.meta.coords  # pylint: disable=no-member
 
     @property
     def shape(self):
+        """The shape of the Cutout by (y, x)."""
         return len(self.coords["y"]), len(self.coords["x"])
 
     @property
-    def extent(self):
+    def extent(self) -> Iterable[float]:
+        """The extent of the Cutout by (x_min, x_max, y_min, y_max)."""
         return list(self.coords["x"].values[[0, -1]]) + list(
             self.coords["y"].values[[-1, 0]]
         )
 
     def grid_coordinates(self):
+        """Return grid coordinates of the Cutout."""
         xs, ys = np.meshgrid(self.coords["x"], self.coords["y"])
         return np.asarray((np.ravel(xs), np.ravel(ys))).T
 
     def grid_cells(self):
+        """Return grid cells of the Cutout."""
         coords = self.grid_coordinates()
         span = (coords[self.shape[1] + 1] - coords[0]) / 2
         return [box(*c) for c in np.hstack((coords - span, coords + span))]
@@ -435,5 +449,5 @@ class Dataset:
             self.months.start,
             self.months.stop,
             self.datadir,
-            "Prepared" if self.prepared else "Unprepared",
+            "prepared" if self.prepared else "unprepared",
         )

@@ -9,13 +9,13 @@ Geodata streamlines the collection and use of geospatial datasets through the cr
 
 Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). Geodata retains the power systems data functionality of atlite. 
 
-![png](images/geodata_workflow_chart.png)
+![png](docs/source/_static/images/geodata_workflow_chart.png)
 
 
 
 ## Installation
 
-**Geodata** has been tested to run with python3 (>= 3.9). Read the [package setup instructions](doc/general/packagesetup.md) to configure and install the package.
+**Geodata** has been tested to run with python3 (>= 3.9). Read the [package setup instructions](docs/source/quick_start/packagesetup.md) to configure and install the package.
 Installation will also install the following dependencies:
 * `numpy`
 * `scipy`
@@ -33,14 +33,11 @@ Installation will also install the following dependencies:
 * `rasterio`
 * `rioxarray`
 * `shapely`
-* `progressbar2`
+* `tqdm`
 
 ## Documentation
 
-Read the [Introduction to Geodata](doc/general/Introduction.md) documentation to get started. 
-
-Read the [Table of Contents](doc/general/tableofcontents.md) to navigate through the documentation. 
-
+YOU CAN FIND GEODATA's DOCUMENTATIONS HERE: ...
 You may also jump directly to [Example Notebooks](example_notebooks).
 
 

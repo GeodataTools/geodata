@@ -11,8 +11,10 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+
+"""Various Preparation Functions for Geodata's modules"""
 
 import calendar
 import logging
@@ -27,7 +29,6 @@ import dask
 import numpy as np
 import pandas as pd
 import xarray as xr
-from six.moves import map  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -142,17 +143,27 @@ def cutout_prepare(cutout, overwrite=False, nprocesses=None, gebco_height=False)
         def datasetfn_with_id(ym):
             # returns a filename with incrementing id at end eg `201101-01.nc`
             base, ext = os.path.splitext(cutout.datasetfn(ym))
-            return base + "-{}".format(i) + ext
+            return f"{base}-{i}{ext}"
 
         t["datasetfns"] = {ym: datasetfn_with_id(ym) for ym in yearmonths.tolist()}
 
-    logger.info(
-        "%d tasks have been collected. Starting running them on %s.",
-        len(tasks),
-        ("%d processes" % nprocesses) if nprocesses is not None else "all processors",
-    )
+    # TODO: Using multiple processes will cause issues with geodata currently
+    # because geodata write the metadata dataframe to the cutout directory
+    # in every instantiation of a new Cutout object in an unprepared state.
+    # By running multiple processes, the metadata file will be overwritten
+    # and there are no locking mechanism currently in place.
+    # As the result, we will run the tasks in a single process for now.
+    # In the future, we can consider doing it in a multiprocessing scheme as long as
+    # we can ensure that the metadata file is being processed in places other than
+    # the constructor.
 
-    pool = Pool(processes=nprocesses)
+    # logger.info(
+    #     "%d tasks have been collected. Starting running them on %s.",
+    #     len(tasks),
+    #     f"{nprocesses} processes" if nprocesses is not None else "all processors",
+    # )
+
+    pool = Pool(processes=1)
     try:
         pool.map(cutout_do_task, tasks)
     except Exception as e:
@@ -236,7 +247,7 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
 
     # with metadata, load various parameters
     meta_file_granularity = meta_kwds["file_granularity"]
-    month_start = pd.Timestamp("{}-{}".format(years.stop, months.stop))
+    month_start = pd.Timestamp(f"{years.stop}-{months.stop}")
     ds.coords["year"] = range(years.start, years.stop + 1)
     ds.coords["month"] = range(months.start, months.stop + 1)
 
@@ -246,27 +257,22 @@ def cutout_get_meta(cutout, xs, ys, years, months=None, **dataset_params):
         offset_end = end - (month_start + pd.offsets.MonthBegin())
         step = (second - start).components.hours
         ds.coords["time"] = pd.date_range(
-            start=pd.Timestamp("{}-{}".format(years.start, months.start))
-            + offset_start,
+            start=pd.Timestamp(f"{years.start}-{months.start}") + offset_start,
             end=(month_start + pd.offsets.MonthBegin() + offset_end),
-            freq="h" if step == 1 else ("%dh" % step),
+            freq="h" if step == 1 else f"{step}h",
         )
     elif meta_file_granularity == "dailymeans":
         ds.coords["time"] = pd.date_range(
-            start=pd.Timestamp("{}-{}-{}".format(years.start, months.start, 1)),
+            start=pd.Timestamp(f"{years.start}-{months.start}-1"),
             end=pd.Timestamp(
-                "{}-{}-{}".format(
-                    years.stop,
-                    months.stop,
-                    calendar.monthrange(years.stop, months.stop)[1],
-                )
+                f"{years.stop}-{months.stop}-{calendar.monthrange(years.stop, months.stop)[1]}"
             ),
             freq="d",
         )
     elif meta_file_granularity == "monthly":
         ds.coords["time"] = pd.date_range(
-            start=pd.Timestamp("{}-{}".format(years.start, months.start)),
-            end=pd.Timestamp("{}-{}".format(years.stop, months.stop)),
+            start=pd.Timestamp(f"{years.start}-{months.start}"),
+            end=pd.Timestamp(f"{years.stop}-{months.stop}"),
             freq="MS",
         )
 
@@ -311,7 +317,7 @@ def cutout_get_meta_view(
     meta = meta.sel(
         time=slice(
             *(
-                "{:04}-{:02}".format(*ym)
+                f"{ym[0]:04d}-{ym[1]:02d}"
                 for ym in meta["year-month"][[0, -1]].to_index()
             )
         )

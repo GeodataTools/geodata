@@ -1,4 +1,5 @@
-# Copyright 2024 Xiqiang Liu
+# Copyright 2016-2017 Jonas Hoersch (FIAS), Tom Brown (FIAS), Markus Schlott (FIAS)
+# Copyright 2022 Xiqiang Liu
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -11,8 +12,7 @@
 # GNU General Public License for more details.
 
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from . import era5, merra2
 
