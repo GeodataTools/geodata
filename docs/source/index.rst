@@ -58,6 +58,15 @@ Welcome to Geodata's documentation!
 ..    application/*
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Modeling
+   :glob:
+   :hidden:
+
+   modeling/wind/index
+   modeling/*
+
+.. toctree::
    :maxdepth: 2
    :caption: API Reference
    :glob:
