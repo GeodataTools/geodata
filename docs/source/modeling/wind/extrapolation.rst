@@ -99,3 +99,33 @@ and/or :code:`ys=slice(start, end)` parameters to the `estimate` method.
     `estimate` method. You do not need worry about whether the height you queried is
     available in the dataset; the model will handle that for you. If the height is not
     available, it will perform extrapolation instead.
+
+How the Extrapolation Model Works
+---------------------------------
+
+The model calculate hub height wind speed from MERRA2, extrapolating the variables in
+MERRA's tavg1_2d_slv_Nx data collection, which is a set of the time-averaged
+single-layer diagnostics.
+
+Specifically, the variables we use for extrapolation are: 2-m wind (U2M, V2M, in m/s),
+10-m wind (U10M, V10M), 50-m wind (U50M, V50M), and the zero-plane displacement
+height (DISPH, in meters).
+
+
+The hub height wind speed can be calculated as
+
+.. math::
+   \nu  = \alpha \ln\left(\frac{H - d}{z}\right)
+
+.. math::
+   z = e^{-\beta/\alpha}
+
+where :math:`\nu` is the hub height wind speed, :math:`\alpha` is the best-fit slope
+from a linear regression of MERRA's 3-level (i.e., 2, 10, and 50 m) wind speed on
+vertical heights, :math:`\ln` is the natural logarithm, :math:`H` is the hub height,
+:math:`d` is the zero-plane displacement height, and :math:`\beta` is the intercept
+from the linear regression fit.
+
+Here we estimate :math:`\alpha` and :math:`\beta` fitting the first-degree polynomial
+regression model (i.e., simple linear regression) to three data points from the pairs
+of the heights at 2, 10 and 50 m and the corresponding MERRA wind speed.

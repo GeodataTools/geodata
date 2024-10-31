@@ -1,5 +1,5 @@
 [project]
-name = "geodata"
+name = "geodata-re"
 version = "0.1.0"
 description = "Geospatial Data Collection and Pre-Analysis Tools"
 authors = [

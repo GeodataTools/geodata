@@ -18,10 +18,11 @@ release = __version__
 
 extensions = [
     "myst_nb",
-    "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.mathjax",
+    "autoapi.extension",
 ]
 
 templates_path = ["_templates"]
@@ -50,3 +51,14 @@ intersphinx_mapping = {
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
+
+
+autoapi_dirs = ["../../src/geodata"]
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "inherited-members",
+    "show-module-summary",
+    "imported-members",
+]
+autoapi_own_page_level = "method"
