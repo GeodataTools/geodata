@@ -108,7 +108,11 @@ single-layer diagnostics.
 
 Specifically, the variables we use for extrapolation are: 2-m wind (U2M, V2M, in m/s),
 10-m wind (U10M, V10M), 50-m wind (U50M, V50M), and the zero-plane displacement
-height (DISPH, in meters).
+height (DISPH, in meters). Additionally, we also use the wind speed at MERRA2's lowest
+model level (ULML, VLML, in m/s), the height of the lowest model level
+(HLML, in meters), may vary depending on the location. We can obtain the wind speed at
+any given location and height by computing the norm of the vector sum of the U and V
+components.
 
 
 The hub height wind speed can be calculated as
