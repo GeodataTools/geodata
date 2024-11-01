@@ -44,10 +44,9 @@ Next, we need to load the dataset that contains the wind speed data. We will use
     if not ds.prepared:
         ds.get_data()  # Download the data if we don't have it locally
 
-Step 3: Prepare the data for interpolation
+Step 3: Compute interpolation parameters
 --------------------------------------------
-Before we can perform the actual estimation process, we need to compute the parameters
-required for the interpolation model.
+The interpolation is separated into two steps to separate the computationally-intensive step (estimating interpolation parameters) from the computationally-easy step (interpolating at desired heights). First, we compute the interpolation parameters. 
 
 .. code:: Python
 
@@ -72,12 +71,12 @@ Simply replace :code:`ds` with your cutout variable.
     interpolation. You only need to call it once after loading the dataset. From that
     point on, you can load and use the model directly without re-preparing it.
 
-Step 4: Perform the interpolation
+Step 4: Estimate using the interpolation model
 ----------------------------------
 
 Now that we have prepared the model, we can perform the interpolation to estimate wind
 speed at the desired locations. Suppose we want to estimate the wind speed at a height
-of 60 above ground during Jaunary of 2006 for the entire region covered by the original
+of 60 m above ground during Jaunary of 2006 for the entire region covered by the original
 dataset, we can do this as follows:
 
 .. code:: Python
@@ -91,11 +90,3 @@ dataset, we can do this as follows:
 This will return an xarray DataArray containing the estimated wind speed values. Note
 that you can also select a subset area by passing in :code:`xs=slice(start, end)`
 and/or :code:`ys=slice(start, end)` parameters to the `estimate` method.
-
-.. note::
-    As the underlying ERA5 dataset already contained wind speed at certain heights, the
-    model also has a feature to return the original wind speed values from the dataset
-    if desired. To do this, simply set the `use_real_data` parameter to `True` in the
-    `estimate` method. You do not need worry about whether the height you queried is
-    available in the dataset; the model will handle that for you. If the height is not
-    available, it will perform interpolation instead.
