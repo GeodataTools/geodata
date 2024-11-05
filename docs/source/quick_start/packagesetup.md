@@ -10,6 +10,18 @@ Make sure that you have the following **required** software set up:
   - [conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda)
   - [pip](https://pip.pypa.io/en/stable/installation/)
 
+
+```{note}
+
+The majority of the content below applies to macOS and Linux. Any possible differences for Windows users are noted.
+Nontheless, it is worth noting that using **geodata** on Windows may present some additional challenges due to its
+file access properties.
+
+Thus, it is recommended to use geodata a Linux-based system. If you are using Windows, you may
+want to consider using the [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install)
+or a virtual machine.
+```
+
 ## Downloading Geodata
 
 To download **geodata**, open a terminal/shell window navigate to your preferred working directory, and run the following: (If you do not have Git installed, you may also directly download it with this [link](https://github.com/GeodataTools/geodata/archive/refs/heads/master.zip).
