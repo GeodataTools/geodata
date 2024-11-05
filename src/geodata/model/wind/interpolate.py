@@ -187,7 +187,9 @@ class WindInterpolationModel(WindBaseModel):
                 valid_time=get_daterange(years, months),
             )
 
-        if float(height) in LEVEL_TO_HEIGHT.values() and use_real_data:
+        # If the height is in the list of known heights, we can directly return
+        # the wind speed to save computation time.
+        if float(height) in LEVEL_TO_HEIGHT.values():
             params = params.sel(height=height)
             return (
                 ((params["u"] ** 2 + params["v"] ** 2) ** 0.5)

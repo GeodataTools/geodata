@@ -380,7 +380,7 @@ def get_var(cutout, var, **params):
     Returns: dataarray
     """
     logger.info("Getting variable: %s", str(var))
-    return cutout.convert_cutout(convert_func=_get_var, var=var, **params)
+    return cutout._convert_cutout(convert_func=_get_var, var=var, **params)
 
 
 def _compute_var(ds, fn):
