@@ -15,7 +15,9 @@
 
 
 """
-This module contains various functions used to perform conversion in Geodata.
+This module contains various private functions used to perform conversion in Geodata.
+They are not meant to be used by users directly. Use the corresponding methods of the
+`Cutout` class instead.
 """
 
 import datetime as dt

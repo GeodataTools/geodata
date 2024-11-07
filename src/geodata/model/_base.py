@@ -25,11 +25,11 @@ import xarray as xr
 
 import geodata
 
-from ..config import model_dir
-from ..cutout import Cutout
-from ..dataset import Dataset
-from ..logging import logger
-from ..utils import NpEncoder
+from .._config import model_dir
+from .._cutout import Cutout
+from .._dataset import Dataset
+from .._logging import logger
+from .._utils import NpEncoder
 
 
 class BaseModel(abc.ABC):

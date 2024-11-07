@@ -34,7 +34,7 @@ import numpy as np
 import xarray as xr
 from shapely.geometry import box
 
-from . import config, datasets  # noqa: F401
+from . import _config, _datasets  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -371,7 +371,7 @@ class Dataset:
         if self.downloadedFiles == self.totalFiles:
             self.prepared = True
 
-        if trim is True and self.module not in config.untrimmable_datasets:
+        if trim is True and self.module not in _config.untrimmable_datasets:
             self.trim_variables()
 
     def trim_variables(self):

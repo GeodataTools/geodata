@@ -36,14 +36,14 @@ from rasterio.merge import merge
 from rasterio.plot import plotting_extent
 from rioxarray import open_rasterio
 
-from .config import MASK_DIR
+from ._config import MASK_DIR
 
 logger = logging.getLogger(__name__)
 
 try:
     from numba import njit, prange
 except ImportError:
-    from .utils import dummy_njit as njit
+    from ._utils import dummy_njit as njit
 
     prange = range
     logging.info("Numba not installed, custom functions on arrays are not vectorized.")
@@ -1531,3 +1531,22 @@ def show_all(r_dict: dict[str, ras.DatasetReader], **kwargs):
     """
     for name, r in r_dict.items():
         show(r, title=name, **kwargs)
+
+
+__all__ = (
+    "open_tif",
+    "ras_to_xarr",
+    "create_temp_tif",
+    "save_opened_raster",
+    "save_raster",
+    "crop_raster",
+    "reproject_raster",
+    "apply_fn_to_raster",
+    "filter_raster",
+    "trim_raster",
+    "filter_area",
+    "convert_shape_crs",
+    "show",
+    "show_all",
+    "raster_show",
+)

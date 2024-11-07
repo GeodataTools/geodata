@@ -45,7 +45,7 @@ from typing import Callable
 import xarray as xr
 from tqdm.auto import tqdm
 
-from ...logging import logger
+from ..._logging import logger
 from .._base import BaseModel
 
 HEIGHTS = {"u50m": 50, "u10m": 10, "u2m": 2}

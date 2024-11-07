@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ...logging import logger
+from ..._logging import logger
 from ._base import HEIGHTS, WindBaseModel
 
 try:
@@ -28,7 +28,7 @@ except ImportError:
     logger.warning("Numba not installed. Using pure Python implementation.")
     prange = range
 
-    from ...utils import dummy_njit as njit
+    from ..._utils import dummy_njit as njit
 
 
 @njit(parallel=True)

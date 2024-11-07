@@ -22,7 +22,7 @@ import matplotlib.animation as anim
 import matplotlib.pyplot as plt
 import xarray as xr
 
-from .cutout import ds_reformat_index
+from ._cutout import ds_reformat_index
 from .mask import show  # noqa: F401
 
 plt.rcParams["animation.html"] = "jshtml"

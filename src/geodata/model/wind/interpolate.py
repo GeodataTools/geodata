@@ -20,8 +20,8 @@ import scipy.interpolate as sinterp
 import xarray as xr
 from xarray.namedarray.pycompat import array_type as dask_array_type
 
-from ...logging import logger
-from ...utils import get_daterange
+from ..._logging import logger
+from ..._utils import get_daterange
 from ._base import WindBaseModel
 
 # See https://confluence.ecmwf.int/display/UDOC/L137+model+level+definitions
