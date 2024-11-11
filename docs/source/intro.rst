@@ -31,8 +31,27 @@ model inputs. Additionally, with a minimal amount of data consistency
 checks and metadata information, when one researcher goes through this
 exercise, everyone benefits.
 
+Geodata builds off the atlite library, which converts weather data
+(such as wind speeds, solar radiation, temperature and runoff) into power
+systems data (such as wind power, solar power, hydro power and heating demand
+time series). Geodata retains the power systems data functionality of atlite.
+
+
+
 How To Use
 ----------
+
+Installation
+~~~~~~~~~~~~
+
+In short, Geodata is available on PyPI and can be installed via pip:
+
+.. code :: bash
+
+   pip install geodata
+
+For more detailed installation instructions, see the
+:doc:`installation guide<quick_start/installation>`.
 
 Download Datasets
 ~~~~~~~~~~~~~~~~~
@@ -56,7 +75,7 @@ on 01/01/2011, use the following method call:
    from geodata import Dataset
 
    solar = Dataset(
-      module="merra2", 
+      module="merra2",
       years= slice(2011, 2011),
       months=slice(1,1),
       weather_data_config="slv_radiation_hourly"
@@ -97,15 +116,13 @@ China.
 
 Then, we can convert the downward-shortwave, upward-shortwave radiation
 flux, and ambient temperature variables from the Cutout data into a PV
-generation time-series using the geodata ``convert`` method. Geodata
+generation time-series using the cutout's ``convert`` method. Geodata
 stores objects internally as an xarray DataArray, which can be easily
 converted to a Pandas DataFrame.
 
 .. code :: Python
 
-   from geodata import convert
-
-   ds_solar = convert.pv(cutout, panel="KANEKA", orientation="latitude_optimal")
+   ds_solar = cutout.pv(panel="KANEKA", orientation="latitude_optimal")
    ds_solar.to_dataframe(name="pv")
 
 
@@ -226,8 +243,8 @@ covered by the Mask and areas calculated via an equal-area projection.
 
 .. code :: Python
 
-   ds_cutout = convert.pv(
-      cutout, panel="KANEKA", orientation="latitude_optimal"
+   ds_cutout = cutout.pv(
+      panel="KANEKA", orientation="latitude_optimal"
    ).to_dataset(name="solar")
 
    cutout.add_mask("china")

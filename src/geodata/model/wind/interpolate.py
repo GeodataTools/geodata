@@ -118,6 +118,9 @@ class WindInterpolationModel(WindBaseModel):
     This model uses the ERA5 3D dataset to estimate wind speed at a given height using
     spline interpolation.
 
+    Args:
+        source (Dataset | Cutout): Dataset or Cutout object this model is based on.
+
     Example:
 
     >>> from geodata import Dataset
@@ -245,3 +248,6 @@ class WindInterpolationModel(WindBaseModel):
         return xr.DataArray(
             spline_params(height), dims=params.dims, coords=params.coords
         )
+
+
+__all__ = ("WindInterpolationModel",)

@@ -78,6 +78,9 @@ class WindExtrapolationModel(WindBaseModel):
         The residuals are the difference between the estimated wind speed and the actual wind speed.
         The residuals are stored in the same order as the heights used in the regression.
 
+    Args:
+        source (Dataset | Cutout): Dataset or Cutout object this model is based on.
+
     Example:
         >>> from geodata import Dataset
         >>> from geodata.model.wind import WindExtrapolationModel
@@ -225,3 +228,6 @@ class WindExtrapolationModel(WindBaseModel):
 
         result = alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
         return result.drop_vars("coeff")  # remove unnecessary coordinate
+
+
+__all__ = ("WindExtrapolationModel",)
