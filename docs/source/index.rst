@@ -64,15 +64,11 @@ Welcome to Geodata's documentation!
    :hidden:
 
    modeling/wind/index
-   modeling/*
 
 .. toctree::
-   :maxdepth: 1
    :caption: API Reference
-   :hidden:
 
-   autoapi/geodata/*
-
+   autoapi/geodata/index
 
 Indices and tables
 ==================

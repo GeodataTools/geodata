@@ -15,4 +15,4 @@
 
 from . import wind
 
-__all__ = ["wind"]
+__all__ = ("wind",)

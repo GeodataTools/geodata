@@ -1,4 +1,5 @@
 # Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,12 +15,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-"""
-GEODATA
-
-Geospatial Data Collection and "Pre-Analysis" Tools
-"""
-
 import logging
 from operator import itemgetter
 
@@ -29,7 +24,7 @@ from scipy.signal import fftconvolve
 from geodata._config import SRC_ROOT
 
 
-logger = logging.getLogger(name=__name__)
+_logger = logging.getLogger(name=__name__)
 
 
 def get_windturbineconfig(turbine):
@@ -134,7 +129,7 @@ def windturbine_smooth(turbine, params):
     turbine["P"] = np.max(turbine["POW"])
 
     if any(turbine["POW"][np.where(turbine["V"] == 0.0)] > 1e-2):
-        logger.warning(
+        _logger.warning(
             "Oversmoothing detected with parameters %s. Turbine generates energy at 0 m/s wind speeds",
             params,
         )

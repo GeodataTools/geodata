@@ -758,21 +758,17 @@ class Cutout:
         """
         Generate wind speed time-series
 
-        convert.convert_cutout → convert.convert_windspd
+        Internally calls convert_windspd under :func:`_convert::convert_windspd`.
 
-        Parameters
-        ----------
-        **params
-            Must have 1 of:
-                turbine : str or dict
-                        Name of a turbine
-                hub_height : num
-                        Extrapolation height
+        Args:
+            turbine : str or dict
+                Name of a turbine
+            hub_height: float | int
+                Extrapolation height
 
-            Can also specify all of the general conversion arguments
-            documented in the `convert_cutout` function.
-                e.g. var_height='lml'
-
+        Can also specify all of the general conversion arguments
+        documented in the `convert_cutout` function.
+            e.g. var_height='lml'
         """
 
         if "turbine" in params:
@@ -797,21 +793,17 @@ class Cutout:
         """
         Generate wind power density time-series
 
-        convert.convert_cutout → convert.convert_windwpd
+        Internally calls convert_windwpd under :func:`_convert::convert_windwpd`.
 
-        Parameters
-        ----------
-        **params
-                Must have 1 of:
-                        turbine : str or dict
-                                Name of a turbine
-                        hub_height : num
-                                Extrapolation height
+        Args:
+            turbine : str or dict
+                Name of a turbine
+            hub_height: float | int
+                Extrapolation height
 
-                Can also specify all of the general conversion arguments
-                documented in the `convert_cutout` function.
-                        e.g. var_height='lml'
-
+        Can also specify all of the general conversion arguments
+        documented in the `convert_cutout` function.
+            e.g. var_height='lml'
         """
 
         if "turbine" in params:

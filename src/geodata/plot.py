@@ -27,7 +27,7 @@ from .mask import show  # noqa: F401
 
 plt.rcParams["animation.html"] = "jshtml"
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 CoordinateType = tuple[Union[float, int], Union[float, int]]
 ReductionType = Literal["mean", "sum"]
 
@@ -179,7 +179,7 @@ def time_series(
                     raise ValueError(f"Longitude for {key} out of bound.")
 
             if log_new_coord:
-                logger.info(
+                _logger.info(
                     "Find grid cell containing coordinate for %s at lat = %f, lon = %f.",
                     key,
                     la,

@@ -62,3 +62,4 @@ autoapi_options = [
     "imported-members",
 ]
 autoapi_own_page_level = "method"
+autoapi_add_toctree_entry = False

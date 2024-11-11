@@ -31,11 +31,12 @@ model inputs. Additionally, with a minimal amount of data consistency
 checks and metadata information, when one researcher goes through this
 exercise, everyone benefits.
 
-Geodata builds off the atlite library, which converts weather data
+Geodata builds off the `atlite`_ library, which converts weather data
 (such as wind speeds, solar radiation, temperature and runoff) into power
 systems data (such as wind power, solar power, hydro power and heating demand
 time series). Geodata retains the power systems data functionality of atlite.
 
+.. _atlite: https://github.com/PyPSA/atlite
 
 
 How To Use
@@ -51,7 +52,7 @@ In short, Geodata is available on PyPI and can be installed via pip:
    pip install geodata
 
 For more detailed installation instructions, see the
-:doc:`installation guide<quick_start/installation>`.
+:doc:`installation guide<quick_start/packagesetup>`.
 
 Download Datasets
 ~~~~~~~~~~~~~~~~~
