@@ -2,13 +2,12 @@
 
 This guide covers how to install and configure the **geodata** package for local and cloud use.
 
-Make sure that you have the following **required** software set up:
+Make sure that you have the following software set up:
 
 * [Python 3](https://www.python.org/downloads/)
 
-* Package Management System
+* Package Management System (Optional but highly recommended to isolate individual projects dependent packages)
   - [conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda)
-  - [pip](https://pip.pypa.io/en/stable/installation/)
 
 
 ```{note}
@@ -71,5 +70,16 @@ If you already have Anaconda/miniconda installed on your machine, jump straight 
 If you have conda 4.6 or later versions, in the terminal/shell, run the following command below to activate the conda [environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments).
 
 ```bash
+
+conda create --name geodata python=3.12
 conda activate <ENVIRONMENT_NAME>
+pip install geodata-re
+```
+
+Once you activate the environment, any packages you install (including geodata) will be isolated.
+If you have a new project and wish to start over again, you can create a new environment and install the package again.
+
+```bash
+conda deactivate
+conda env remove --name geodata
 ```
