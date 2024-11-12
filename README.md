@@ -1,5 +1,4 @@
-GEODATA
--
+# Geodata
 
 [![DOI](https://zenodo.org/badge/218690319.svg)](https://zenodo.org/badge/latestdoi/218690319)
 
@@ -7,7 +6,7 @@ GEODATA
 
 Geodata streamlines the collection and use of geospatial datasets through the creation of shared scripts for “analysis-ready” physical variables. Its purpose is to make it easier for researchers to identify, download, and work with new sources of geospatial data. Additionally, with a minimal amount of data consistency checks and metadata information, when one researcher goes through this exercise, everyone benefits.
 
-Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). Geodata retains the power systems data functionality of atlite. 
+Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). Geodata retains the power systems data functionality of atlite.
 
 ![png](docs/source/_static/images/geodata_workflow_chart.png)
 
@@ -15,7 +14,9 @@ Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, wh
 
 ## Installation
 
-**Geodata** has been tested to run with python3 (>= 3.9). Read the [package setup instructions](docs/source/quick_start/packagesetup.md) to configure and install the package.
+**Geodata** has been tested to run with python3 (>= 3.10). Read the [package setup instructions](https://geodata.readthedocs.io/en/latest/quick_start/packagesetup.html) to configure and install the package.
+
+
 Installation will also install the following dependencies:
 * `numpy`
 * `scipy`
@@ -37,14 +38,10 @@ Installation will also install the following dependencies:
 
 ## Documentation
 
-YOU CAN FIND GEODATA's DOCUMENTATIONS HERE: ...
-You may also jump directly to [Example Notebooks](example_notebooks).
-
-
+You can find the documentation for Geodata [here](https://geodata.readthedocs.io/en/latest/).
 
 ## Contributing
-
-We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://mdavidson.org/about/) of geodata.
+We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://pwrlab.org/about.html) of geodata.
 
 
 ## License
@@ -54,7 +51,3 @@ Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This 
 ## Support
 
 The Geodata team would like to thank the Center for Global Transformation at UC San Diego for providing financial support to the project.
-
-
-
-

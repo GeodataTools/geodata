@@ -67,6 +67,7 @@ Welcome to Geodata's documentation!
 
 .. toctree::
    :caption: API Reference
+   :hidden:
 
    autoapi/geodata/index
 
