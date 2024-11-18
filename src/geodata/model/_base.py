@@ -1,4 +1,4 @@
-# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2023-2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -72,15 +72,52 @@ class BaseModel(abc.ABC):
 
         if isinstance(source, geodata.Dataset):
             self._ref_path = model_dir.parent / self.source.module
-            self._path = model_dir / self.type / self.source.module
+            self._path = (
+                model_dir
+                / self.type
+                / self.__class__.__name__
+                / "datasets"
+                / self.source.module
+            )
         else:
             self._ref_path = model_dir.parent / "cutouts"
-            self._path = model_dir / self.type / self.source.name
+            self._path = (
+                model_dir
+                / self.type
+                / self.__class__.__name__
+                / "cutouts"
+                / self.source.name
+            )
 
         if (meta_path := self._path / "meta.json").exists():
             try:
                 with open(meta_path, encoding="utf_8") as f:
                     self.metadata = json.load(f)
+
+                # NOTE: Double-check if we have an updated dataset/cutout
+                # If we do, we need to re-prepare the model
+                if isinstance(source, geodata.Dataset):
+                    _source_files = self.extract_dataset_metadata(source).get(
+                        "files_orig", {}
+                    )
+                else:
+                    _source_files = self.extract_cutout_metadata(source).get(
+                        "files_orig", {}
+                    )
+
+                if set(_source_files.keys()) != set(
+                    self.metadata.get("files_orig", {}).keys()
+                ):
+                    logger.warning(
+                        "Metadata file %s is outdated. Model will be re-prepared.",
+                        meta_path,
+                    )
+                    self._corrupt_metadata = True
+                    if isinstance(source, geodata.Dataset):
+                        self.metadata = self.extract_dataset_metadata(source)
+                    else:
+                        self.metadata = self.extract_cutout_metadata(source)
+
             except json.JSONDecodeError:
                 logger.warning(
                     "Metadata file %s is corrupted. Model will be re-prepared.",
@@ -92,7 +129,7 @@ class BaseModel(abc.ABC):
                 else:
                     self.metadata = self.extract_cutout_metadata(source)
         else:
-            # NOTE: We only store metadata in transient fashion until prepartion is done
+            # NOTE: We only store metadata in transient fashion until preparation is done
             if isinstance(source, geodata.Dataset):
                 self.metadata = self.extract_dataset_metadata(source)
             else:

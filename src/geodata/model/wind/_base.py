@@ -71,7 +71,7 @@ class WindBaseModel(BaseModel):
         prepared_files = []
         for file_path in tqdm(self.metadata["files_orig"], dynamic_ncols=True):
             orig_ds_path: Path = self._ref_path / file_path
-            ds = xr.open_dataset(orig_ds_path)
+            ds = xr.open_dataset(orig_ds_path, chunks="auto")
             try:
                 ds = self._prepare_fn(ds)
             except SystemError:

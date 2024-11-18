@@ -18,7 +18,7 @@ from typing import Hashable, Optional
 import numpy as np
 import scipy.interpolate as sinterp
 import xarray as xr
-from xarray.namedarray.pycompat import array_type as dask_array_type
+from xarray.namedarray.pycompat import array_type
 
 from ...logging import logger
 from ...utils import get_daterange
@@ -79,13 +79,11 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
 
     t = sinterp._bsplines._not_a_knot(x, k=k)
 
-    if isinstance(a.data, dask_array_type("dask")):
+    if isinstance(a.data, array_type("dask")):
         from dask.array import map_blocks
 
         if len(a.data.chunks[0]) > 1:
-            raise NotImplementedError(
-                "Unsupported: multiple chunks on interpolation dim"
-            )
+            a = a.chunk({dim: 1})
 
         c = map_blocks(
             _make_interp_coeff,
