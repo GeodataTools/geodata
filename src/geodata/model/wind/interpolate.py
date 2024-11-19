@@ -83,7 +83,7 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
         from dask.array import map_blocks
 
         if len(a.data.chunks[0]) > 1:
-            a = a.chunk({dim: 1})
+            a = a.chunk({dim: -1})
 
         c = map_blocks(
             _make_interp_coeff,
