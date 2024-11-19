@@ -1,33 +1,24 @@
-Wind Modeling
+Wind Models
 =============
 
-Starting from geodata v0.2.0, geodata's capability to model and estimate wind speed have
-been from the cutout module to a separate wind module. This module has the capability to
-estimate wind speed with two modes: interpolation and extrapolation.
+Estimating wind speed and wind generation from simulated reanalysis or weather models entails a number of assumptions, due to the general sparsity of measurements and complex meteorology affecting wind speed evolution with height. 
+Default approaches use parameterizations such as the log law to scale wind speed to desired turbine hub heights according to general relationships. 
+The `model` module extracts multiple wind speeds from the underlying datasets which are used to estimate wind speed in one of two ways: interpolation and extrapolation.
 
-How to use the models
+How to use the wind models
 ---------------------
 
-Unlike other modules of geodata, the model module does not get imported automatically.
-In other words, one cannot use the models with an import statement like this:
+Unlike other modules of geodata, the `model` module does not get imported automatically, in order to keep the namespace clean. 
 
-.. code:: Python
-
-    import geodata
-    model = geodata.model.wind.WindInterpolationModel()
-
-Instead, the user must import the models explicitly:
+Instead, the user must import `model` explicitly:
 
 .. code:: Python
 
     from geodata.model.wind import WindInterpolationModel
     model = WindInterpolationModel()
 
-The reason for this is to keep the main geodata namespace clean,
-since we might add many more models in the future.
-
-More details on how to use the models can be found in each model's respective tutorial
-as well as in the API reference.
+For more details on how to use the models, see the tutorials below
+as well as the API reference.
 
 .. toctree::
    :maxdepth: 1

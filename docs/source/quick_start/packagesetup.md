@@ -60,6 +60,7 @@ If you are running geodata in a Jupyter Notebook, you could define the variable 
 
 If you do not define this variable, all datasets and cutouts will be stored under `~/.local/geodata` by default.
 
+[ADD typical folders to be created under GEODATA_ROOT]
 
 ## Anaconda/miniconda Environment
 

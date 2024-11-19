@@ -102,20 +102,14 @@ and/or :code:`ys=slice(start, end)` parameters to the `estimate` method.
 How the Extrapolation Model Works
 ---------------------------------
 
-The model calculates hub height wind speed from MERRA2, extrapolating the variables in
-MERRA's tavg1_2d_slv_Nx data collection, which is a set of the time-averaged
-single-layer diagnostics.
-
-Specifically, the variables we use for extrapolation are: 2-m wind (U2M, V2M, in m/s),
-10-m wind (U10M, V10M), 50-m wind (U50M, V50M), and the zero-plane displacement
-height (DISPH, in meters). Additionally, we also use the wind speed at MERRA2's lowest
-model level (ULML, VLML, in m/s), the height of the lowest model level
-(HLML, in meters), may vary depending on the location. We can obtain the wind speed at
-any given location and height by computing the norm of the vector sum of the U and V
-components.
+The model utilizes wind speeds at different heights to estimate individual parameters for a log law parameterization at each point in time and space. 
+Specifically, the variables drawn from MERRA2 for extrapolation: zero-plane displacement height (DISPH, in meters), 2-m wind (U2M, V2M, in m/s),
+10-m wind (U10M, V10M), 50-m wind (U50M, V50M), and MERRA2's lowest
+model level (ULML, VLML, in m/s) and the height of the lowest model level
+(HLML, in meters). Wind speed is obtained by computing the norm of the vector sum of the U and V components.
 
 
-The hub height wind speed can be calculated as
+The desired height wind speed can be calculated as
 
 .. math::
    \nu  = \alpha \ln\left(\frac{H - d}{z}\right)
@@ -128,4 +122,4 @@ from a linear regression of wind speeds on vertical heights, :math:`\ln` is the 
 :math:`d` is the zero-plane displacement height, and :math:`\beta` is the intercept
 from the linear regression fit.
 
-Here we estimate :math:`\alpha` and :math:`\beta` fitting a simple linear regression model to the heights and wind speeds in the data.
+Here, we estimate :math:`\alpha` and :math:`\beta` fitting a simple linear regression model to the heights and wind speeds in the data.

@@ -46,7 +46,7 @@ Next, we need to load the dataset that contains the wind speed data. We will use
 
 Step 3: Compute interpolation parameters
 --------------------------------------------
-The interpolation is separated into two steps to separate the computationally-intensive step (estimating interpolation parameters) from the computationally-easy step (interpolating at desired heights). First, we compute the interpolation parameters. 
+The interpolation is separated into two steps: the computationally-intensive step (estimating interpolation parameters) and the computationally-easy step (interpolating at desired heights). First, we compute the interpolation parameters. 
 
 .. code:: Python
 

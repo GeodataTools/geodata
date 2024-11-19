@@ -138,3 +138,6 @@ scripts/cluster
 
 # PDM
 .pdm-python
+
+# Mac
+.DS_Store

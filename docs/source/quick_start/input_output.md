@@ -7,6 +7,7 @@
 ### ERA5
 
 * [ERA5 hourly data on single levels](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
+* ERA5 3D level data [ADD 3D layer title and link]
 
 ### MERRA2
 
@@ -20,7 +21,7 @@
 * [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
 * Functionality and documentation for additional datasets is planned.
 
-Geodata can work with the following GIS file for masking:
+Geodata can work with the following GIS files for masking:
 
 * Tag Image File Format ([`.tif`](https://en.wikipedia.org/wiki/GeoTIFF))
 * The shapefile format (`.shp`; geospatial vector data format for geographic information system software)
@@ -38,24 +39,17 @@ The following outputs are currently supported for climate data:
 
 **Solar**
 
-* Solar photovoltaic generation time-series ([ERA5 only](../datasets/era5/era5_outputs.md#solar-photovoltaic-generation-time-series))
-* PV generation time-series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pv-generation-time-series))
+* Solar photovoltaic generation time-series ([MERRA2](../datasets/merra2/merra2_outputs.md#pv-generation-time-series), [ERA5](../datasets/era5/era5_outputs.md#solar-photovoltaic-generation-time-series))
 
 
 **Temperature**
 
-* Celsius Temperature (MERRA2 only)
+* Celsius Temperature (MERRA2 only) [ADD ERA5 temperature and links to both]
 
 
 **Aerosols**
 
 * PM2.5 time series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pm25-time-series))
-
-### Mask Specific
-
-The following outputs are currently supported for masking:
-
-* Geospatial raster data in Tag Image File Format ([`.tif`](https://en.wikipedia.org/wiki/GeoTIFF))
 
 
 

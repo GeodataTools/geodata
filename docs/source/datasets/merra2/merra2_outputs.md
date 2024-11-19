@@ -1,4 +1,4 @@
-# MERRA2 Ouputs
+# MERRA2 Outputs
 
 This notebook includes these following sections:
 
