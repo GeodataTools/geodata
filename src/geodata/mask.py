@@ -47,7 +47,10 @@ except ImportError:
     from ._utils import dummy_njit as njit
 
     prange = range
-    logging.info("Numba not installed, custom functions on arrays are not vectorized.")
+    logger.info(
+        "Numba not installed, custom functions on arrays are not "
+        "vectorized when applied to masks."
+    )
 
 # NOTE: Shapely's had an API change that results in MultiPolygon
 # being non-iterable. Use shp.geoms in those cases.
