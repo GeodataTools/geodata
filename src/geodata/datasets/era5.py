@@ -132,9 +132,6 @@ def api_complete(
                 "format": "netcdf",
             }
 
-            if bounds is not None:
-                full_request["area"] = bounds
-
             full_result = cdsapi.Client().retrieve(product, full_request)
 
             logger.info(
@@ -142,7 +139,23 @@ def api_complete(
                 len(full_request["param"]),
                 f,
             )
-            full_result.download(f[1])
+
+            if not bounds:
+                full_result.download(f[1])
+            else:
+                # NOTE: Raw MARS request doesn't support bounding box, so we need to
+                # subset the data after downloading
+                with tempfile.NamedTemporaryFile(suffix=".nc") as tmpfile:
+                    full_result.download(tmpfile.name)
+                    with xr.open_dataset(tmpfile.name, chunks="auto") as ds:
+                        ds = ds.sel(
+                            longitude=slice(*sorted([bounds[0], bounds[2]])),
+                            latitude=slice(
+                                *sorted([bounds[1], bounds[3]], reverse=True)
+                            ),
+                        )
+                        ds.to_netcdf(f[1])
+
             logger.info("Successfully downloaded to %s", f[1])
             downloadedFiles.append((f[0], f[1]))
 
@@ -266,9 +279,36 @@ def api_monthly_era5(
                 len(full_request["variable"]),
                 f,
             )
-            full_result.download(f[1])
-            logger.info("Successfully downloaded to %s", f[1])
-            downloadedFiles.append((f[0], f[1]))
+
+            if full_result.content_type == "application/zip":
+                logger.info(
+                    "Multiple files found with request. Additional unzipping/preprocessing needed."
+                )
+
+                with tempfile.TemporaryDirectory() as tempdir:
+                    full_result.download(os.path.join(tempdir, "download.zip"))
+                    with zipfile.ZipFile(
+                        os.path.join(tempdir, "download.zip"), "r"
+                    ) as zip_ref:
+                        zip_ref.extractall(tempdir)
+
+                    with xr.open_mfdataset(
+                        [
+                            os.path.join(tempdir, f)
+                            for f in os.listdir(tempdir)
+                            if f.endswith(".nc")
+                        ]
+                    ) as ds:
+                        ds.to_netcdf(f[1])
+
+                    logger.info("Preprocessing complete with zipfile")
+                    logger.info("Successfully downloaded to %s", f[1])
+                    downloadedFiles.append((f[0], f[1]))
+
+            else:
+                full_result.download(f[1])
+                logger.info("Successfully downloaded to %s", f[1])
+                downloadedFiles.append((f[0], f[1]))
 
 
 def _add_height(ds):
