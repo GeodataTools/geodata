@@ -155,7 +155,7 @@ class Cutout:
                 from geodata import Dataset
 
                 self.dataset_module: Dataset = sys.modules[
-                    "geodata.datasets." + self.meta.attrs["module"]
+                    "geodata._datasets." + self.meta.attrs["module"]
                 ]
                 params_dict["module"] = self.meta.attrs["module"]
 
@@ -187,7 +187,7 @@ class Cutout:
                 raise TypeError("Module is required to create cutout.")
             # load module from geodata library
             self.dataset_module = sys.modules[
-                "geodata.datasets." + params_dict["module"]
+                "geodata._datasets." + params_dict["module"]
             ]
 
             logger.info("Cutout (%s, %s) not found or incomplete.", name, cutout_dir)

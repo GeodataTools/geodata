@@ -70,7 +70,9 @@ class Dataset:
     ):
         self.module = module
         self.config = weather_data_config
-        self.dataset_module = importlib.import_module(f"geodata.datasets.{self.module}")
+        self.dataset_module = importlib.import_module(
+            f"geodata._datasets.{self.module}"
+        )
         self.weatherconfig = self.weather_data_config[self.config]
         self.datadir: str = self.dataset_module.datadir
         self.opendap = opendap
