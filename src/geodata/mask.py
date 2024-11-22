@@ -1,5 +1,5 @@
 # Copyright 2021 Jiahe Feng (Davidson Lab).
-# Copyright 2023 Xiqiang Liu.
+# Copyright 2023-2024 Xiqiang Liu.
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -21,6 +21,7 @@ interact with raw raster data and shapefiles.
 
 import logging
 import os
+from pathlib import Path
 from typing import Iterable, Literal, Optional
 
 import geopandas as gpd
@@ -930,6 +931,61 @@ class Mask:
         return prev_mask
 
 
+def load_mask(name: str, mask_dir: str | Path | None = MASK_DIR):
+    """
+    Load a previously saved mask object
+
+    Args:
+        name (str): name for the mask
+        mask_dir (str): directory to look for previously saved mask file and where the mask
+            object will be updated. By default, it should be the mask path in config.py
+
+    Returns:
+        Mask: the loaded mask object
+    """
+    obj_dir = os.path.join(mask_dir, name)
+
+    # create new mask object
+    prev_mask = Mask(name=os.path.basename(obj_dir))
+    prev_mask.mask_dir = mask_dir
+
+    # load the layers
+    layer_path = os.path.join(obj_dir, "layers")
+    layer_lst = []
+    if os.path.isdir(layer_path):
+        for i in os.listdir(layer_path):
+            prev_mask.layers[i.split(".")[0]] = ras.open(os.path.join(layer_path, i))
+            layer_lst.append(i.split(".")[0])
+    else:
+        logger.info("No previously saved mask found for mask %s", name)
+
+    logger.info(f"Layer {layer_lst} loaded to the mask {prev_mask.name}.")
+
+    # load the merged layer, if there is one
+    merge_path = os.path.join(obj_dir, "merged_mask")
+    merge_file_path = os.path.join(merge_path, "merged_mask.tif")
+    if os.path.exists(merge_file_path):
+        prev_mask.merged_mask = ras.open(merge_file_path)
+        logger.info(f"Merged_mask loaded to the mask {prev_mask.name}.")
+    else:
+        logger.info("No Merged Mask found.")
+
+    # load the shape masks
+    shape_path = os.path.join(obj_dir, "shape_mask")
+    shape_lst = []
+    if os.path.isdir(shape_path):
+        for i in os.listdir(shape_path):
+            prev_mask.shape_mask[i.split(".")[0]] = ras.open(
+                os.path.join(shape_path, i)
+            )
+            shape_lst.append(i.split(".")[0])
+        logger.info(f"Shape mask {shape_lst} loaded to the mask {prev_mask.name}.")
+
+    prev_mask.saved = True
+
+    return prev_mask
+
+
 def open_tif(
     layer_path: str, show_raster: bool = True, close: bool = False
 ) -> ras.DatasetReader:
@@ -1549,4 +1605,5 @@ __all__ = (
     "show",
     "show_all",
     "raster_show",
+    "load_mask",
 )

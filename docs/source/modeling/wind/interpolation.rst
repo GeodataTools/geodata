@@ -46,7 +46,7 @@ Next, we need to load the dataset that contains the wind speed data. We will use
 
 Step 3: Compute interpolation parameters
 --------------------------------------------
-The interpolation is separated into two steps: the computationally-intensive step (estimating interpolation parameters) and the computationally-easy step (interpolating at desired heights). First, we compute the interpolation parameters. 
+The interpolation is separated into two steps: the computationally-intensive step (estimating interpolation parameters) and the computationally-easy step (interpolating at desired heights). First, we compute the interpolation parameters.
 
 .. code:: Python
 
@@ -72,7 +72,7 @@ Simply replace :code:`ds` with your cutout variable.
     point on, you can load and use the model directly without re-preparing it.
 
 Step 4: Estimate using the interpolation model
-----------------------------------
+----------------------------------------------
 
 Now that we have prepared the model, we can perform the interpolation to estimate wind
 speed at the desired locations. Suppose we want to estimate the wind speed at a height

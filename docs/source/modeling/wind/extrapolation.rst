@@ -72,7 +72,7 @@ Simply replace :code:`ds` with your cutout variable.
     point on, you can load and use the model directly without re-preparing it.
 
 Step 4: Estimate using the extrapolation model
-----------------------------------
+----------------------------------------------
 
 Now that we have prepared the model, we can perform the extrapolation to estimate wind
 speed at the desired locations. Suppose we want to estimate the wind speed at a height
@@ -102,7 +102,7 @@ and/or :code:`ys=slice(start, end)` parameters to the `estimate` method.
 How the Extrapolation Model Works
 ---------------------------------
 
-The model utilizes wind speeds at different heights to estimate individual parameters for a log law parameterization at each point in time and space. 
+The model utilizes wind speeds at different heights to estimate individual parameters for a log law parameterization at each point in time and space.
 Specifically, the variables drawn from MERRA2 for extrapolation: zero-plane displacement height (DISPH, in meters), 2-m wind (U2M, V2M, in m/s),
 10-m wind (U10M, V10M), 50-m wind (U50M, V50M), and MERRA2's lowest
 model level (ULML, VLML, in m/s) and the height of the lowest model level

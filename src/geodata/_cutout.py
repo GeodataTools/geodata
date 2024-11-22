@@ -765,9 +765,8 @@ class Cutout:
                 Name of a turbine
             hub_height: float | int
                 Extrapolation height
-
-        Can also specify all of the general conversion arguments
-        documented in the `convert_cutout` function.
+            **params: Can also specify all of the general conversion arguments
+            documented in the `convert_cutout` function.
             e.g. var_height='lml'
         """
 
@@ -968,7 +967,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
     lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) // 2)
 
     if func == "mean":
-        _coarsen = (
+        _coarsen: xr.Dataset = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -978,7 +977,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
             .mean()
         )
     elif func == "sum":
-        _coarsen = (
+        _coarsen: xr.Dataset = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -990,7 +989,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
     else:
         raise ValueError("func can only be 'mean' or 'sum'")
 
-    return coarsen.reindex_like(tar, method="nearest")
+    return _coarsen.reindex_like(tar, method="nearest")
 
 
 def calc_grid_area(lis_lats_lons):
