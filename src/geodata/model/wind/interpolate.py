@@ -178,7 +178,7 @@ class WindInterpolationModel(WindBaseModel):
         if not (xs is None or ys is None):
             params = params.sel(latitude=ys, longitude=xs)
 
-        if not (years is None or months is None):
+        if not (years is None and months is None):
             if months is None:
                 months = slice(1, 13)
             params = params.sel(
@@ -219,7 +219,7 @@ class WindInterpolationModel(WindBaseModel):
         if not (xs is None or ys is None):
             params = params.sel(latitude=ys, longitude=xs)
 
-        if not (years is None or months is None):
+        if not (years is None and months is None):
             if months is None:
                 months = slice(1, 13)
             params = params.sel(
