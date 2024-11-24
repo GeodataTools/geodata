@@ -7,7 +7,7 @@
 ### ERA5
 
 * [ERA5 hourly data on single levels](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
-* ERA5 3D level data [ADD 3D layer title and link]
+* [ERA5 3D level data](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-complete?tab=overview)
 
 ### MERRA2
 
@@ -50,8 +50,3 @@ The following outputs are currently supported for climate data:
 **Aerosols**
 
 * PM2.5 time series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pm25-time-series))
-
-
-
-
-

@@ -60,7 +60,18 @@ If you are running geodata in a Jupyter Notebook, you could define the variable 
 
 If you do not define this variable, all datasets and cutouts will be stored under `~/.local/geodata` by default.
 
-[ADD typical folders to be created under GEODATA_ROOT]
+```{note}
+
+Once you run geodata, the package will several folders under the `GEODATA_ROOT` directory. The following folders will be created:
+
+- `cutouts`: Contains the cutouts of the datasets
+- `era5`: Contains the downloaded ERA5 datasets
+- `merra2`: Contains the downloaded MERRA2 datasets
+- `masks`: Contains the created masks
+- `models`: Contains the computed interpolated/extrapolated wind speed models
+- `gebco`: Contains the downloaded GEBCO datasets
+```
+
 
 ## Anaconda/miniconda Environment
 
