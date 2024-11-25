@@ -26,7 +26,7 @@ interface for downloading, subsetting, and transforming large earth
 systems datasets into relevant physical variables and flexibly
 incorporating GIS datasets to mask these variables and generate
 “analysis-ready” datasets for use in regression, plotting, and energy
-models. Geodata builds off the structure of the `atlite`_ package. 
+models. Geodata builds off the structure of the `atlite`_ package.
 
 .. _atlite: https://github.com/PyPSA/atlite
 
@@ -164,7 +164,38 @@ day through an animation:
 
    Animated Result
 
-[ADD section on Model module]
+Wind Speed Modeling
+~~~~~~~~~~~~~~~~~~~
+Estimating wind speed and wind generation from simulated reanalysis or weather models
+entails a number of assumptions, due to the general sparsity of measurements
+and complex meteorology affecting wind speed evolution with height.
+
+The `model` module extracts multiple wind speeds from the underlying datasets
+which are used to support wind speed estimation in one of two ways: interpolation
+and extrapolation.
+
+.. code :: Python
+
+   from geodata import Cutout
+   from geodata.model.wind import WindExtrapolationModel
+
+   cutout = Cutout(
+      name="china-2011-slv-hourly-test",
+      module="merra2",
+      weather_data_config="slv_flux_hourly",
+      xs=slice(73, 136),
+      ys=slice(18, 54),
+      years=slice(2011, 2011),
+      months=slice(1, 1),
+   )
+   cutout.prepare()
+
+   model = WindExtrapolationModel(cutout)
+   model.prepare()
+
+   windspd = model.estimate(height=100, years=slice(2011, 2011), months=slice(1, 1))
+   windspd.to_dataframe(name="wind")
+
 
 Masking
 ~~~~~~~
