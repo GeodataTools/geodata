@@ -22,9 +22,17 @@ import datetime as dt
 import logging
 from operator import itemgetter
 
+import pandas as pd
+import pvlib
 import numpy as np
 import xarray as xr
 from six import string_types
+from pvlib.pvsystem import PVSystem, FixedMount
+from pvlib.location import Location
+from pvlib.modelchain import ModelChain
+from pvlib.solarposition import get_solarposition
+from pvlib.temperature import TEMPERATURE_MODEL_PARAMETERS
+from pvlib import irradiance
 from tqdm.auto import tqdm
 
 from . import wind as windm
@@ -248,6 +256,58 @@ def convert_pv(ds, panel, orientation, trigon_model="simple", clearsky_model="si
     solar_panel = SolarPanelModel(ds, irradiation, panel)
     return solar_panel
 
+## solar PV - pvlib
+def _calculate_pvlib_solarposition(time, y, x):
+    sp = get_solarposition(time, y, x)
+    sp.index = pd.MultiIndex.from_arrays([time, y, x], names=['time', 'y', 'x'])
+    return sp
+
+def _calculate_ghi(dhi, dni, zenith):
+    return np.clip(
+        dhi + dni * np.cos(zenith),
+        0,
+        np.Inf
+    )
+
+def _prepare_pvlib_df(cutout, *args):
+    dfs = []
+    for var in args:
+        
+        var_array = cutout.convert_cutout(convert_func=_get_var, var=var)
+        df = var_array.to_dataframe(name=var_array.name)
+        dfs.append(df)
+    
+    result_df = pd.concat(dfs, axis=1)
+    result_df.reset_index(inplace=True)
+    result_df.set_index(['time', 'y', 'x'], inplace=True)
+    result_df = (
+        result_df
+        .loc[:, ~result_df.columns.duplicated()]
+        .assign(temperature=convert_temperature(result_df))  # Convert temperature to C
+        .rename(columns={
+            'influx_diffuse': 'dhi',
+            'influx_direct': 'dni',
+            'temperature': 'temp_air',
+            'wnd100m': 'wind_speed'
+        })
+    )    
+    # solar position
+    sp = _calculate_pvlib_solarposition(
+        result_df.index.get_level_values('time'),
+        result_df.index.get_level_values('y'),
+        result_df.index.get_level_values('x')
+    )
+
+    # ghi
+    result_df['ghi'] = _calculate_ghi(
+        result_df['dhi'], 
+        result_df['dni'], 
+        sp['zenith']
+    )
+
+    # precipitation
+    result_df['precipitable_water'] = 0.5 # guesstimate from example script, should find a better way to call this
+    return result_df
 
 ## wind
 
