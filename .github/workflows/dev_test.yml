@@ -30,12 +30,6 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Get GDAL for Mac OS
-        run: |
-          brew install gdal
-          pip uninstall -y rasterio
-          pip install rasterio
-        if: ${{ matrix.os == 'macos-latest' }}
       - name: Configure CDS API Key (Linux/Mac OS)
         run: |
           echo "${{ secrets.CDS_API_KEY }}" | base64 -d > ~/.cdsapirc
