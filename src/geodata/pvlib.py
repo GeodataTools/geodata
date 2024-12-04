@@ -24,6 +24,7 @@ import logging
 import pandas as pd
 import numpy as np
 from pvlib.solarposition import get_solarposition
+from pvlib import pvsystem
 logger = logging.getLogger(__name__)
 
 __all__ = ["_prepare_pvlib_df"]
@@ -32,6 +33,43 @@ from .convert import (
     get_var,
     convert_temperature
 )
+
+def retrieve_sam(samfile, path=None):
+    """
+    Wrapper for pvlib.pvsystem.retrieve_sam(). Retrieves latest module 
+    and inverter info from a file bundled with pvlib, a path or a 
+    URL (like SAM’s website), and returns it as a Pandas DataFrame.
+
+    Supported databases:
+    - CEC module database
+    - Sandia Module database
+    - CEC Inverter database
+    - Anton Driesse Inverter database
+
+    Parameters
+    ----------
+    name : string
+            Use one of the following strings to retrieve a database bundled with pvlib:
+                - ’CECMod’ - returns the CEC module database
+                - ’CECInverter’ - returns the CEC Inverter database
+                - ’SandiaInverter’ - returns the CEC Inverter database 
+                    (CEC is only current inverter db available; tag kept for backwards compatibility)
+                - ’SandiaMod’ - returns the Sandia Module database
+                - ’ADRInverter’ - returns the ADR Inverter database
+    
+    Optional Parameters
+    ----------
+    path : string
+            Path to a CSV file or a URL.
+
+    Returns: DataFrame
+
+    See also:
+        - pvlib.pvsystem.retrieve_sam(): 
+            https://pvlib-python.readthedocs.io/en/stable/reference/generated/pvlib.pvsystem.retrieve_sam.html
+
+    """
+    return pvsystem.retrieve_sam(name=samfile, path=path)
 
 ## solar PV - pvlib
 def _calculate_pvlib_solarposition(time, y, x):
