@@ -271,9 +271,9 @@ def _calculate_ghi(dhi, dni, zenith):
 
 def _prepare_pvlib_df(cutout, *args):
     dfs = []
-    for var in args:
+    for varname in args:
         
-        var_array = cutout.convert_cutout(convert_func=_get_var, var=var)
+        var_array =  get_var(cutout, varname)
         df = var_array.to_dataframe(name=var_array.name)
         dfs.append(df)
     
