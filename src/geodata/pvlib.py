@@ -90,7 +90,6 @@ def pvlib_model(
             'temperature', 
             'wnd100m'
         ], 
-        *args, 
         **kwargs
     ):
 
@@ -105,15 +104,7 @@ def pvlib_model(
         mc = ModelChain(
             system, 
             location, 
-            clearsky_model= 'haurwitz',
-            transposition_model='perez', 
-            solar_position_method= 'nrel_numpy',
-            airmass_model= 'kastenyoung1989',
-            dc_model='cec',
-            ac_model='sandia', 
-            aoi_model="physical",
-            spectral_model='first_solar',
-            dc_ohmic_model='no_loss'
+            **kwargs
         )
         mc.run_model(subset)
         
