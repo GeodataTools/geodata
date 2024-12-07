@@ -23,8 +23,11 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 import logging
 import pandas as pd
 import numpy as np
-from pvlib.solarposition import get_solarposition
+from timezonefinder import TimezoneFinder
 from pvlib import pvsystem
+from pvlib.location import Location
+from pvlib.modelchain import ModelChain
+from pvlib.solarposition import get_solarposition
 logger = logging.getLogger(__name__)
 
 __all__ = ["_prepare_pvlib_df"]
@@ -71,45 +74,59 @@ def retrieve_sam(samfile, path=None):
     """
     return pvsystem.retrieve_sam(name=samfile, path=path)
 
-def PVSystem(
-    arrays=None, 
-    surface_tilt=0, 
-    surface_azimuth=180, 
-    albedo=None, 
-    surface_type=None, 
-    module=None, 
-    module_type=None, 
-    module_parameters=None, 
-    temperature_model_parameters=None, 
-    modules_per_string=1, 
-    strings_per_inverter=1, 
-    inverter=None, 
-    inverter_parameters=None, 
-    racking_model=None, 
-    losses_parameters=None, 
-    name=None
-):
+def pv_system(*args, **kwargs):
     """
-    
+    TBD
+    See also: https://pvlib-python.readthedocs.io/en/stable/reference/generated/pvlib.pvsystem.PVSystem.html
     """
-    return pvsystem.PVSystem(
-        arrays, 
-        surface_tilt, 
-        surface_azimuth, 
-        albedo, 
-        surface_type, 
-        module, 
-        module_type, 
-        module_parameters, 
-        temperature_model_parameters, 
-        modules_per_string, 
-        strings_per_inverter, 
-        inverter, 
-        inverter_parameters, 
-        racking_model, 
-        losses_parameters, 
-        name
-    )
+    return pvsystem.PVSystem(*args, **kwargs)
+
+def pvlib_model(
+        cutout, 
+        system,
+        vars = [
+            'influx_diffuse', 
+            'influx_direct', 
+            'temperature', 
+            'wnd100m'
+        ], 
+        *args, 
+        **kwargs
+    ):
+
+    weather_data = _prepare_pvlib_df(cutout, *vars)
+    unique_coords = weather_data.index.droplevel('time').drop_duplicates()
+    coord_subsets = []
+    for y, x in unique_coords:
+        subset = weather_data.loc[(slice(None), y, x), :].reset_index(['x', 'y'])
+        tz_str = TimezoneFinder().timezone_at(lat=y, lng=x)
+        location = Location(latitude=y, longitude=x, tz = tz_str)
+        
+        mc = ModelChain(
+            system, 
+            location, 
+            clearsky_model= 'haurwitz',
+            transposition_model='perez', 
+            solar_position_method= 'nrel_numpy',
+            airmass_model= 'kastenyoung1989',
+            dc_model='cec',
+            ac_model='sandia', 
+            aoi_model="physical",
+            spectral_model='first_solar',
+            dc_ohmic_model='no_loss'
+        )
+        mc.run_model(subset)
+        
+        subset['ac'] = mc.results.ac
+        subset = subset.merge(mc.results.dc, how = "left", on = "time").set_index(['x', 'y'], append=True)
+
+        coord_subsets.append(subset)
+
+    weather_data_final = pd.concat(coord_subsets)
+
+    return weather_data_final
+
+
 
 ## solar PV - pvlib
 def _calculate_pvlib_solarposition(time, y, x):
