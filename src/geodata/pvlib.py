@@ -71,6 +71,46 @@ def retrieve_sam(samfile, path=None):
     """
     return pvsystem.retrieve_sam(name=samfile, path=path)
 
+def PVSystem(
+    arrays=None, 
+    surface_tilt=0, 
+    surface_azimuth=180, 
+    albedo=None, 
+    surface_type=None, 
+    module=None, 
+    module_type=None, 
+    module_parameters=None, 
+    temperature_model_parameters=None, 
+    modules_per_string=1, 
+    strings_per_inverter=1, 
+    inverter=None, 
+    inverter_parameters=None, 
+    racking_model=None, 
+    losses_parameters=None, 
+    name=None
+):
+    """
+    
+    """
+    return pvsystem.PVSystem(
+        arrays, 
+        surface_tilt, 
+        surface_azimuth, 
+        albedo, 
+        surface_type, 
+        module, 
+        module_type, 
+        module_parameters, 
+        temperature_model_parameters, 
+        modules_per_string, 
+        strings_per_inverter, 
+        inverter, 
+        inverter_parameters, 
+        racking_model, 
+        losses_parameters, 
+        name
+    )
+
 ## solar PV - pvlib
 def _calculate_pvlib_solarposition(time, y, x):
     sp = get_solarposition(time, y, x)
