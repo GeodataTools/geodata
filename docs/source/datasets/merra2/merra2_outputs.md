@@ -27,13 +27,15 @@ In this section, we provide a list of currently possible **geodata** configs and
     - [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
 * `surface_aerosol_hourly`: [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
 * `slv_flux_hourly`:
+    - [MERRA2 hourly, surface-flux diagnostics](https://developers.google.com/earth-engine/datasets/catalog/NASA_GSFC_MERRA_flx_2)
+    - [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXSLV_5.12.4/summary)
 
 
 ### Variable Configurations
 
 MERRA2 surface flux data currently supports the following variable configs:
 
-**Wind** (`surface_flux_hourly`, `surface_flux_monthly`):
+**Wind** (`surface_flux_hourly`, `surface_flux_monthly`, `slv_flux_hourly`):
 * ustar: surface_velocity_scale (m s-1)
 * z0m: surface_roughness (m)
 * disph: zero_plane_displacement_height (m)
@@ -46,6 +48,14 @@ MERRA2 surface flux data currently supports the following variable configs:
 * pblh: planetary_boundary_layer_height (m)
 * hflux: sensible_heat_flux_from_turbulence (W m-2)
 * eflux: total_latent_energy_flux (W m-2)
+
+**Wind (Extra)** (Only found in `slv_flux_hourly`):
+* u2m: 2-meter eastward wind (m s-1)
+* v2m: 2-meter northward wind (m s-1)
+* u10m: 10-meter eastward wind (m s-1)
+* v10m: 10-meter northward wind (m s-1)
+* u50m: 50-meter eastward wind (m s-1)
+* v50m: 50-meter northward wind (m s-1)
 
 **Solar** (`slv_radiation_hourly`, `slv_radiation_monthly`)
 * albedo: surface albedo
@@ -101,21 +111,17 @@ MERRA2 surface flux data currently supports the following outputs:
 Convert wind speeds for turbine to wind energy generation.
 
 ```python
-cutout.wind(
-    turbine,
-    smooth=False,
-    var_height
-)
+cutout.wind(turbine, nsmooth=False, var_height)
 ```
 
 ### Parameters
 
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
 * `smooth` - **bool or dict** - If `True`, smooth power curve with a gaussian kernel as determined for the Danish wind fleet to Delta_v = 1.27 and sigma = 2.29. A dict allows to tune these values.
 
-*Note* -
+```{note}
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
+```
 
 ### Example Code
 
@@ -135,12 +141,13 @@ cutout.windspd(**params)
 
 ### Parameters
 
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
     - `hub-height` - **num** - Extrapolation height (m)
-*Note* -
+
+```{note}
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
+```
 
 ### Example Code
 
@@ -159,13 +166,14 @@ cutout.windwpd(**params)
 ```
 
 ### Parameters
-
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `**params` - Must have 1 of the following:
     - `turbine` - **string or dict** - Name of a turbine known by the reatlas client or a turbineconfig dictionary with the keys 'hub_height' for the hub height and 'V', 'POW' defining the power curve.  For a full list of currently supported turbines, see [the list of Turbines here.](https://github.com/east-winds/geodata/tree/master/geodata/resources/windturbine)
-    - `hub-height` - **num** Extrapolation height (m)
-*Note* -
+    - `hub-height` - **float or int** Extrapolation height (m)
+
+```{note}
+
 You can also specify all of the general conversion arguments documented in the `convert_and_aggregate` function (e.g. `var_height='lml'`).
+```
 
 ### Example Code
 
@@ -192,7 +200,6 @@ Convert downward-shortwave, upward-shortwave radiation flux and
 
 #### Parameters
 
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
 * `panel` - string - Specify a solar panel type on which to base the calculation.  **geodata** contains an internal solar panel dictionary with keys defining several solar panel characteristics used for the time-series calculation.  For a complete list of included panel types, see [the list of panel types here.](https://github.com/GeodataTools/geodata/tree/master/src/geodata/resources/solarpanel)
 * `orientation` - str, dict or callback - Panel orientation can be chosen from either `latitude_optimal`, a constant orientation such as `{'slope': 0.0,'azimuth': 0.0}`,  or a callback function with the same signature as the callbacks generated by the `geodata.pv.orientation.make_*` functions.
 * (optional) clearsky_model - string or None - 	Either the `simple` or the `enhanced` Reindl clearsky model. The default choice of None will choose dependending on data availability, since the `enhanced` model also incorporates ambient air temperature and relative humidity.
@@ -216,13 +223,20 @@ ds_pv.to_dataframe(name="pv")
 Generate PM2.5 time series according to [1]:
 		PM2.5 = [Dust2.5] + [SS2.5] + [BC] + 1.4*[OC] + 1.375*[SO4]
 
-#### Parameters
-
-* `cutout` - **string** -  A cutout created by `geodata.Cutout()`
-
 #### Example Code and Result
 
 ```python
 ds_pm25 = cutout.pm25()
-ds_pm25.to_dataframe(name = 'pm25')
+ds_pm25.to_dataframe(name='pm25')
+```
+
+## Generating Temperature Outputs with MERRA2 Data
+
+### Celsius Temperature Time-series
+
+Extract temperature in the cutout in Celsius.
+
+```python
+ds_temperature = cutout.temperature()
+ds_temperature.to_dataframe(name='temperature')
 ```

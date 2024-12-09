@@ -31,7 +31,7 @@ from typing import Iterable
 import numpy as np
 import xarray as xr
 
-from .._config import era5_dir
+from ..config import era5_dir
 
 logger = logging.getLogger(__name__)
 datadir = era5_dir

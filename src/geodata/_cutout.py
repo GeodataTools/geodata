@@ -37,7 +37,7 @@ from shapely.geometry import box
 from tqdm.auto import tqdm
 
 
-from . import _config
+from . import config
 from ._convert import (
     convert_pm25,
     convert_pv,
@@ -90,7 +90,7 @@ class Cutout:
         weather_data_config: str,
         years: slice,
         name: Optional[str] = None,
-        cutout_dir: Union[str, Path] = _config.cutout_dir,
+        cutout_dir: Union[str, Path] = config.cutout_dir,
         bounds: Optional[Iterable] = None,
         months: Optional[slice] = None,
         xs: Optional[slice] = None,
@@ -374,7 +374,7 @@ class Cutout:
         """
         # make sure data is in correct format for coarsening
         xr_ds = ds_reformat_index(self.meta)
-        mask = Mask.from_name(name, mask_dir=_config.MASK_DIR)
+        mask = Mask.from_name(name, mask_dir=config.MASK_DIR)
 
         if not mask.merged_mask and not mask.shape_mask:
             raise ValueError(

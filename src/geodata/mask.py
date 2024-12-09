@@ -37,7 +37,7 @@ from rasterio.merge import merge
 from rasterio.plot import plotting_extent
 from rioxarray import open_rasterio
 
-from ._config import MASK_DIR
+from .config import MASK_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -788,7 +788,7 @@ class Mask:
         close_files: bool = False,
     ):
         """Save a mask object to the directory. By default, the directory should be the
-        MASK_DIR in config.py.
+        mask_dir in config.py.
 
         **Note**: It is recommended that multiple masks would not be opened
         at the same time to avoid permission issues.

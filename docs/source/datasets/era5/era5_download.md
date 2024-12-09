@@ -44,7 +44,12 @@ dataset = geodata.Dataset(
 )
 ```
 
-`geodata.Dataset()` creates a dataset object via which you can download data files.  To create objects for ERA5 data, specify `module="era5"`.  You must also have configured `era5_dir` in `config.py` to point to a directory on your local machine  (to set up `config.py`, [see here](../../quick_start/packagesetup.md)).
+`geodata.Dataset()` creates a dataset object via which you can download data files.  To create objects for ERA5 data, specify `module="era5"`.
+
+```{note}
+
+If you want to personalize the storage location of the downloaded datasets, you must configure `GEODATA_ROOT` in `config.py` to point to a directory on your local machine  (to set up `config.py`, [see here](../../quick_start/packagesetup.md)). The downloaded files will be stored in the sub-directory `era5` under `GEODATA_ROOT`. If you do not configure `GEODATA_ROOT`, the default directory for the downloaded datasets will be `~/.local/geodata/era5`.
+```
 
 The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for January to February 2005.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 

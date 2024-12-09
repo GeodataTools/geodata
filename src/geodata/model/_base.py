@@ -25,7 +25,7 @@ import xarray as xr
 
 import geodata
 
-from .._config import model_dir
+from ..config import model_dir
 from .._cutout import Cutout
 from .._dataset import Dataset
 from .._logging import logger

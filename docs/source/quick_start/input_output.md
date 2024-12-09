@@ -44,7 +44,9 @@ The following outputs are currently supported for climate data:
 
 **Temperature**
 
-* Celsius Temperature (MERRA2 only) [ADD ERA5 temperature and links to both]
+* Celsius Temperature (MERRA2 only)
+- [MERRA2](../datasets/merra2/merra2_outputs.md#celsius-temperature-time-series)
+- [ERA5](../datasets/era5/era5_outputs.md#celsius-temperature-time-series)
 
 
 **Aerosols**

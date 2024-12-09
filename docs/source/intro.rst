@@ -81,10 +81,10 @@ Extract Cutouts [ADD edit this section]
 Most energy analyses (e.g., energy models, resource assessments,
 political economy studies) require time series on subsets of locations
 and time periods. Geodata can extract desired variables, time periods,
-and geographies from the dataset to a Cutout object. We then call various functions in
-``geodata.convert`` module to transform the raw data into analysis-ready
-variables with the option to export to CSV or combine with other GIS
-datasets through further masking analysis.
+and geographies from the dataset to a Cutout object. We then call various
+conversion methods of the ``Cutout`` class to transform the raw data
+into analysis-ready variables with the option to export to CSV or combine with other
+GIS datasets through further masking analysis.
 
 After downloading the required
 `MERRA2 <https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary&sa=D&source=docs&ust=1646032882397245&usg=AOvVaw1WJVA5CNhT-7x_XWIA58o5>`__
@@ -109,7 +109,7 @@ China.
 
 Then, we can convert the downward-shortwave, upward-shortwave radiation
 flux, and ambient temperature variables from the Cutout data into a PV
-generation time-series using the cutout's ``convert`` method. Geodata
+generation time-series using the cutout's ``pv`` method. Geodata
 stores objects internally as an xarray DataArray, which can be easily
 converted to a Pandas DataFrame.
 

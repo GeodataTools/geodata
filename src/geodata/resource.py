@@ -21,7 +21,7 @@ from operator import itemgetter
 import numpy as np
 import yaml
 from scipy.signal import fftconvolve
-from geodata._config import SRC_ROOT
+from geodata.config import SRC_ROOT
 
 
 _logger = logging.getLogger(name=__name__)

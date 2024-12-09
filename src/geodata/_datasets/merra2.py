@@ -31,7 +31,7 @@ import xarray as xr
 from requests.exceptions import HTTPError
 from tqdm.contrib.logging import tqdm_logging_redirect
 
-from .._config import merra2_dir
+from ..config import merra2_dir
 from .._logging import logger
 
 datadir = merra2_dir

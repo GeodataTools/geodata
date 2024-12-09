@@ -1,7 +1,7 @@
 Tutorial: Estimate Wind Speed with Interpolation
 ================================================
 
-In this tutorial, we will learn how to estimate wind speed using the interpolation model from the geodata library.
+In this tutorial, we will learn how to estimate wind speed using the a cubic spline interpolation model from the geodata library.
 
 .. warning::
    Performing wind speed estimation using interpolation requires a dataset with known
