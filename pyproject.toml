@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Geospatial Data Collection and Pre-Analysis Tools"
 authors = [
     {name = "Michael Davidson", email = "mrdavidson@ucsd.edu"},
-    {name = "Xiqiang Liu", email = "9440183+xiqiangliu@users.noreply.github.com"}
+    {name = "Xiqiang Liu", email = "9440183+xiqiangliu@users.noreply.github.com"},
+    {name = "William Honaker"},
+    {name = "Jiahe Feng (Jeffrey)", email = "51950358+j1feng@users.noreply.github.com"}
 ]
 dependencies = [
     "numpy<2",
@@ -31,7 +33,29 @@ dependencies = [
 requires-python = ">=3.10"
 readme = "README.md"
 license = {text = "GPLv3"}
+classifiers = [
+    "Development Status :: 4 - Beta",
 
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/GeodataTools/geodata"
+Documentation = "https://geodata.readthedocs.io"
+Repository = "https://github.com/GeodataTools/geodata.git"
+Issues = "https://github.com/GeodataTools/geodata/issues"
 
 [project.optional-dependencies]
 download = [
@@ -60,6 +84,3 @@ profile = "black"
 
 [tool.ruff]
 line-length = 88
-
-[tool.ruff.lint]
-exclude = ["*.ipynb"]

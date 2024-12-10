@@ -2,52 +2,51 @@
 
 [![DOI](https://zenodo.org/badge/218690319.svg)](https://zenodo.org/badge/latestdoi/218690319)
 
-**Geodata** is a Python library of geospatial data collection and "pre-analysis" tools. Geospatial and gridded datasets of physical variables are ubiquitous and increasingly high resolution. Long time-series gridded datasets can be generated as part of earth system models, and due to their geographic coverage they can have wider applications, including in engineering and social sciences. Geospatial (GIS) files can encode various physical, social, economic, and political data. However, working with these datasets often has significant startup costs due to their diverse sources, data formats, resolutions, and large file sizes.
-
-Geodata streamlines the collection and use of geospatial datasets through the creation of shared scripts for “analysis-ready” physical variables. Its purpose is to make it easier for researchers to identify, download, and work with new sources of geospatial data. Additionally, with a minimal amount of data consistency checks and metadata information, when one researcher goes through this exercise, everyone benefits.
-
-Geodata builds off the **[atlite](https://github.com/PyPSA/atlite)** library, which converts weather data (such as wind speeds, solar radiation, temperature and runoff) into power systems data (such as wind power, solar power, hydro power and heating demand time series). Geodata retains the power systems data functionality of atlite.
+**Geodata** is a Python library of geospatial data collection and
+analytical tools. Through the creation of shared scripts and
+documentation for analysis-ready physical variables, geodata streamlines
+the collection and use of geospatial datasets for natural science,
+engineering, and social science applications.
 
 ![png](docs/source/_static/images/geodata_workflow_chart.png)
 
 
+# Motivation
+The main motivation is the difficulty in working with high temporal and
+spatial resolution datasets of physical variables from earth system
+models and combining them with GIS datasets (land use, geographic
+features, etc.). The primary analytical questions addressed here are
+generating profiles of energy and environmental variables of interest
+(solar PV, wind power, pollution distribution) subject to suitability and
+weighting criteria. Additional applications are under development.
 
-## Installation
+Working with these datasets has startup costs and computational barriers
+due to diverse sources, formats, resolutions, and large memory
+requirements. To solve this, geodata provides an all-in-one Python
+interface for downloading, subsetting, and transforming large earth
+systems datasets into relevant physical variables and flexibly
+incorporating GIS datasets to mask these variables and generate
+“analysis-ready” datasets for use in regression, plotting, and energy
+models. Geodata builds off the structure of the [**atlite**](https://github.com/PyPSA/atlite) package.
 
+# Installation
 **Geodata** has been tested to run with python3 (>= 3.10). Read the [package setup instructions](https://geodata.readthedocs.io/en/latest/quick_start/packagesetup.html) to configure and install the package.
 
+In short, you can install the latest version of the package by running the following commands:
 
-Installation will also install the following dependencies:
-* `numpy`
-* `scipy`
-* `pandas`
-* `bottleneck`
-* `numexpr`
-* `xarray`
-* `netcdf4`
-* `dask`
-* `boto3`
-* `toolz`
-* `pyproj`
-* `requests`
-* `matplotlib`
-* `rasterio`
-* `rioxarray`
-* `shapely`
-* `tqdm`
+```bash
+pip install geodata-re
+```
 
-## Documentation
+# Documentation
+You can find detailed documentation for Geodata [here](https://geodata.readthedocs.io/en/latest/). This includes installation instructions, tutorials, and API documentation.
 
-You can find the documentation for Geodata [here](https://geodata.readthedocs.io/en/latest/).
-
-## Contributing
+# Contributing
 We welcome suggestions for feature enhancements and the identification of bugs. Please make an issue or contact the [authors](https://pwrlab.org/about.html) of geodata.
 
 
-## License
+# License
+Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](LICENSE) for more details.
 
-Geodata is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (2007). This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](/LICENSE.txt) for more details.
-
-## Support
-
+# Support
 The Geodata team would like to thank the Center for Global Transformation at UC San Diego for providing financial support to the project.

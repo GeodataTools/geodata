@@ -9,7 +9,7 @@
 from geodata import __version__
 
 project = "Geodata"
-copyright = "2024, Geodata Contributors"
+copyright = "2024, Power Transformation Lab"
 author = "Geodata Contributors"
 release = __version__
 
