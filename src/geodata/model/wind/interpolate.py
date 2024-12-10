@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from typing import Hashable, Optional
 
 import numpy as np
@@ -81,9 +82,16 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
 
     if isinstance(a.data, array_type("dask")):
         from dask.array import map_blocks
+        from dask.diagnostics import ProgressBar
+
+        logger.info("Computing interpolation coefficients using Dask.")
 
         if len(a.data.chunks[0]) > 1:
             a = a.chunk({dim: -1})
+
+        pbar = ProgressBar()
+        if logger.level <= logging.INFO:
+            pbar.register()
 
         c = map_blocks(
             _make_interp_coeff,
@@ -94,6 +102,9 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
             check_finite=False,
             dtype=float,
         )
+
+        pbar.unregister()
+
     else:
         c = _make_interp_coeff(x, a.data, k=k, t=t, check_finite=False)
 
