@@ -24,12 +24,12 @@ import numpy as np
 import xarray as xr
 
 
-def get_orientation(name, **params):
+def get_orientation(name: str, **params):
     """
     Definitions:
-            -`slope` is the angle between ground and panel.
-            -`azimuth` is the clockwise angle from North.
-                    i.e. azimuth = 180 faces exactly South
+        -`slope` is the angle between ground and panel.
+        -`azimuth` is the clockwise angle from North.
+                i.e. azimuth = 180 faces exactly South
     """
     if isinstance(name, dict):
         params = name
@@ -70,7 +70,9 @@ def make_latitude_optimal():
         below_50 = lat.values <= np.deg2rad(50)
 
         slope[below_25] = 0.87 * lat.values[below_25]
-        slope[~below_25 & below_50] = 0.76 * lat.values[~below_25 & below_50] + np.deg2rad(0.31)
+        slope[~below_25 & below_50] = 0.76 * lat.values[
+            ~below_25 & below_50
+        ] + np.deg2rad(0.31)
         slope[~below_50] = np.deg2rad(40.0)
 
         return dict(slope=xr.DataArray(slope, coords=lat.coords), azimuth=180.0)

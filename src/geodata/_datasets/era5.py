@@ -25,13 +25,14 @@ import calendar
 import glob
 import logging
 import os
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
 import numpy as np
 import xarray as xr
 
-from ..config import era5_dir
+from .._config import era5_dir
 
 logger = logging.getLogger(__name__)
 datadir = era5_dir
@@ -130,9 +131,6 @@ def api_complete(
                 "format": "netcdf",
             }
 
-            if bounds is not None:
-                full_request["area"] = bounds
-
             full_result = cdsapi.Client().retrieve(product, full_request)
 
             logger.info(
@@ -140,7 +138,23 @@ def api_complete(
                 len(full_request["param"]),
                 f,
             )
-            full_result.download(f[1])
+
+            if not bounds:
+                full_result.download(f[1])
+            else:
+                # NOTE: Raw MARS request doesn't support bounding box, so we need to
+                # subset the data after downloading
+                with tempfile.NamedTemporaryFile(suffix=".nc") as tmpfile:
+                    full_result.download(tmpfile.name)
+                    with xr.open_dataset(tmpfile.name, chunks="auto") as ds:
+                        ds = ds.sel(
+                            longitude=slice(*sorted([bounds[0], bounds[2]])),
+                            latitude=slice(
+                                *sorted([bounds[1], bounds[3]], reverse=True)
+                            ),
+                        )
+                        ds.to_netcdf(f[1])
+
             logger.info("Successfully downloaded to %s", f[1])
             downloadedFiles.append((f[0], f[1]))
 

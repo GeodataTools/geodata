@@ -2,21 +2,40 @@
 
 This guide covers how to install and configure the **geodata** package for local and cloud use.
 
-Make sure that you have the following **required** software set up:
+Make sure that you have the following software set up:
 
 * [Python 3](https://www.python.org/downloads/)
 
-* Package Management System
+* Package Management System (Optional but highly recommended to isolate individual projects dependent packages)
   - [conda](https://docs.conda.io/projects/conda/en/latest/) (miniconda or anaconda)
-  - [pip](https://pip.pypa.io/en/stable/installation/)
+
+
+```{note}
+
+The majority of the content below applies to macOS and Linux. Any possible differences for Windows users are noted.
+Nontheless, it is worth noting that using **geodata** on Windows may present some additional challenges due to its
+file access properties.
+
+Thus, it is recommended to use geodata a Linux-based system. If you are using Windows, you may
+want to consider using the [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install)
+or a virtual machine.
+```
 
 ## Downloading Geodata
 
-To download **geodata**, open a terminal/shell window navigate to your preferred working directory, and run the following: (If you do not have Git installed, you may also directly download it with this [link](https://github.com/GeodataTools/geodata/archive/refs/heads/master.zip).
+To install **geodata**, open a terminal/shell window and run the following:
+
+```bash
+pip install geodata-re
+```
+
+### Advanced: Installing from Source
+
+If you want to install **geodata** from source, you can clone the repository and install it using the following commands:
 
 ```bash
 git clone https://github.com/GeodataTools/geodata.git
-cd geodata
+pip install geodata/
 ```
 
 ## Configuring File Storage Location
@@ -41,9 +60,20 @@ If you are running geodata in a Jupyter Notebook, you could define the variable 
 
 If you do not define this variable, all datasets and cutouts will be stored under `~/.local/geodata` by default.
 
-## Building Geodata
+```{note}
 
-### Anaconda/miniconda Environment
+Once you run geodata, the package will several folders under the `GEODATA_ROOT` directory. The following folders will be created:
+
+- `cutouts`: Contains the cutouts of the datasets
+- `era5`: Contains the downloaded ERA5 datasets
+- `merra2`: Contains the downloaded MERRA2 datasets
+- `masks`: Contains the created masks
+- `models`: Contains the computed interpolated/extrapolated wind speed models
+- `gebco`: Contains the downloaded GEBCO datasets
+```
+
+
+## Anaconda/miniconda Environment
 
 [Anaconda](https://www.anaconda.com/download)/[miniconda](https://docs.conda.io/en/latest/miniconda.html) is a powerful package manager and environment manager for Windows, macOS or Linux, and it provides easy installation for all operating systems. It is especially convenient if you are building Geodata on the cloud with potential installation permission issues.
 
@@ -52,97 +82,16 @@ If you already have Anaconda/miniconda installed on your machine, jump straight 
 If you have conda 4.6 or later versions, in the terminal/shell, run the following command below to activate the conda [environment](https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html#managing-environments).
 
 ```bash
+
+conda create --name geodata python=3.12
 conda activate <ENVIRONMENT_NAME>
+pip install geodata-re
 ```
 
-To use **geodata** in Python scripts by calling `import geodata`, you'll need to build the package.  To do so, in the terminal/shell window, navigate to the package's root directory (ie, "geodata"), and run the following:
+Once you activate the environment, any packages you install (including geodata) will be isolated.
+If you have a new project and wish to start over again, you can create a new environment and install the package again.
 
 ```bash
-pip install .
+conda deactivate
+conda env remove --name geodata
 ```
-
-**Note**: If running `pip install .` generates errors related to being unable to install the **rasterio** package due to conflicts with incompatible packages, you may need to reinstall Anaconda/miniconda depending on what you went with during setup. Then run the following commands:
-
-```bash
-conda update --all
-```
-
-```bash
-conda install rasterio
-```
-
-### Installation with pip
-
-#### macOS/Linux
-In macOS or Linux's terminal, navigate to the package's root directory, and run the following:
-
-```bash
-pip install .
-```
-
-**Note**: All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires Cython and GDAL. For the source of these instructions and more documentation about **rasterio**, see [the rasterio documentation](https://rasterio.readthedocs.io/en/latest/installation.html).
-
-If one of the dependency, such as **rasterio** does not install automatically (we know this through the error message from the command above), we will have to install it seperately in the terminal:
-
-```bash
-pip install rasterio
-```
-
-Once the library above is successfully installed, re-run the installation command above to build Geodata:
-
-```bash
-pip install .
-```
-
-If there is an error message regarding one of Geodata's dependency, repeat the process and use `pip install` to seperately download it.
-
-#### Windows
-
-In the Windows command prompt, navigate to the package's root directory, and run the following:
-
-```bash
-pip install .
-```
-
-**Note**: All dependencies should install automatically upon building the package, with possible exceptions such as the **rasterio** library, which requires other dependencies.
-
-If one of the dependency, such as **GDAL** does not install automatically (we know this through the error message from the command above), we will have to install it seperately in the terminal. There are 2 options to solve this issue. Once we download the required dependency successfully, we can proceed by re-run the install command:
-
-```bash
-pip install .
-```
-##### Pipwin
-
-This option is recommended. When we download libraries that is built on **GDAL**, we might run into this [issue](https://stackoverflow.com/q/54734667), where a GDAL API version must be specified.
-
-**Pipwin** is a complementary tool for **pip** on Windows. **pipwin** installs unofficial python package binaries for windows provided by Christoph Gohlke [here](http://www.lfd.uci.edu/~gohlke/pythonlibs/).
-
-Run the following commands to download **pipwin** and acquire the dependencies: (This solution is adopted from [stackoverflow](https://stackoverflow.com/a/58943939))
-
-```
-pip install pipwin
-pipwin install shapely
-pipwin install gdal
-pipwin install fiona
-pipwin install pyproj
-pipwin install six
-pipwin install rtree
-```
-
-You may need to also install the **wheel** package `pip install wheel` to facilitate building the wheels.
-
-Similarly, if you run into installation errors regarding the **rasterio** or **bottleneck** packages, you can also call **pipwin install rasterio** or **pipwin install bottleneck** to download them.
-
-##### Direct Wheel Install
-
-To install **rasterio** and the necessary GDAL library, we can download the appropriate binaries for your system by hand ([rasterio](https://www.lfd.uci.edu/~gohlke/pythonlibs/#rasterio) and [GDAL](https://www.lfd.uci.edu/~gohlke/pythonlibs/#gdal)) , place them into the current working directory, and run the following command in the downloads folder:
-
-```bash
-pip install -U pip
-pip install {GDAL binary name here}.whl
-pip install {rasterio binary name here}.whl
-```
-
-You may also need to also install the **wheel** package `pip install wheel` to facilitate building the wheels.
-
-For more documentation/troubleshooting conda installation issues, see [here](https://github.com/conda-forge/rasterio-feedstock)

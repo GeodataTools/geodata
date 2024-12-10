@@ -336,7 +336,7 @@ def cutout_get_meta_view(
 def _prepare_gebco_height(xs, ys, gebco_fn=None):
     # gebco bathymetry heights for underwater
     if gebco_fn is None:
-        from .config import gebco_path
+        from ._config import gebco_path
 
         gebco_fn = gebco_path
 

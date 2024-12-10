@@ -37,8 +37,8 @@ from shapely.geometry import box
 from tqdm.auto import tqdm
 
 
-from . import config
-from .convert import (
+from . import _config
+from ._convert import (
     convert_pm25,
     convert_pv,
     convert_solar_thermal,
@@ -54,7 +54,7 @@ from .resource import (
     windturbine_smooth,
 )
 from .mask import Mask
-from .preparation import (
+from ._preparation import (
     cutout_get_meta,
     cutout_get_meta_view,
     cutout_prepare,
@@ -90,7 +90,7 @@ class Cutout:
         weather_data_config: str,
         years: slice,
         name: Optional[str] = None,
-        cutout_dir: Union[str, Path] = config.cutout_dir,
+        cutout_dir: Union[str, Path] = _config.cutout_dir,
         bounds: Optional[Iterable] = None,
         months: Optional[slice] = None,
         xs: Optional[slice] = None,
@@ -155,7 +155,7 @@ class Cutout:
                 from geodata import Dataset
 
                 self.dataset_module: Dataset = sys.modules[
-                    "geodata.datasets." + self.meta.attrs["module"]
+                    "geodata._datasets." + self.meta.attrs["module"]
                 ]
                 params_dict["module"] = self.meta.attrs["module"]
 
@@ -187,7 +187,7 @@ class Cutout:
                 raise TypeError("Module is required to create cutout.")
             # load module from geodata library
             self.dataset_module = sys.modules[
-                "geodata.datasets." + params_dict["module"]
+                "geodata._datasets." + params_dict["module"]
             ]
 
             logger.info("Cutout (%s, %s) not found or incomplete.", name, cutout_dir)
@@ -374,7 +374,7 @@ class Cutout:
         """
         # make sure data is in correct format for coarsening
         xr_ds = ds_reformat_index(self.meta)
-        mask = Mask.from_name(name, mask_dir=config.MASK_DIR)
+        mask = Mask.from_name(name, mask_dir=_config.MASK_DIR)
 
         if not mask.merged_mask and not mask.shape_mask:
             raise ValueError(
@@ -758,21 +758,16 @@ class Cutout:
         """
         Generate wind speed time-series
 
-        convert.convert_cutout → convert.convert_windspd
+        Internally calls convert_windspd under :func:`_convert::convert_windspd`.
 
-        Parameters
-        ----------
-        **params
-            Must have 1 of:
-                turbine : str or dict
-                        Name of a turbine
-                hub_height : num
-                        Extrapolation height
-
-            Can also specify all of the general conversion arguments
+        Args:
+            turbine : str or dict
+                Name of a turbine
+            hub_height: float | int
+                Extrapolation height
+            **params: Can also specify all of the general conversion arguments
             documented in the `convert_cutout` function.
-                e.g. var_height='lml'
-
+            e.g. var_height='lml'
         """
 
         if "turbine" in params:
@@ -797,21 +792,17 @@ class Cutout:
         """
         Generate wind power density time-series
 
-        convert.convert_cutout → convert.convert_windwpd
+        Internally calls convert_windwpd under :func:`_convert::convert_windwpd`.
 
-        Parameters
-        ----------
-        **params
-                Must have 1 of:
-                        turbine : str or dict
-                                Name of a turbine
-                        hub_height : num
-                                Extrapolation height
+        Args:
+            turbine : str or dict
+                Name of a turbine
+            hub_height: float | int
+                Extrapolation height
 
-                Can also specify all of the general conversion arguments
-                documented in the `convert_cutout` function.
-                        e.g. var_height='lml'
-
+        Can also specify all of the general conversion arguments
+        documented in the `convert_cutout` function.
+            e.g. var_height='lml'
         """
 
         if "turbine" in params:
@@ -976,7 +967,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
     lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) // 2)
 
     if func == "mean":
-        _coarsen = (
+        _coarsen: xr.Dataset = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -986,7 +977,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
             .mean()
         )
     elif func == "sum":
-        _coarsen = (
+        _coarsen: xr.Dataset = (
             ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
             .coarsen(
                 dim={"lat": lat_multiple, "lon": lon_multiple},
@@ -998,7 +989,7 @@ def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "me
     else:
         raise ValueError("func can only be 'mean' or 'sum'")
 
-    return coarsen.reindex_like(tar, method="nearest")
+    return _coarsen.reindex_like(tar, method="nearest")
 
 
 def calc_grid_area(lis_lats_lons):

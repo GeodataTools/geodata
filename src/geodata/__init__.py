@@ -14,8 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ._version import __version__
-from .cutout import Cutout
-from .dataset import Dataset
+from ._cutout import Cutout
+from ._dataset import Dataset
 from .mask import Mask
 from .plot import *  # noqa: F403
 from .model import *  # noqa: F403
@@ -24,4 +24,4 @@ __author__ = "Michael Davidson (UCSD), William Honaker"
 __copyright__ = "GNU GPL 3 license"
 
 
-__all__ = ["Cutout", "Dataset", "Mask", "__version__"]
+__all__ = ("Cutout", "Dataset", "Mask", "__version__")

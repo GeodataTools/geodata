@@ -4,12 +4,12 @@ This is a document that includes possible errors for the mask module and trouble
 
 ## No Affine Transformation
 
-If you run into this error when loading any tif file with the mask module: 
+If you run into this error when loading any tif file with the mask module:
 
 CPLE_AppDefinedError: The transformation is already "north up" or a transformation between pixel/line and georeferenced coordinates cannot be computed
 There is no affine transformation and no GCPs. Specify transformation option `SRC_METHOD=NO_GEOTRANSFORM` to bypass this check.
 
-Try the following code to examine the raster:
+Try the following code to examine the raster (you need to download the test raster from [here](https://github.com/rasterio/rasterio/blob/main/tests/data/RGB.byte.tif)):
 
 ```python
 import rasterio

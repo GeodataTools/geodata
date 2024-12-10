@@ -1,4 +1,4 @@
-# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2023-2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -13,22 +13,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ...logging import logger
 from ._base import HEIGHTS, WindBaseModel
+
+logger = logging.getLogger(__name__)
 
 try:
     from numba import njit, prange
 except ImportError:
-    logger.warning("Numba not installed. Using pure Python implementation.")
+    logger.warning(
+        "Numba not installed. Using pure Python implementation with extrapolation."
+    )
     prange = range
 
-    from ...utils import dummy_njit as njit
+    from ..._utils import dummy_njit as njit
 
 
 @njit(parallel=True)
@@ -77,6 +81,9 @@ class WindExtrapolationModel(WindBaseModel):
         The residuals of the regression are stored in the dataset as a 2D array of shape (n,).
         The residuals are the difference between the estimated wind speed and the actual wind speed.
         The residuals are stored in the same order as the heights used in the regression.
+
+    Args:
+        source (Dataset | Cutout): Dataset or Cutout object this model is based on.
 
     Example:
         >>> from geodata import Dataset
@@ -225,3 +232,6 @@ class WindExtrapolationModel(WindBaseModel):
 
         result = alpha * np.log((height - ds["disph"]) / np.exp(-beta / alpha))
         return result.drop_vars("coeff")  # remove unnecessary coordinate
+
+
+__all__ = ("WindExtrapolationModel",)

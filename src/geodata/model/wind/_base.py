@@ -45,7 +45,7 @@ from typing import Callable
 import xarray as xr
 from tqdm.auto import tqdm
 
-from ...logging import logger
+from ..._logging import logger
 from .._base import BaseModel
 
 HEIGHTS = {"u50m": 50, "u10m": 10, "u2m": 2}
@@ -71,7 +71,7 @@ class WindBaseModel(BaseModel):
         prepared_files = []
         for file_path in tqdm(self.metadata["files_orig"], dynamic_ncols=True):
             orig_ds_path: Path = self._ref_path / file_path
-            ds = xr.open_dataset(orig_ds_path)
+            ds = xr.open_dataset(orig_ds_path, chunks="auto")
             try:
                 ds = self._prepare_fn(ds)
             except SystemError:

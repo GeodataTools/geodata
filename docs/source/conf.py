@@ -9,7 +9,7 @@
 from geodata import __version__
 
 project = "Geodata"
-copyright = "2023, Geodata Contributors"
+copyright = "2024, Geodata Contributors"
 author = "Geodata Contributors"
 release = __version__
 
@@ -62,3 +62,4 @@ autoapi_options = [
     "imported-members",
 ]
 autoapi_own_page_level = "method"
+autoapi_add_toctree_entry = False

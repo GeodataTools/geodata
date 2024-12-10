@@ -1,5 +1,5 @@
 **Geodata** is a Python library of geospatial data collection and
-“pre-analysis” tools. Through the creation of shared scripts and
+analytical tools. Through the creation of shared scripts and
 documentation for analysis-ready physical variables, geodata streamlines
 the collection and use of geospatial datasets for natural science,
 engineering, and social science applications.
@@ -7,7 +7,7 @@ engineering, and social science applications.
 .. figure:: _static/images/geodata_workflow_chart.png
    :alt: Geodata Workflow
 
-   A typical anaylsis workflow with Geodata
+   A typical analysis workflow with Geodata
 
 Motivation
 ----------
@@ -16,23 +16,35 @@ The main motivation is the difficulty in working with high temporal and
 spatial resolution datasets of physical variables from earth system
 models and combining them with GIS datasets (land use, geographic
 features, etc.). The primary analytical questions addressed here are
-generating profiles of variables of interest (solar PV, wind power,
-pollution distribution) subject to suitability and weighting criteria.
+generating profiles of energy and environmental variables of interest (solar PV, wind power, pollution distribution) subject to suitability and weighting criteria.
 Additional applications are under development.
 
 Working with these datasets has startup costs and computational barriers
 due to diverse sources, formats, resolutions, and large memory
-requirements. To solve this, **Geodata** provides an all-in-one Python
+requirements. To solve this, geodata provides an all-in-one Python
 interface for downloading, subsetting, and transforming large earth
 systems datasets into relevant physical variables and flexibly
 incorporating GIS datasets to mask these variables and generate
-“analysis-ready” datasets for use in regression, plotting, or energy
-model inputs. Additionally, with a minimal amount of data consistency
-checks and metadata information, when one researcher goes through this
-exercise, everyone benefits.
+“analysis-ready” datasets for use in regression, plotting, and energy
+models. Geodata builds off the structure of the `atlite`_ package. 
+
+.. _atlite: https://github.com/PyPSA/atlite
+
 
 How To Use
 ----------
+
+Installation
+~~~~~~~~~~~~
+
+In short, Geodata is available on PyPI and can be installed via pip:
+
+.. code :: bash
+
+   pip install geodata-re
+
+For more detailed installation instructions, see the
+:doc:`installation guide<quick_start/packagesetup>`.
 
 Download Datasets
 ~~~~~~~~~~~~~~~~~
@@ -40,7 +52,7 @@ Download Datasets
 Earth system datasets can be large (100+ MB / file with hundreds of
 files necessary for a single analysis) and their APIs and file
 structures (e.g., daily vs monthly) vary by source. Utilizing xarray and
-dask data parallelization, Geodata provides single call download with
+dask data parallelization, geodata provides single call download with
 API credentials stored locally. Data requests are automatically trimmed
 to keep only required variables, significantly reducing bandwidth
 requirements and disk usage.
@@ -56,14 +68,14 @@ on 01/01/2011, use the following method call:
    from geodata import Dataset
 
    solar = Dataset(
-      module="merra2", 
+      module="merra2",
       years= slice(2011, 2011),
       months=slice(1,1),
       weather_data_config="slv_radiation_hourly"
    )
    solar.get_data()
 
-Extract Cutouts
+Extract Cutouts [ADD edit this section]
 ~~~~~~~~~~~~~~~
 
 Most energy analyses (e.g., energy models, resource assessments,
@@ -97,15 +109,13 @@ China.
 
 Then, we can convert the downward-shortwave, upward-shortwave radiation
 flux, and ambient temperature variables from the Cutout data into a PV
-generation time-series using the geodata ``convert`` method. Geodata
+generation time-series using the cutout's ``convert`` method. Geodata
 stores objects internally as an xarray DataArray, which can be easily
 converted to a Pandas DataFrame.
 
 .. code :: Python
 
-   from geodata import convert
-
-   ds_solar = convert.pv(cutout, panel="KANEKA", orientation="latitude_optimal")
+   ds_solar = cutout.pv(panel="KANEKA", orientation="latitude_optimal")
    ds_solar.to_dataframe(name="pv")
 
 
@@ -153,6 +163,8 @@ day through an animation:
    :alt: animation
 
    Animated Result
+
+[ADD section on Model module]
 
 Masking
 ~~~~~~~
@@ -226,8 +238,8 @@ covered by the Mask and areas calculated via an equal-area projection.
 
 .. code :: Python
 
-   ds_cutout = convert.pv(
-      cutout, panel="KANEKA", orientation="latitude_optimal"
+   ds_cutout = cutout.pv(
+      panel="KANEKA", orientation="latitude_optimal"
    ).to_dataset(name="solar")
 
    cutout.add_mask("china")

@@ -15,7 +15,9 @@
 
 
 """
-This module contains various functions used to perform conversion in Geodata.
+This module contains various private functions used to perform conversion in Geodata.
+They are not meant to be used by users directly. Use the corresponding methods of the
+`Cutout` class instead.
 """
 
 import datetime as dt
@@ -27,7 +29,7 @@ import xarray as xr
 from six import string_types
 from tqdm.auto import tqdm
 
-from . import wind as windm
+from . import _wind as windm
 from .pv.irradiation import TiltedIrradiation
 from .pv.orientation import SurfaceOrientation, get_orientation  # noqa: F401
 from .pv.solar_panel_model import SolarPanelModel
