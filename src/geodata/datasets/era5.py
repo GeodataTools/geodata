@@ -204,14 +204,14 @@ def api_hourly_era5(
                     ) as zip_ref:
                         zip_ref.extractall(tempdir)
 
-                    ds = xr.open_mfdataset(
+                    with xr.open_mfdataset(
                         [
                             os.path.join(tempdir, f)
                             for f in os.listdir(tempdir)
                             if f.endswith(".nc")
                         ]
-                    )
-                    ds.to_netcdf(f[1])
+                    ) as ds:
+                        ds.to_netcdf(f[1])
 
                     logger.info("Preprocessing complete with zipfile")
                     logger.info("Successfully downloaded to %s", f[1])
