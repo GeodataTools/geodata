@@ -128,12 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Geodata Specific
-.ipynb_checkpoints/
-example_notebooks/*.csv
-example_notebooks/data
-
-# interal cluster scripts/configs
+# Interal cluster scripts/configs
 scripts/cluster
 
 # PDM

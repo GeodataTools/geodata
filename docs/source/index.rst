@@ -34,13 +34,6 @@ Welcome to Geodata's documentation!
 
    mask/*
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Parameterization
-..    :glob:
-..    :hidden:
-
-..    parameterizations/*
 
 .. toctree::
    :maxdepth: 1
@@ -50,13 +43,6 @@ Welcome to Geodata's documentation!
 
    visualization/*
 
-.. .. toctree::
-..    :maxdepth: 1
-..    :caption: Application with Geodata
-..    :glob:
-
-..    application/*
-
 .. toctree::
    :maxdepth: 1
    :caption: Modeling
@@ -64,6 +50,13 @@ Welcome to Geodata's documentation!
    :hidden:
 
    modeling/wind/index
+
+.. toctree::
+   :maxdepth: 1
+   :caption: License
+   :hidden:
+
+   license
 
 .. toctree::
    :caption: API Reference
