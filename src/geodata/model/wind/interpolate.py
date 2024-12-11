@@ -103,7 +103,8 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
             dtype=float,
         )
 
-        pbar.unregister()
+        if logger.level <= logging.INFO:
+            pbar.unregister()
 
     else:
         c = _make_interp_coeff(x, a.data, k=k, t=t, check_finite=False)
