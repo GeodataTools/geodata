@@ -1,4 +1,4 @@
-# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2023-2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -13,19 +13,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from typing import Optional
 
 import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ...logging import logger
 from ._base import HEIGHTS, WindBaseModel
+
+logger = logging.getLogger(__name__)
 
 try:
     from numba import njit, prange
 except ImportError:
-    logger.warning("Numba not installed. Using pure Python implementation.")
+    logger.warning(
+        "Numba not installed. Using pure Python implementation with extrapolation."
+    )
     prange = range
 
     from ...utils import dummy_njit as njit
