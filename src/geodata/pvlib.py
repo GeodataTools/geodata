@@ -23,6 +23,7 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 import logging
 import pandas as pd
 import numpy as np
+import xarray as xr
 from timezonefinder import TimezoneFinder
 from pvlib import pvsystem
 from pvlib.location import Location
@@ -242,7 +243,7 @@ def pvlib_model(
 
     """
 
-    weather_data = _prepare_pvlib_df(cutout, *vars)
+    weather_data = _prepare_pvlib_ds(cutout, *vars).to_dataframe()
     unique_coords = weather_data.index.droplevel('time').drop_duplicates()
     coord_subsets = []
     for y, x in unique_coords:
@@ -269,54 +270,75 @@ def pvlib_model(
 
 
 ## solar PV - pvlib
-def _calculate_pvlib_solarposition(time, y, x):
-    sp = get_solarposition(time, y, x)
-    sp.index = pd.MultiIndex.from_arrays([time, y, x], names=['time', 'y', 'x'])
-    return sp
+def _calculate_pvlib_solarposition(ds):
+    nt, ny, nx = ds.sizes['time'], ds.sizes['y'], ds.sizes['x']
+    time_expanded = np.broadcast_to(ds.time.values[:, None, None], (nt, ny, nx)).ravel()
+    yy, xx = np.meshgrid(ds.y, ds.x, indexing="ij")
+    x_expanded = np.tile(xx.ravel(), nt)
+    y_expanded = np.tile(yy.ravel(), nt)
+    solarposition = get_solarposition(time_expanded, y_expanded, x_expanded)
+    solarposition.index = pd.MultiIndex.from_arrays([time_expanded, y_expanded, x_expanded], names=['time', 'y', 'x'])
+    return solarposition
 
-def _calculate_ghi(dhi, dni, zenith):
-    return np.clip(
+def _calculate_ghi(ds, zenith):
+    dhi = ds.influx_diffuse.values.ravel()
+    dni = ds.influx_direct.values.ravel()
+    ghi = np.clip(
         dhi + dni * np.cos(zenith),
         0,
         np.Inf
     )
 
-def _prepare_pvlib_df(cutout, *args):
-    dfs = []
-    for varname in args:
-        
-        var_array =  get_var(cutout, varname)
-        df = var_array.to_dataframe(name=var_array.name)
-        dfs.append(df)
+    reshaped_ghi = ghi.values.reshape(
+        ds.sizes['time'], 
+        ds.sizes['y'], 
+        ds.sizes['x']
+    )
     
-    result_df = pd.concat(dfs, axis=1)
-    result_df.reset_index(inplace=True)
-    result_df.set_index(['time', 'y', 'x'], inplace=True)
-    result_df = (
-        result_df
-        .loc[:, ~result_df.columns.duplicated()]
-        .assign(temperature=convert_temperature(result_df))  # Convert temperature to C
-        .rename(columns={
+    ghi = xr.DataArray(
+        reshaped_ghi,
+        dims=("time", "y", "x"),
+        coords={
+            "time": ds['time'].values, 
+            "y": ds['y'].values, 
+            "x": ds['x'].values
+        },
+        name="ghi"
+    )
+    return ghi
+
+def _calculate_precipitable_water(ds, precipitable_water):
+    return xr.DataArray(
+        np.full((len(ds.time), len(ds.y), len(ds.x)), precipitable_water),
+        dims=("time", "y", "x"),
+        coords={"time": ds.time, "y": ds.y, "x": ds.x},
+        name="precipitable_water"
+    )
+
+def _prepare_pvlib_ds(cutout, *varnames, precipitable_water=5.0):
+    ds = xr.Dataset({
+        name: get_var(cutout, name)
+        for name in varnames
+    })
+    
+    sp = _calculate_pvlib_solarposition(ds)
+    ghi = _calculate_ghi(ds, sp['zenith'])
+    precip = _calculate_precipitable_water(ds, precipitable_water)
+
+    ds = (
+        ds
+        .assign(
+            ghi=ghi,
+            temperature=convert_temperature(ds),
+            precipitable_water = precip
+        )
+        .rename({
             'influx_diffuse': 'dhi',
             'influx_direct': 'dni',
             'temperature': 'temp_air',
             'wnd100m': 'wind_speed'
         })
-    )    
-    # solar position
-    sp = _calculate_pvlib_solarposition(
-        result_df.index.get_level_values('time'),
-        result_df.index.get_level_values('y'),
-        result_df.index.get_level_values('x')
     )
 
-    # ghi
-    result_df['ghi'] = _calculate_ghi(
-        result_df['dhi'], 
-        result_df['dni'], 
-        sp['zenith']
-    )
+    return ds
 
-    # precipitation
-    result_df['precipitable_water'] = 0.5 # guesstimate from example script, should find a better way to call this
-    return result_df
