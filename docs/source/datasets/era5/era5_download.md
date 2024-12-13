@@ -1,13 +1,10 @@
 # Download ERA5 Dataset and Create ERA5 Cutouts
 
-A short guide to using **geodata** to downloading and creating cutouts from ERA5 data from the [Copernicus Data Store](https://cds.climate.copernicus.eu/).
+This is a short guide to using **geodata** to downloading and creating cutouts from ERA5 data from the [Copernicus Data Store](https://cds.climate.copernicus.eu/).
 
 ## Download Dataset
 
 Download methods for ERA5 data are built into the **geodata** package.  A basic example is as follows:
-
-
-To start, import the required dependencies:
 
 ```python
 import geodata
@@ -23,7 +20,7 @@ dataset = geodata.Dataset(
 if not dataset.prepared:
     dataset.get_data()
 
-dataset.trim_variables(downloadedfiles=True)
+dataset.trim_variables()
 ```
 
 Let's breakdown the code above:
@@ -31,8 +28,13 @@ Let's breakdown the code above:
 ```python
 import geodata
 ```
-Importing the logging package allows **geodata** to generate console input for download status, errors, etc.
+
 Importing geodata is necessary to run **geodata**.
+
+```{note}
+
+If you want to personalize the storage location of the downloaded datasets, you must configure `GEODATA_ROOT` in `config.py` to point to a directory on your local machine  (to set up `config.py`, [see here](../../quick_start/packagesetup.md)). The downloaded files will be stored in the sub-directory `era5` under `GEODATA_ROOT`. If you do not configure `GEODATA_ROOT`, the default directory for the downloaded datasets will be `~/.local/geodata/era5`.
+```
 
 ```python
 dataset = geodata.Dataset(
@@ -46,14 +48,9 @@ dataset = geodata.Dataset(
 
 `geodata.Dataset()` creates a dataset object via which you can download data files.  To create objects for ERA5 data, specify `module="era5"`.
 
-```{note}
-
-If you want to personalize the storage location of the downloaded datasets, you must configure `GEODATA_ROOT` in `config.py` to point to a directory on your local machine  (to set up `config.py`, [see here](../../quick_start/packagesetup.md)). The downloaded files will be stored in the sub-directory `era5` under `GEODATA_ROOT`. If you do not configure `GEODATA_ROOT`, the default directory for the downloaded datasets will be `~/.local/geodata/era5`.
-```
-
 The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for January to February 2005.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 
-Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the local directory specified in `config.py`:
+Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the download directory under the configured `GEODATA_ROOT` path:
 
 ```
 >> INFO:geodata.dataset:Directory /home/user/.local/geodata/era5 found, checking for completeness.
@@ -72,17 +69,20 @@ A "prepared" dataset indicates that the directories for storing the data - which
 if not dataset.prepared:
     dataset.get_data()
 ```
+
 If the dataset is "Unprepared", this conditional statement will download the actual netcdf files from the ERA5 CDS API.
 
 
 ```python
-dataset.trim_variables(downloadedfiles = True)
+dataset.trim_variables()
 ```
+
 To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs.
 
 ## Create Cutout
 
-A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the directory `cutout_dir` configured in `config.py` (to set up `config.py`, [see here](../../quick_start/packagesetup.md)).
+A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the cutout directory under the configured `GEODATA_ROOT` path (see more information [here](../../quick_start/packagesetup.md)).
+
 
 ```python
 cutout = geodata.Cutout(
@@ -111,7 +111,7 @@ The example in the code block above uses ERA5 data, as specified by the `module=
 
 ## Prepare Cutout
 
-To create a cutout, we can run `cutout.prepare()`. The **geodata** package will create a folder in the cutout directory you specified in `config.py` with the name specified in `geodata.Cutout()` (in the above example, `era5-europe-test-2011-01`).  The folder, depending on the date range, will then contain one or more monthly netcdf files containing ERA5 data corresponding to the temporal and geographical ranges indicated when the cutout was created.  Data files in the cutout folder will be at the monthly level - i.e., there will be one file for each month in the specified download time range.
+To create a cutout, we can run `cutout.prepare()`. The **geodata** package will create a folder in the cutout directory `GEODATA_ROOT/cutouts` with the name specified in `geodata.Cutout()` (in the above example, `era5-europe-test-2011-01`).  The folder, depending on the date range, will then contain one or more monthly netCDF files containing ERA5 data corresponding to the temporal and geographical ranges indicated when the cutout was created.  Data files in the cutout folder will be at the monthly level - i.e., there will be one file for each month in the specified download time range.
 
 To actually create the cutout, you must run `cutout.prepare()`.  Upon running `cutout.prepare()`, **geodata** will check for the presence of the cutout and abort if the cutout already exists.  If you want to force the regeneration of a cutout, run the command with the parameter `overwrite=True`.
 
@@ -121,6 +121,8 @@ To actually create the cutout, you must run `cutout.prepare()`.  Upon running `c
 You can query various metadata associated with a cutout. Querying returns the name, geographic and time range, and the preparation status of the cutout (i.e., whether cutout.prepare() has been run, creating the .nc files making up the cutout data).
 
 ```python
+cutout
+
 <Cutout era5-europe-test-2011-01 x=30.00-41.50 y=34.81-33.81 time=2011/1-2011/1 prepared>
 ```
 
@@ -166,7 +168,7 @@ Attributes:
 ```
 
 To understand the variables that were downloaded, you can run:
-```
+```python
 cutout.dataset_module.weather_data_config
 ```
 
@@ -183,18 +185,34 @@ Which will return the selected download settings for the ERA5 data.
   'fn': '/Users/johndoe/data_for_geodata/era5/{year}/{month:0>2}/wind_solar_hourly.nc',
   'product': 'reanalysis-era5-single-levels',
   'product_type': 'reanalysis',
-  'variables': ['100m_u_component_of_wind',
-   '100m_v_component_of_wind',
-   '2m_temperature',
-   'runoff',
-   'soil_temperature_level_4',
-   'surface_net_solar_radiation',
-   'surface_pressure',
-   'surface_solar_radiation_downwards',
-   'toa_incident_solar_radiation',
-   'total_sky_direct_solar_radiation_at_surface',
-   'forecast_surface_roughness',
-   'orography'],
+  'keywords': [
+      "100m_u_component_of_wind",
+      "100m_v_component_of_wind",
+      "2m_temperature",
+      "runoff",
+      "soil_temperature_level_4",
+      "surface_net_solar_radiation",
+      "surface_pressure",
+      "surface_solar_radiation_downwards",
+      "toa_incident_solar_radiation",
+      "total_sky_direct_solar_radiation_at_surface",
+      "forecast_surface_roughness",
+      "geopotential",
+  ],
+  'variables': [
+      "u100",
+      "v100",
+      "t2m",
+      "ro",
+      "stl4",
+      "ssr",
+      "sp",
+      "ssrd",
+      "tisr",
+      "fdir",
+      "fsr",
+      "z",
+  ],
   'meta_attrs': {'Conventions': 'CF-1.6',
    'history': '2022-01-11 00:43:10 GMT by grib_to_netcdf-2.23.0: /opt/ecmwf/mars-client/bin/grib_to_netcdf -S param -o /cache/data3/adaptor.mars.internal-1641861772.7584445-3425-17-8ff8bcdc-2c08-4aed-95db-e0337692a384.nc /cache/tmp/8ff8bcdc-2c08-4aed-95db-e0337692a384-adaptor.mars.internal-1641861207.3577378-3425-30-tmp.grib',
    'module': 'era5'}},
@@ -207,16 +225,32 @@ Which will return the selected download settings for the ERA5 data.
   'fn': '/Users/johndoe/data_for_geodata/era5/{year}/{month:0>2}/wind_solar_monthly.nc',
   'product': 'reanalysis-era5-single-levels-monthly-means',
   'product_type': 'monthly_averaged_reanalysis',
-  'variables': ['100m_u_component_of_wind',
-   '100m_v_component_of_wind',
-   '2m_temperature',
-   'runoff',
-   'soil_temperature_level_4',
-   'surface_net_solar_radiation',
-   'surface_pressure',
-   'surface_solar_radiation_downwards',
-   'toa_incident_solar_radiation',
-   'total_sky_direct_solar_radiation_at_surface',
-   'forecast_surface_roughness',
-   'orography']}}
+  'keywords': [
+      "100m_u_component_of_wind",
+      "100m_v_component_of_wind",
+      "2m_temperature",
+      "runoff",
+      "soil_temperature_level_4",
+      "surface_net_solar_radiation",
+      "surface_pressure",
+      "surface_solar_radiation_downwards",
+      "toa_incident_solar_radiation",
+      "total_sky_direct_solar_radiation_at_surface",
+      "forecast_surface_roughness",
+      "geopotential",
+  ],
+  'variables': [
+      "u100",
+      "v100",
+      "t2m",
+      "ro",
+      "stl4",
+      "ssr",
+      "sp",
+      "ssrd",
+      "tisr",
+      "fdir",
+      "fsr",
+      "z",
+  ]}}
 ```

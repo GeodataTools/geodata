@@ -1,29 +1,14 @@
 # Download MERRA2 Data and Create MERRA2 Cutouts
 
-This is a short guide to using **geodata** to download MERRA2 data, and create cutouts
-(subsets of data based on specific time and geographic ranges)
-for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
+This is a short guide to using **geodata** to downloading and creating cutouts for [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary) (also known as the `surface_flux_hourly` weather data config).
 
-**Geodata** is currently optimized to work with the following MERRA2 datasets:
-* [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
-* [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
-* [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
-* [MERRA2 hourly, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXSLV_5.12.4/summary)
-* [MERRA2 hourly, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXRAD_5.12.4/summary)
-* [MERRA2 monthly mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXSLV_5.12.4/summary)
-* [MERRA2 monthly mean, single-level radiation diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXRAD_5.12.4/summary)
-* [MERRA2 hourly, single level aerosol diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXAER_5.12.4/summary)
 
 ## Download Dataset
 
 Download methods for MERRA2 hourly data are built into the **geodata** package. A basic example is as follows:
 
 ```python
-import logging
-
 import geodata
-
-logging.basicConfig(level=logging.INFO)
 
 dataset = geodata.Dataset(
     module="merra2",
@@ -35,19 +20,15 @@ dataset = geodata.Dataset(
 if not dataset.prepared:
     dataset.get_data()
 
-dataset.trim_variables(downloadedfiles=True)
+dataset.trim_variables()
 ```
 
 Let's breakdown the code above:
 
 ```python
-import logging
-
 import geodata
-
-logging.basicConfig(level=logging.INFO)
 ```
-Importing the logging package allows **geodata** to generate more verbose console input for download status, errors, etc.
+
 We also must `import geodata` in order to use it.
 
 ```{note}
@@ -65,22 +46,22 @@ dataset = geodata.Dataset(
 )
 ```
 
-`geodata.Dataset` creates a dataset object via which you can download data files.  To create objects for MERRA2 hourly, single-level surface flux diagnostics, specify `module="merra2"`. You must properly configure geodata before this ([see here](https://github.com/east-winds/geodata/blob/master/doc/general/packagesetup.md)).
+`geodata.Dataset` creates a dataset object via which you can download data files.  To create objects for MERRA2 hourly, single-level surface flux diagnostics, specify `module="merra2"`.
 
 The `years` and `months` parameters allow you to specify start years/months and end years/months for the data download.  The above example would download data for January to March 2012.  Ranges based on more granular time periods (such as day or hour) are not currently supported, but may be available in a future release.
 
 
-Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the local directory specified in `config.py`:
+Running the above code does not actually download the data yet.  Instead, it checks whether the indicated files for download are present in the download directory under the configured `GEODATA_ROOT` path:
 
 ```
->> INFO:geodata.dataset:Directory /Users/johndoe/desktop/geodata/data/merra2 found, checking for completeness.
+>> INFO:geodata.dataset:Directory /home/user/.local/geodata/merra2 found, checking for completeness.
 >> INFO:geodata.dataset:Directory complete.
 ```
 
 and returns a `dataset` object indicating whether the data is "prepared."
 
 ```
-<Dataset merra2 years=2012-2012 months=2-2 datadir=/Users/johndoe/desktop/geodata/data/merra2 Prepared>
+<Dataset merra2 years=2012-2012 months=2-2 datadir=/home/user/.local/geodata/merra2 Prepared>
 ```
 
 A "prepared" dataset indicates that the directories for storing the data - which take the form `geodata_root/merra2/{years}` (or `geodata_root/merra2/{years}/{months}` for hourly data) for every unique time period in the data - have been created and are populated with downloaded data.
@@ -89,23 +70,20 @@ A "prepared" dataset indicates that the directories for storing the data - which
 if not dataset.prepared:
     dataset.get_data()
 ```
+
 If the dataset is "Unprepared", this conditional statement will download the actual netcdf files from GES DISC.
 
 Files for the MERRA2 hourly, single-level surface flux diagnostics will be downloaded at the daily level, meaning that if you download data fo January 2011, 31 daily files will download to the directory `geodata_root/merra2/2011/01`.  If you download data for January and February 2011, 31 daily files will download to the directory `geodata_root/merra2/2011/01`, and 28 daily files will download to the directory `geodata_root/merra2/2011/02`.
 
-Each daily file is about 400mb in size, and contains all 46 variables detailed under the "Subset/Get Data" tab here: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
+Each daily file is about 400MB in size, and contains all 46 variables detailed under the "Subset/Get Data" tab here: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary).
 
-Files for the MERRA2 monthly, single-level surface flux diagnostics will be downloaded at the monthly level, meaning that if you download data for January 2011 to June 2011, 6 monthly files will download to the directory `geodata_root/merra2/2011`.  These files contain the same variables as the hourly dataset described above.
+Files for the MERRA2 monthly, single-level surface flux diagnostics will be downloaded at the monthly level, meaning that if you download data for January 2011 to June 2011, 6 monthly files will download to the directory `GEODATA_ROOT/merra2/2011`.  These files contain the same variables as the hourly dataset described above.
 
 ```python
-dataset.trim_variables(downloadedfiles = True)
+dataset.trim_variables()
 ```
 
-To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. Running the above code reduces file size from roughly 400mb per daily file to roughly 115mb per daily file by subsetting to only variables needed for generating wind and solar outputs.
-
-By default, `trim_variables` subsets to both wind and solar data.  To further subset to just a single group of variables, you can pass `wind=False` or `solar=False` to exclude those groups of variables from the trimming process.
-
-* Currently, only subsetting for MERRA2 wind data (`surface_flux_hourly`, `surface_flux_monthly`, `slv_flux_hourly`) is available.  Subsetting for solar data is planned for the near future.
+To save hard disk space, **geodata** allows you to trim the downloaded datasets to just the variables needed for the package's supported outputs. Running the above code reduces file size from roughly 400mb per daily file to roughly 115MB per daily file by subsetting to only variables needed for generating wind and solar outputs.
 
 For MERRA2 data, running `trim_variables` as specified iterates over each downloaded file and subsets the data to the following wind variables indicated in the `surface_flux` configuration:
 
@@ -123,9 +101,9 @@ For MERRA2 data, running `trim_variables` as specified iterates over each downlo
 * eflux: total_latent_energy_flux (W m-2)
 
 
-## Preparing the cutout
+## Prepare Cutout
 
-A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the cutout directory configured in `config.py` (to set up `config.py`, [see here](../../quick_start/packagesetup.md)).
+A cutout is the basis for any data or analysis output by the **geodata** package.  Cutouts are stored in the cutout directory under the configured `GEODATA_ROOT` path (see more information [here](../../quick_start/packagesetup.md)).
 
 ```python
 cutout = geodata.Cutout(
@@ -161,7 +139,7 @@ At this point, we are ready to actually prepare the cutout! To create a cutout, 
 ```python
 cutout.prepare();
 ```
-The **geodata** package will create a folder in the cutout directory (`cutout_dir`) you specified in `config.py` with the name specified in `geodata.Cutout()` (in the above example, `merra2-europe-sub24-2011-01`).  The folder, depending on the date range, will then contain one or more netcdf files containing data from the original MERRA2 files falling within the temporal and geographical ranges indicated when the cutout was created.
+To create a cutout, we can run `cutout.prepare()`. The **geodata** package will create a folder in the cutout directory `GEODATA_ROOT/cutouts` with the name specified in `geodata.Cutout()` (in the above example, `merra2-europe-sub24-2011-01`).  The folder, depending on the date range, will then contain one or more netcdf files containing data from the original MERRA2 files falling within the temporal and geographical ranges indicated when the cutout was created.
 
 Before running `cutout.prepare()`, **geodata** will check for the presence of the cutout and abort if the cutout already exists.  If you want to force the regeneration of a cutout, run the command with the parameter `overwrite=True`.
 
