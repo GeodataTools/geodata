@@ -31,7 +31,7 @@ from pvlib.modelchain import ModelChain
 from pvlib.solarposition import get_solarposition
 logger = logging.getLogger(__name__)
 
-__all__ = ["_prepare_pvlib_df"]
+__all__ = ["_prepare_pvlib_ds"]
 
 from .convert import (
     get_var,
@@ -259,13 +259,14 @@ def pvlib_model(
         mc.run_model(subset)
         
         subset['ac'] = mc.results.ac
+        subset.loc[subset['ac'] < 0, 'ac'] = 0
         subset = subset.merge(mc.results.dc, how = "left", on = "time").set_index(['x', 'y'], append=True)
 
         coord_subsets.append(subset)
 
     weather_data_final = pd.concat(coord_subsets)
 
-    return weather_data_final
+    return xr.Dataset.from_dataframe(weather_data_final)
 
 
 
