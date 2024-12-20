@@ -6,8 +6,9 @@
 
 ### ERA5
 
-* [ERA5 hourly data on single levels](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview)
-* [ERA5 3D level data](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-complete?tab=overview)
+* [ERA5 hourly data on single levels](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview)
+* [ERA5 monthly averaged data on single levels](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels-monthly-means?tab=overview)
+* [ERA5 3D level wind data](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-complete?tab=overview)
 
 ### MERRA2
 

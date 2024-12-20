@@ -1,20 +1,12 @@
-# MERRA2 Outputs
+# Generating Outputs with MERRA2 Data
 
-This notebook includes these following sections:
+## MERRA2 Configurations and Outputs
 
-- [MERRA2 Configs and Outputs](#merra2-configs-and-outputs)
-- [Generating Wind Outputs with MERRA2](#generating-wind-outputs-with-merra2-data)
-- [Generating Solar Outputs with MERRA2](#generating-solar-outputs-with-merra2-data)
-- [Generating Aerosol Outputs with MERRA2](#generating-aerosol-outputs-with-merra2-data)
-
-
-## MERRA2 Configs and Outputs
-
-In this section, we provide a list of currently possible **geodata** configs and outputs for MERRA2 data from NASA's GES DISC.
+In this section, we provide a list of currently possible **geodata** configs and outputs for MERRA2 data from NASA's [GES DISC](https://disc.gsfc.nasa.gov/).
 
 ### Dataset Configurations
 
-**geodata** is currently optimized to work with the following MERRA2 datasets:
+Currently, **geodata** is able to use the following MERRA2 datasets:
 
 * `surface_flux_hourly`: [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
 * `surface_flux_monthly`: [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
