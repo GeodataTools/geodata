@@ -351,7 +351,7 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 
 def prepare_month_era5(fn, year, month, xs, ys):
     # Reference of the quantities
-    # https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
+    # https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation
     # (shortName) | (name)                                      | (paramId)
     # tisr        | TOA incident solar radiation                | 212
     # ssrd        | Surface Solar Rad Downwards                 | 169
@@ -361,6 +361,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
     # 2t          | 2 metre temperature                         | 167
     # sp          | Surface pressure                            | 134
     # stl4        | Soil temperature level 4                    | 236
+    # tcvw        | Total column water vapor                    | 137
     # fsr         | Forecast surface roughnes                   | 244
 
     if not os.path.isfile(fn):
@@ -371,7 +372,11 @@ def prepare_month_era5(fn, year, month, xs, ys):
         ds = _add_height(ds)
         ds = subset_x_y_era5(ds, xs, ys)
 
-        ds = ds.rename({"fdir": "influx_direct", "tisr": "influx_toa"})
+        ds = ds.rename({
+            "fdir": "influx_direct",
+            "tisr": "influx_toa",
+            "tcwv": "total_column_water_vapour"
+            })
         with np.errstate(divide="ignore", invalid="ignore"):
             ds["albedo"] = (
                 ((ds["ssrd"] - ds["ssr"]) / ds["ssrd"])
