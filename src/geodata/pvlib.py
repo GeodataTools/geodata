@@ -226,7 +226,8 @@ def pvlib_model(
             'influx_diffuse', 
             'influx_direct', 
             'temperature', 
-            'wnd100m'
+            'wnd100m',
+            'total_column_water_vapour'
         ]
     ):
 
@@ -308,15 +309,8 @@ def _calculate_ghi(ds, zenith):
     )
     return ghi
 
-def _calculate_precipitable_water(ds, precipitable_water):
-    return xr.DataArray(
-        np.full((len(ds.time), len(ds.y), len(ds.x)), precipitable_water),
-        dims=("time", "y", "x"),
-        coords={"time": ds.time, "y": ds.y, "x": ds.x},
-        name="precipitable_water"
-    )
 
-def _prepare_pvlib_ds(cutout, *varnames, precipitable_water=5.0):
+def _prepare_pvlib_ds(cutout, *varnames):
     ds = xr.Dataset({
         name: get_var(cutout, name)
         for name in varnames
@@ -324,20 +318,19 @@ def _prepare_pvlib_ds(cutout, *varnames, precipitable_water=5.0):
     
     sp = _calculate_pvlib_solarposition(ds)
     ghi = _calculate_ghi(ds, sp['zenith'])
-    precip = _calculate_precipitable_water(ds, precipitable_water)
 
     ds = (
         ds
         .assign(
             ghi=ghi,
             temperature=convert_temperature(ds),
-            precipitable_water = precip
         )
         .rename({
             'influx_diffuse': 'dhi',
             'influx_direct': 'dni',
             'temperature': 'temp_air',
             'wnd100m': 'wind_speed'
+            'total_column_water_vapour': 'precipitation'
         })
     )
 
