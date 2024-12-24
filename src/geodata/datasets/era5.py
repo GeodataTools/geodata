@@ -372,11 +372,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
         ds = _add_height(ds)
         ds = subset_x_y_era5(ds, xs, ys)
 
-        ds = ds.rename({
-            "fdir": "influx_direct",
-            "tisr": "influx_toa",
-            "tcwv": "total_column_water_vapour"
-            })
+        ds = ds.rename({"fdir": "influx_direct", "tisr": "influx_toa"})
         with np.errstate(divide="ignore", invalid="ignore"):
             ds["albedo"] = (
                 ((ds["ssrd"] - ds["ssr"]) / ds["ssrd"])
@@ -405,6 +401,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
                 "sp": "pressure",
                 "stl4": "soil temperature",
                 "fsr": "roughness",
+                "tcwv": "total_column_water_vapour"
             }
         )
 
