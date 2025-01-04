@@ -71,7 +71,11 @@ class CustomFormatter(_logging.Formatter):
 
 
 logger = _logging.getLogger("geodata")
-logger.setLevel(_logging.INFO)
+
+# Only set the level if it hasn't been set yet
+if logger.level == _logging.NOTSET:
+    logger.setLevel(_logging.INFO)
+
 logger.propagate = False
 if not logger.hasHandlers():
     ch = _logging.StreamHandler()

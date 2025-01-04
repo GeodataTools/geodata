@@ -137,12 +137,17 @@ class BaseDataset(abc.ABC):
         """
 
     @property
-    @abc.abstractmethod
     def downloaded(self):
         """A boolean flag indicating whether the dataset has been prepared
         for use. This typically means that the dataset has been downloaded,
         preprocessed, and stored in a format that is ready for use.
+
+        The basic implementation of this method checks the presence of each file in
+        the catalog in the storage root. Subclasses can override this behavior if
+        a more comprehensive check is required.
         """
+
+        return all((file["save_path"].exists() for file in self.catalog))
 
     @abc.abstractmethod
     def _download_file(self, file: dict):
@@ -159,10 +164,18 @@ class BaseDataset(abc.ABC):
                 - save_path: the path where the file should be saved
         """
 
-    def download(self):
+    def download(self, force: bool = False):
         """Method to download the dataset. This method should download the
         dataset files and store them in the appropriate location.
+
+        Args:
+            force: A boolean flag indicating whether to force the download of
+                the dataset, even if it has already been downloaded.
         """
+
+        if self.downloaded and not force:
+            logger.info(f"{self} has already been downloaded.")
+            return
 
         for file in tqdm(
             self.catalog, desc="Downloading", unit="file", dynamic_ncols=True
@@ -170,14 +183,14 @@ class BaseDataset(abc.ABC):
             self._download_file(file)
 
     def __repr__(self):
-        return "<Dataset Module={} Config={} Years={}-{} Months={}-{} {} {}>".format(
+        return "<Dataset Module={} Config={} Years={}-{} Months={}-{} {}{}>".format(
             self.module,
             self.weather_config,
             self.years.start,
             self.years.stop,
             self.months.start,
             self.months.stop,
-            "Prepared" if self.prepared else "Unprepared",
+            "Downloaded" if self.downloaded else "Not Downloaded",
             " " + self.extra_repr if self.extra_repr else "",
         )
 
@@ -206,34 +219,46 @@ class BaseDataset(abc.ABC):
 
         match self.frequency:
             case "monthly":
-                yield from self._monthly_catalog()
+                return self._monthly_catalog()
             case "daily":
-                yield from self._daily_catalog()
+                return self._daily_catalog()
             case "hourly":
-                yield from self._hourly_catalog()
+                return self._hourly_catalog()
             case _:
                 raise ValueError(
                     f"Invalid frequency {self.frequency} defined for this dataset."
                 )
 
     def _monthly_catalog(self):
+        catalog = []
+
         for year, month in itertools.product(
             range(self.years.start, self.years.stop + 1),
             range(self.months.start, self.months.stop + 1),
         ):
             save_path = self.storage_root / f"{year}_{month:02d}.nc"
-            yield {"year": year, "month": month, "save_path": save_path}
+            catalog.append({"year": year, "month": month, "save_path": save_path})
+
+        return catalog
 
     def _daily_catalog(self):
+        catalog = []
+
         for year, month in itertools.product(
             range(self.years.start, self.years.stop + 1),
             range(self.months.start, self.months.stop + 1),
         ):
             for day in range(1, pd.Timestamp(f"{year}-{month}-1").days_in_month + 1):
                 save_path = self.storage_root / f"{year}_{month:02d}_{day:02d}.nc"
-                yield {"year": year, "month": month, "day": day, "save_path": save_path}
+                catalog.append(
+                    {"year": year, "month": month, "day": day, "save_path": save_path}
+                )
+
+        return catalog
 
     def _hourly_catalog(self):
+        catalog = []
+
         for year, month in itertools.product(
             range(self.years.start, self.years.stop + 1),
             range(self.months.start, self.months.stop + 1),
@@ -244,10 +269,13 @@ class BaseDataset(abc.ABC):
                         self.storage_root
                         / f"{year}_{month:02d}_{day:02d}_{hour:02d}.nc"
                     )
-                    yield {
-                        "year": year,
-                        "month": month,
-                        "day": day,
-                        "hour": hour,
-                        "save_path": save_path,
-                    }
+                    catalog.append(
+                        {
+                            "year": year,
+                            "month": month,
+                            "day": day,
+                            "hour": hour,
+                            "save_path": save_path,
+                        }
+                    )
+        return catalog
