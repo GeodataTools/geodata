@@ -35,7 +35,7 @@ license = {text = "GPLv3"}
 
 [project.optional-dependencies]
 download = [
-    "cdsapi>=0.7.3",
+    "cdsapi>=0.7.5",
     "herbie-data>=2024.8.0",
 ]
 notebook = [

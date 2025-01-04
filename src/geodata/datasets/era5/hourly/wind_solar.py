@@ -15,6 +15,7 @@
 
 import logging
 import os
+import pprint
 import tempfile
 import zipfile
 from pathlib import Path
@@ -90,6 +91,8 @@ class ERA5WindSolarHourlyDataset(ERA5BaseDataset):
         if self.bounds is not None:
             full_request["area"] = self.bounds[::-1]
 
+        logger.debug("Full request for download: %s", pprint.pformat(full_request))
+
         full_result = self.client.retrieve(self.product, full_request)
         if full_result.content_type == "application/zip":
             logger.info(
@@ -114,6 +117,3 @@ class ERA5WindSolarHourlyDataset(ERA5BaseDataset):
 
                 logger.info("Preprocessing complete with zipfile")
                 logger.info("Successfully downloaded to %s", save_path)
-
-    def downloaded(self):
-        pass
