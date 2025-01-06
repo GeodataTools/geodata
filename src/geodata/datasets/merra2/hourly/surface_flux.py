@@ -1,4 +1,4 @@
-# Copyright 2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,28 +14,29 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
-import tempfile
+from .._base import MERRA2BaseDataset
 
 
-from .._base import BaseDataset
-
-logger = logging.getLogger(__name__)
-
-
-class HRRRBaseDataset(BaseDataset):
-    """HRRRBaseDataset is a class that encaps a dataset from the HRRR
+class MERRA2SurfaceFluxHourlyDataset(MERRA2BaseDataset):
+    """MERRA2SurfaceFluxHourlyDataset is a class that encaps a dataset from the MERRA2 reanalysis
     dataset. It provides a streamlined workflow for downloading, preprocessing,
     and storing of these datasets.
-
-    TODO: Support multi-file downloads
     """
 
-    module = "hrrr"
-    _priority = ["google", "aws", "azure"]
+    weather_config = "surface_flux_hourly"
 
-    def _extra_setup(self, **kwargs):
-        self._herbie_save_dir = tempfile.TemporaryDirectory()
-
-    def __del__(self):
-        self._herbie_save_dir.cleanup()
+    variables = [
+        "ustar",
+        "z0m",
+        "disph",
+        "rhoa",
+        "ulml",
+        "vlml",
+        "tstar",
+        "hlml",
+        "tlml",
+        "pblh",
+        "hflux",
+        "eflux",
+    ]
+    url_template = "https://goldsmr4.gesdisc.eosdis.nasa.gov/data/MERRA2/M2T1NXFLX.5.12.4/{year}/{month:0>2}/MERRA2_{spinup}.tavg1_2d_flx_Nx.{year}{month:0>2}{day:0>2}.nc4"
