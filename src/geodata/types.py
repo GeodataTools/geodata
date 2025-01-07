@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-DateRange = slice[int, int, None] | tuple[int, int] | list[int, int]
-CoordRange = slice[float, float, None] | tuple[float, float] | list[float, float]
-BoundRange = tuple[float, float, float, float] | list[float, float, float, float]
+DateRange = slice | tuple[int, int] | list[int]
+CoordRange = slice | tuple[float, float] | list[float]
+BoundRange = tuple[float, float, float, float] | list[float]
 
 __all__ = ["DateRange", "CoordRange"]
