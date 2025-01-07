@@ -330,7 +330,7 @@ def _prepare_pvlib_ds(cutout, *varnames):
             'influx_direct': 'dni',
             'temperature': 'temp_air',
             'wnd100m': 'wind_speed',
-            'total_column_water_vapour': 'precipitation'
+            'total_column_water_vapour': 'precipitable_water'
         })
     )
 
