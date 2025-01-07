@@ -132,13 +132,13 @@ class BaseDataset(abc.ABC):
 
         self._extra_setup(**kwargs)
 
-    @abc.abstractmethod
     def _extra_setup(self, **kwargs):
         """Method to be implemented by subclasses to handle any extra setup
         that is required for the dataset.
         """
 
-    def apply(self, func: callable, *args, **kwargs):
+    @staticmethod
+    def apply(func: callable, *args, **kwargs):
         """Method to apply a function to each file in the dataset.
 
         Args:
@@ -147,10 +147,13 @@ class BaseDataset(abc.ABC):
             **kwargs: Additional keyword arguments to pass to the function.
         """
 
-        for file in self.catalog:
-            with xr.open_dataset(file["save_path"], chunks="auto") as ds:
-                ds = func(ds, *args, **kwargs)
-                ds.to_netcdf(file["save_path"])
+        def wrapper(self, *args, **kwargs):
+            for file in self.catalog:
+                with xr.open_dataset(file["save_path"], chunks="auto") as ds:
+                    ds = func(ds, *args, **kwargs)
+                    ds.to_netcdf(file["save_path"])
+
+        return wrapper
 
     @property
     def downloaded(self):
@@ -163,7 +166,7 @@ class BaseDataset(abc.ABC):
         a more comprehensive check is required.
         """
 
-        return all((file["save_path"].exists() for file in self.catalog))
+        return all((file["downloaded"] for file in self.catalog))
 
     @abc.abstractmethod
     def _download_file(self, file: dict):
@@ -267,15 +270,20 @@ class BaseDataset(abc.ABC):
 
         match self.frequency:
             case "monthly":
-                return self._monthly_catalog()
+                cat = self._monthly_catalog()
             case "daily":
-                return self._daily_catalog()
+                cat = self._daily_catalog()
             case "hourly":
-                return self._hourly_catalog()
+                cat = self._hourly_catalog()
             case _:
                 raise ValueError(
                     f"Invalid frequency {self.frequency} defined for this dataset."
                 )
+
+        for file in cat:
+            file["downloaded"] = file["save_path"].exists()
+
+        return cat
 
     def _monthly_catalog(self):
         catalog = []

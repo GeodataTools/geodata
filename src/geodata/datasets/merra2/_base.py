@@ -30,13 +30,15 @@ class MERRA2BaseDataset(BaseDataset):
     """
 
     module = "merra2"
+    projection = "latlong"
+    frequency = "daily"
     url_template = ""
 
     def _download_file(self, file: dict):
         assert "url" in file, "URL is required to download the file"
 
         url: str = file["url"]
-        path: Path = file["path"]
+        path: Path = file["save_path"]
 
         # Download the file
         with requests.get(url, stream=True) as r:
@@ -46,7 +48,7 @@ class MERRA2BaseDataset(BaseDataset):
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
-    def spinup_year(year: int, month: int):
+    def spinup_year(self, year: int, month: int):
         """Returns the spinup period for the given year and month.
         See https://gmao.gsfc.nasa.gov/pubs/docs/Bosilovich785.pdf for more
         information.
@@ -114,11 +116,11 @@ class MERRA2BaseDataset(BaseDataset):
 
         return super()._rename_and_clean_coords(ds)
 
-    def _hourly_catalog(self):
+    def _daily_catalog(self):
         if not self.url_template:
             raise NotImplementedError("url_template is not defined for this dataset")
 
-        catalog = super()._hourly_catalog()
+        catalog = super()._daily_catalog()
 
         for file in catalog:
             file["spinup"] = self.spinup_year(file["year"], file["month"])
