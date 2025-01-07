@@ -1,4 +1,4 @@
-# Copyright 2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -20,9 +20,11 @@ from collections.abc import Sequence
 from pathlib import Path
 
 import pandas as pd
+import xarray as xr
 from tqdm.auto import tqdm
 
 from ..config import DATASET_ROOT_PATH
+from ..types import BoundRange, DateRange
 
 logger = logging.getLogger(__name__)
 
@@ -60,9 +62,9 @@ class BaseDataset(abc.ABC):
 
     def __init__(
         self,
-        years: Sequence[int] | slice,
-        months: Sequence[int] | slice,
-        bounds: Sequence[int] | None = None,
+        years: DateRange,
+        months: DateRange,
+        bounds: BoundRange | None = None,
         **kwargs,
     ):
         if not hasattr(self, "module"):
@@ -136,6 +138,20 @@ class BaseDataset(abc.ABC):
         that is required for the dataset.
         """
 
+    def apply(self, func: callable, *args, **kwargs):
+        """Method to apply a function to each file in the dataset.
+
+        Args:
+            func: A function that takes an xarray.Dataset as its first argument.
+            *args: Additional arguments to pass to the function.
+            **kwargs: Additional keyword arguments to pass to the function.
+        """
+
+        for file in self.catalog:
+            with xr.open_dataset(file["save_path"], chunks="auto") as ds:
+                ds = func(ds, *args, **kwargs)
+                ds.to_netcdf(file["save_path"])
+
     @property
     def downloaded(self):
         """A boolean flag indicating whether the dataset has been prepared
@@ -177,10 +193,35 @@ class BaseDataset(abc.ABC):
             logger.info(f"{self} has already been downloaded.")
             return
 
-        for file in tqdm(
-            self.catalog, desc="Downloading", unit="file", dynamic_ncols=True
-        ):
+        for file in tqdm(self.catalog, unit="file", dynamic_ncols=True):
             self._download_file(file)
+
+        logger.info(f"Downloaded {self}")
+        logger.info("Cleaning and renaming coordinates")
+
+        self.apply(self._rename_and_clean_coords)
+
+    @apply
+    def trim_variables(
+        self, variables: Sequence[str] | None = None, **kwargs
+    ) -> xr.Dataset | xr.DataArray:
+        """Method to trim the dataset to only include the specified variables.
+
+        Args:
+            variables: A sequence of strings representing the variables to keep.
+                If None, we will keep the variables specified in the `variables`
+                attribute of the dataset.
+        """
+
+        if variables is None:
+            if not hasattr(self, "variables"):
+                raise ValueError(
+                    "The dataset does not have a `variables` attribute defined."
+                    "Please specify the variables to keep."
+                )
+            variables: Sequence[str] = getattr(self, "variables")
+
+        return kwargs["ds"][variables]
 
     def __repr__(self):
         return "<Dataset Module={} Config={} Years={}-{} Months={}-{} {}{}>".format(
@@ -193,6 +234,13 @@ class BaseDataset(abc.ABC):
             "Downloaded" if self.downloaded else "Not Downloaded",
             " " + self.extra_repr if self.extra_repr else "",
         )
+
+    @property
+    @abc.abstractmethod
+    def projection(self):
+        """The projection of the dataset. This should be a string that
+        represents the projection of the dataset.
+        """
 
     @property
     def extra_repr(self):
@@ -279,3 +327,33 @@ class BaseDataset(abc.ABC):
                         }
                     )
         return catalog
+
+    def _rename_and_clean_coords(
+        ds: xr.Dataset | xr.DataArray, add_lon_lat: bool = True
+    ):
+        """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
+
+        Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
+
+        Args:
+            ds (xarray.Dataset): Dataset to rename
+            add_lon_lat (bool, optional): Add lon/lat columns. Defaults to True.
+
+        Returns:
+            xarray.Dataset: Dataset with renamed coordinates
+        """
+
+        # Rename latitude / lat -> y, longitude / lon -> x
+        if "latitude" in list(ds.coords):
+            ds = ds.rename({"latitude": "y"})
+        if "longitude" in list(ds.coords):
+            ds = ds.rename({"longitude": "x"})
+        if "lat" in list(ds.coords):
+            ds = ds.rename({"lat": "y"})
+        if "lon" in list(ds.coords):
+            ds = ds.rename({"lon": "x"})
+
+        if add_lon_lat:
+            ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
+
+        return ds
