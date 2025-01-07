@@ -16,9 +16,10 @@
 from pathlib import Path
 
 import numpy as np
-import xarray as xr
 import requests
+import xarray as xr
 
+from ...types import CoordRange
 from .._base import BaseDataset
 
 
@@ -73,8 +74,8 @@ class MERRA2BaseDataset(BaseDataset):
         return spinup
 
     def convert_and_subset_lons_lats_merra2(
-        ds: xr.Dataset | xr.DataArray, xs: slice, ys: slice
-    ):
+        ds: xr.Dataset | xr.DataArray, xs: CoordRange, ys: CoordRange
+    ) -> xr.Dataset | xr.DataArray:
         """Rename geographic dimensions to x,y. Subset x,y according to xs, ys.
 
         Args:
@@ -111,28 +112,7 @@ class MERRA2BaseDataset(BaseDataset):
         else:
             ds = ds.sel(lon=xs)
 
-        ds = ds.rename({"lon": "x", "lat": "y"})
-        ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
-
-        return ds
-
-    def _rename_and_clean_coords(
-        ds: xr.Dataset | xr.DataArray, add_lon_lat: bool = True
-    ):
-        """Rename 'longitude' and 'latitude' columns to 'x' and 'y'
-
-        Optionally `add_lon_lat` preserves latitude and longitude
-        columns as 'lat' and 'lon'.
-
-        Args:
-            ds (xr.Dataset): The dataset to rename
-            add_lon_lat (bool, optional): Whether to preserve latitude and longitude columns. Defaults to True.
-        """
-
-        ds = ds.rename({"lon": "x", "lat": "y"})
-        if add_lon_lat:
-            ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
-        return ds
+        return super()._rename_and_clean_coords(ds)
 
     def _hourly_catalog(self):
         if not self.url_template:
