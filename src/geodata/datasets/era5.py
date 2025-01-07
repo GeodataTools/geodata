@@ -361,7 +361,6 @@ def prepare_month_era5(fn, year, month, xs, ys):
     # 2t          | 2 metre temperature                         | 167
     # sp          | Surface pressure                            | 134
     # stl4        | Soil temperature level 4                    | 236
-    # tcvw        | Total column water vapor                    | 137
     # fsr         | Forecast surface roughnes                   | 244
 
     if not os.path.isfile(fn):
@@ -400,8 +399,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
                 "t2m": "temperature",
                 "sp": "pressure",
                 "stl4": "soil temperature",
-                "fsr": "roughness",
-                "tcwv": "total_column_water_vapour"
+                "fsr": "roughness"
             }
         )
 
@@ -476,7 +474,6 @@ weather_data_config = {
             "surface_pressure",
             "surface_solar_radiation_downwards",
             "toa_incident_solar_radiation",
-            "total_column_water_vapour",
             "total_sky_direct_solar_radiation_at_surface",
             "forecast_surface_roughness",
             "geopotential",
@@ -491,7 +488,6 @@ weather_data_config = {
             "sp",
             "ssrd",
             "tisr",
-            "tcwv",
             "fdir",
             "fsr",
             "z",
