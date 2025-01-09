@@ -5,7 +5,7 @@ name: Kaneka Hybrid
 # The manufacturer of this panel
 manufacturer: Kaneka
 # Link to the original datasheet of the panel
-source: http://www.kaneka-solar.com/products/pdf/U-EA.pdf
+source: https://www.kaneka-solar.com/product/thin-film/pdf/U-EA.pdf
 
 # Solar radiation below which the panel stops giving useful power
 threshold: 1
@@ -13,13 +13,13 @@ threshold: 1
 # Area of the solar panel in m^2
 area: 1.22
 # Rated production in watt peak
-rated_production: 89.3  
+rated_production: 89.3
 
 # A. B. C are coefficients for the equation : efficiency = A + B*I + C*logI and
 # are calculated by using the three different values of solar
 # radiation and their peak powers at 25deg C module temperature for
 # corresponding radiations from the data sheet
-# That model comes from 
+# That model comes from
 A: 0.0659164166836276
 B: -4.44310393547043E-06
 C: 0.0122044905275824
