@@ -359,6 +359,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
     # fdir        | Total sky direct solar radiation at surface | 228021
     # ro          | Runoff                                      | 205
     # 2t          | 2 metre temperature                         | 167
+    # 2d          | 2 metre dewpoint temperature                | 168
     # sp          | Surface pressure                            | 134
     # stl4        | Soil temperature level 4                    | 236
     # fsr         | Forecast surface roughnes                   | 244
@@ -396,6 +397,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
         ds = ds.rename(
             {
                 "ro": "runoff",
+                "d2m": "dewpoint_temperature",
                 "t2m": "temperature",
                 "sp": "pressure",
                 "stl4": "soil temperature",
@@ -468,6 +470,7 @@ weather_data_config = {
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
+            "2m_dewpoint_temperature",
             "runoff",
             "soil_temperature_level_4",
             "surface_net_solar_radiation",
@@ -482,6 +485,7 @@ weather_data_config = {
             "u100",
             "v100",
             "t2m",
+            "d2m",
             "ro",
             "stl4",
             "ssr",

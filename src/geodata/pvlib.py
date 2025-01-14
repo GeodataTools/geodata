@@ -28,15 +28,13 @@ from timezonefinder import TimezoneFinder
 from pvlib import pvsystem
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
+from pvlib.atmosphere import gueymard94_pw
 from pvlib.solarposition import get_solarposition
 logger = logging.getLogger(__name__)
 
 __all__ = ["_prepare_pvlib_ds"]
 
-from .convert import (
-    get_var,
-    convert_temperature
-)
+from .convert import (get_var)
 
 class ModelChainConfig:
     """
@@ -309,13 +307,50 @@ def _calculate_ghi(ds, zenith):
     )
     return ghi
 
+def _calculate_relative_humidity(temperature, dewpoint_temperature):
+
+    relative_humidity = 100 * (
+        np.exp((17.625 * dewpoint_temperature) / (243.04 + dewpoint_temperature)) /
+        np.exp((17.625 * temperature) / (243.04 + temperature))
+    )
+
+    relative_humidity.name = "relative_humidity"
+    relative_humidity.attrs["units"] = "%"
+    relative_humidity.attrs["description"] = "Relative humidity calculated using temperature and dewpoint temperature"
+
+    return relative_humidity
+
+def _calculate_precipitable_water(temperature, relative_humidity):
+
+    precipitable_water = gueymard94_pw(temperature, relative_humidity)
+
+    precipitable_water.name = "precipitable_water"
+    precipitable_water.attrs["units"] = "cm"
+    precipitable_water.attrs["description"] = "Relative humidity calculated using temperature and dewpoint temperature"
+
+    return precipitable_water
+
+def _convert_celsius(ds):
+    return ds - 273.15
 
 def _prepare_pvlib_ds(cutout, *varnames):
     ds = xr.Dataset({
         name: get_var(cutout, name)
         for name in varnames
     })
-    
+
+    temperature_celsius = _convert_celsius(ds.temperature)
+
+    relative_humidity = _calculate_relative_humidity(
+        temperature_celsius,
+        _convert_celsius(ds.dewpoint_temperature),
+    )
+
+    precipitable_water = _calculate_precipitable_water(
+        temperature_celsius,
+        relative_humidity
+    )
+
     sp = _calculate_pvlib_solarposition(ds)
     ghi = _calculate_ghi(ds, sp['zenith'])
 
@@ -323,7 +358,8 @@ def _prepare_pvlib_ds(cutout, *varnames):
         ds
         .assign(
             ghi=ghi,
-            temperature=convert_temperature(ds),
+            temperature=temperature_celsius,
+            precipitable_water=precipitable_water
         )
         .rename({
             'influx_diffuse': 'dhi',
@@ -333,5 +369,11 @@ def _prepare_pvlib_ds(cutout, *varnames):
         })
     )
 
-    return ds
+    return ds[[
+        "dhi", 
+        "dni", 
+        "temp_air", 
+        "wind_speed", 
+        "precipitable_water"
+    ]]
 
