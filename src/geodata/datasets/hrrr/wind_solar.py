@@ -1,4 +1,4 @@
-# Copyright 2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -13,70 +13,99 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-
 import logging
-
-from multiprocessing import cpu_count
-from unittest.mock import patch
-
+import multiprocessing as mp
+import xarray as xr
 
 import pandas as pd
-import xarray as xr
-from herbie import Herbie
-from tqdm.auto import tqdm
+from herbie import FastHerbie, Herbie
 
+from ...logging import redirect_stdout_to_logger
 from ._base import HRRRBaseDataset
 
 logger = logging.getLogger(__name__)
 
 
-def fake_print(*args, **kwargs):
-    pass
-
-
-class HRRRWindSolarDataset(HRRRBaseDataset):
-    """HRRRWindSolarDataset is a class that encaps a dataset from the HRRR
+class HRRRHourlyDataset(HRRRBaseDataset):
+    """HRRRHourlyDataset is a class that encaps a dataset from the HRRR
     dataset. It provides a streamlined workflow for downloading, preprocessing,
     and storing of these datasets.
+
+    The HRRR dataset is a high-resolution weather forecast model that provides
+    hourly data for the United States. This dataset is useful for a variety of
+    applications, including renewable energy forecasting, weather prediction,
+    and climate research.
+
+    This class provides a simple interface for downloading and processing the
+    HRRR dataset. It allows users to specify the years and months of interest,
+    as well as the variables they wish to download.
     """
 
     weather_config = "wind_solar"
-    variables = ":[UV]GRD:[1,8]0 m"
+    product = "sfc"
 
-    def download(self):
-        """Download the dataset from the HRRR dataset."""
-        logger.info(f"Downloading {self.weather_config} dataset")
-        logger.info(self._herbie_save_dir.name)
+    def _download_file(self, file: dict):
+        year, month = file["year"], file["month"]
 
-        with patch("builtins.print", fake_print):
-            for file in tqdm(self.catalog, desc="Downloading Data", dynamic_ncols=True):
-                hours = pd.date_range(
-                    f"{file['year']}-{file['month']}-01",
-                    f"{file['year']}-{file['month']}-31",
-                    freq="1h",
+        date_range = pd.date_range(
+            f"{year}-{month}-01", f"{year}-{month+1}-01", freq="h", inclusive="left"
+        )
+
+        fh = FastHerbie(
+            date_range,
+            model=self.module,
+            product=self.product,
+            max_threads=mp.cpu_count() * 2,
+            save_dir=self._herbie_save_dir.name,
+            priority=self._priority,
+        )
+
+        with redirect_stdout_to_logger(logger, logging.INFO):
+            logger.info(f"Downloading HRRR wind data in bulk for {year}/{month}")
+            fh.download(":[UV]GRD:[1,8]0 m")
+            fh.download(":TMP:2 m")
+
+            uv_10 = []
+            uv_80 = []
+            tmp_2 = []
+            for hour in date_range:
+                h = Herbie(
+                    hour,
+                    model=self.module,
+                    product=self.product,
+                    save_dir=self._herbie_save_dir.name,
+                    priority=self._priority,
                 )
 
-                dss = []
-                for hour in hours:
-                    h = Herbie(
-                        hour,
-                        fxx=0,
-                        product="sfc",
-                        model="hrrr",
-                        priority=self._priority,
-                        save_dir=self._herbie_save_dir.name,
-                        max_threads=cpu_count() * 2,
+                try:
+                    uv_10.append(h.xarray("[UV]GRD:10 m", remove_grib=False))
+                    uv_80.append(
+                        h.xarray("[UV]GRD:80 m", remove_grib=False).rename(
+                            {"u": "u80", "v": "v80"}
+                        )
                     )
-                    logger.info(f"Downloading {hour}")
-                    dss.append(
-                        xr.concat(h.xarray(self.variables), dim="heightAboveGround")
-                    )
+                    tmp_2.append(h.xarray("TMP:2 m", remove_grib=False))
+                except ValueError:
+                    logger.warning(f"No data found for {hour}, skipping.")
 
-                ds = xr.concat(dss, dim="time").to_netcdf(file["save_path"])
-                ds.close()
+            uv_10: xr.Dataset = xr.concat(uv_10, dim="time")
+            uv_80: xr.Dataset = xr.concat(uv_80, dim="time")
+            tmp_2: xr.Dataset = xr.concat(tmp_2, dim="time")
 
-        logger.info(f"Downloaded {self.weather_config} dataset")
+            ds = xr.merge([uv_10, uv_80, tmp_2], compat="override").rename(
+                {"latitude": "y", "longitude": "x"}
+            )
 
-    @property
-    def downloaded(self):
-        pass
+            try:
+                del ds["heightAboveGround"]
+                del ds.attrs["search"]
+                del ds.attrs["local_grib"]
+                del ds.attrs["remote_grib"]
+            except KeyError:
+                pass
+
+            ds.to_netcdf(file["save_path"])
+
+        # NOTE: Flush temporary FastHerbie save directory to save space, since we no
+        # longer need the raw downloaded files
+        self._herbie_save_dir.cleanup()

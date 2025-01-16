@@ -126,7 +126,7 @@ class BaseDataset(abc.ABC):
         if not self.storage_root.exists():
             logger.info(
                 f"Storage directory for {self.__class__.__name__} does not exist, "
-                "creating now at {self.storage_root}"
+                f"creating now at {self.storage_root}"
             )
             self.storage_root.mkdir(parents=True)
 

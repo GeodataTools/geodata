@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class HRRRWindHourlyDataset(HRRRBaseDataset):
-    """HRRRWindDataset is a class that encaps a dataset from the HRRR
+    """HRRRWindHourlyDataset is a class that encaps a dataset from the HRRR
     dataset. It provides a streamlined workflow for downloading, preprocessing,
     and storing of these datasets.
 
@@ -75,16 +75,29 @@ class HRRRWindHourlyDataset(HRRRBaseDataset):
                     priority=self._priority,
                 )
 
-            try:
-                uv_10.append(h.xarray("[UV]GRD:10 m").rename({"u10": "u", "v10": "v"}))
-                uv_80.append(h.xarray("[UV]GRD:80 m"))
-            except ValueError:
-                logger.warning(f"No data found for {hour}, skipping.")
+                try:
+                    uv_10.append(
+                        h.xarray("[UV]GRD:10 m").rename({"u10": "u", "v10": "v"})
+                    )
+                    uv_80.append(h.xarray("[UV]GRD:80 m"))
+                except ValueError:
+                    logger.warning(f"No data found for {hour}, skipping.")
 
-            ds: xr.Dataset = xr.concat(uv_10 + uv_80, dim="heightAboveGround").rename(
+            uv_10 = xr.concat(uv_10, dim="time")
+            uv_80 = xr.concat(uv_80, dim="time")
+
+            ds: xr.Dataset = xr.concat([uv_10, uv_80], dim="heightAboveGround").rename(
                 {"latitude": "y", "longitude": "x"}
             )
             ds["wind_speed"] = (ds["u"] ** 2 + ds["v"] ** 2) ** 0.5
+
+            try:
+                del ds.attrs["search"]
+                del ds.attrs["local_grib"]
+                del ds.attrs["remote_grib"]
+            except KeyError:
+                pass
+
             ds.to_netcdf(file["save_path"])
 
         # NOTE: Flush temporary FastHerbie save directory to save space, since we no
