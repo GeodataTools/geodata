@@ -27,6 +27,8 @@ class MERRA2BaseDataset(BaseDataset):
     """MERRA2BaseDataset is a class that encaps a dataset from the MERRA2 reanalysis
     dataset. It provides a streamlined workflow for downloading, preprocessing,
     and storing of these datasets.
+
+    TODO: Support multi-file downloads.
     """
 
     module = "merra2"

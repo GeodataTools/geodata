@@ -27,11 +27,10 @@ class HRRRBaseDataset(BaseDataset):
     """HRRRBaseDataset is a class that encaps a dataset from the HRRR
     dataset. It provides a streamlined workflow for downloading, preprocessing,
     and storing of these datasets.
-
-    TODO: Support multi-file downloads
     """
 
     module = "hrrr"
+    projection = "latlong"
     _priority = ["google", "aws", "azure"]
 
     def _extra_setup(self, **kwargs):

@@ -1,4 +1,4 @@
-# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2023, 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -13,8 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+import contextlib
 import logging as _logging
-
 
 color2num = {
     "gray": 30,
@@ -54,6 +54,53 @@ def colorize(
     return f"\x1b[{attrs}m{string}\x1b[0m"
 
 
+class StdoutToLoggerRedirect:
+    """A class to redirect stdout to a logger.
+
+    Args:
+        logger: The logger to redirect stdout to. If not provided, a new logger
+            will be created.
+        level: The logging level to use when redirecting stdout.
+            Default is logging.INFO.
+
+    Example:
+    >>> import logging
+    >>> with contextlib.redirect_stdout(StdoutToLoggerRedirect()):
+    ...     print("Hello, world!")
+    """
+
+    def __init__(
+        self, logger: _logging.Logger | None = None, level: int = _logging.INFO
+    ):
+        self.logger = logger or _logging.getLogger(__name__)
+        self.level = level
+
+    def write(self, msg: str):
+        if msg and not msg.isspace():
+            self.logger.log(self.level, msg)
+
+    def flush(self):
+        pass
+
+
+@contextlib.contextmanager
+def redirect_stdout_to_logger(logger=None, level=_logging.INFO):
+    """Context manager to redirect stdout to a logger.
+
+    Args:
+        logger: The logger to redirect stdout to. If not provided, a new logger
+            will be created.
+        level: The logging level to use. Default is logging.INFO.
+
+    Example:
+    >>> import logging
+    >>> with redirect_stdout_to_logger():
+    ...     print("Hello, world!")
+    """
+    with contextlib.redirect_stdout(StdoutToLoggerRedirect(logger, level)):
+        yield
+
+
 class CustomFormatter(_logging.Formatter):
     # https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output
 
@@ -83,3 +130,5 @@ if not logger.hasHandlers():
         CustomFormatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     )
     logger.addHandler(ch)
+
+__all__ = ["logger", "redirect_stdout_to_logger"]
