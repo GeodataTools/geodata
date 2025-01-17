@@ -223,9 +223,9 @@ def pvlib_model(
         vars = [
             'influx_diffuse', 
             'influx_direct', 
+            'dewpoint_temperature',
             'temperature', 
-            'wnd100m',
-            'total_column_water_vapour'
+            'wnd100m'
         ]
     ):
 
@@ -371,7 +371,8 @@ def _prepare_pvlib_ds(cutout, *varnames):
 
     return ds[[
         "dhi", 
-        "dni", 
+        "dni",
+        "ghi", 
         "temp_air", 
         "wind_speed", 
         "precipitable_water"
