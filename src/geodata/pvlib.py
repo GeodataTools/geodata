@@ -24,6 +24,7 @@ import logging
 import pandas as pd
 import numpy as np
 import xarray as xr
+from .convert import (get_var)
 from timezonefinder import TimezoneFinder
 from pvlib import pvsystem
 from pvlib.location import Location
@@ -34,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["_prepare_pvlib_ds"]
 
-from .convert import (get_var)
 
 class ModelChainConfig:
     """
