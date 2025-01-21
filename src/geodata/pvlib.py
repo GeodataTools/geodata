@@ -316,7 +316,7 @@ def _calculate_relative_humidity(temperature, dewpoint_temperature):
 
     relative_humidity.name = "relative_humidity"
     relative_humidity.attrs["units"] = "%"
-    relative_humidity.attrs["description"] = "Relative humidity calculated using temperature and dewpoint temperature"
+    relative_humidity.attrs["description"] = "Relative humidity calculated using temperature and dewpoint temperature."
 
     return relative_humidity
 
@@ -326,7 +326,7 @@ def _calculate_precipitable_water(temperature, relative_humidity):
 
     precipitable_water.name = "precipitable_water"
     precipitable_water.attrs["units"] = "cm"
-    precipitable_water.attrs["description"] = "Relative humidity calculated using temperature and dewpoint temperature"
+    precipitable_water.attrs["description"] = "Precipitable water (cm) calculated from ambient air temperature (C) and relative humidity (%)."
 
     return precipitable_water
 
