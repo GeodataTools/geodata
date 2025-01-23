@@ -281,6 +281,29 @@ def _calculate_pvlib_solarposition(ds):
     return solarposition
 
 def _calculate_ghi(ds, zenith):
+    """
+    Calculates global horizontal irradiance (ghi) from data arrays representing influx diffuse (dhi) and influx direct (dni)
+    Negative values are clipped.  Calculated using the formula:
+
+    .. math::
+
+    GHI = DHI + DNI * cos(Z)
+
+    where Z representst the solar zenith as calculated by :code:`_calculate_pvlib_solarposition()` (LINK)
+
+    Parameters
+    ----------
+    ds : xarray dataset
+        An xarray dataset containing series for both influx diffuse (dhi) and influx direct (dni).
+    zenith : numeric
+        Zenith angle of the sun in degrees, as calculated by :code:`_calculate_pvlib_solarposition()`.
+
+    Returns
+    -------
+    ghi : numeric
+        Global horizontal irradiance (ghi) [W m**-2].
+
+    """
     dhi = ds.influx_diffuse.values.ravel()
     dni = ds.influx_direct.values.ravel()
     ghi = np.clip(
@@ -305,10 +328,45 @@ def _calculate_ghi(ds, zenith):
         },
         name="ghi"
     )
+
+    ghi.name = "ghi"
+    ghi.attrs["units"] = "W m**-2"
+    ghi.attrs["description"] = "Ghi calculated from influx diffuse (dhi) and influx direct (dni)."
     return ghi
 
 def _calculate_relative_humidity(temperature, dewpoint_temperature):
+    """
+        Calculates relative humidity based on air temperature and dewpoint temperature.
+        Needed in order to calculate precipitable water using pvlib's :code:`gueymard94_pw()` function.
 
+        Relative humidity is calculated using a version of the 
+        August-Roche-Magnus equation as follows: 
+        
+        .. math::
+
+            RH = 100 \cdot \frac{{\exp\left(\frac{{17.625 \cdot TD}}{{243.04 + TD}}\right)}}{{\exp\left(\frac{{17.625 \cdot T}}{{243.04 + T}}\right)}}
+
+        where, RH is % relative humidity, TD is dew-point temperature (celsius), and T is air temperature (celsius).[#1]_ [#2]_
+
+        Parameters
+        ----------
+        temperature : numeric
+            Ambient air temperature at the surface. [C]
+        dewpoint_temperature : numeric
+            Dewpoint temperature at the surface. [C]
+
+        Returns
+        -------
+        relative_humidity : numeric
+            Percent relative humidity. [%]
+
+        References
+        ----------
+        .. [#1] `United States Environmental Protection Agency. Hydrologic Micro Services. Meteorology - Humidity.  <https://qed.epa.gov/hms/meteorology/humidity/algorithms/>`_
+
+        .. [#2] `University of Miami. Calculate Temperature, Dewpoint, or Relative Humidity. <https://bmcnoldy.earth.miami.edu/Humidity.html>` 
+
+    """
     relative_humidity = 100 * (
         np.exp((17.625 * dewpoint_temperature) / (243.04 + dewpoint_temperature)) /
         np.exp((17.625 * temperature) / (243.04 + temperature))
@@ -316,14 +374,33 @@ def _calculate_relative_humidity(temperature, dewpoint_temperature):
 
     relative_humidity.name = "relative_humidity"
     relative_humidity.attrs["units"] = "%"
-    relative_humidity.attrs["description"] = "Relative humidity calculated using temperature and dewpoint temperature."
+    relative_humidity.attrs["description"] = "Relative humidity, calculated using temperature and dewpoint temperature."
 
     return relative_humidity
 
 def _calculate_precipitable_water(temperature, relative_humidity):
+    """
+        Calculates precipitable water (cm) from ambient air temperature (C) and relative humidity (%) using 
+        :code:`pvlib.atmosphere.gueymard94_pw()`.  
 
+        Precipitable water (cm) is a required input for models using CEC modules from :code:`pvlib`.
+        For full documentation on how :code:`pvlib.atmosphere.gueymard94_pw()` calculates precipitable water,
+        see: `the pvlib API reference for pvlib.atmosphere.gueymard94_pw() <https://pvlib-python.readthedocs.io/en/v0.4.2/generated/pvlib.atmosphere.gueymard94_pw.html>`.
+
+        Parameters
+        ----------
+        temperature : numeric
+            Ambient air temperature at the surface. [C]
+        relative_humidity : numeric
+            Percent relative humidity. [%]
+
+        Returns
+        -------
+        precipitable_water : numeric
+            Precipitable water (cm) calculated from ambient air temperature (C) and relative humidity (%). [cm]
+
+    """
     precipitable_water = gueymard94_pw(temperature, relative_humidity)
-
     precipitable_water.name = "precipitable_water"
     precipitable_water.attrs["units"] = "cm"
     precipitable_water.attrs["description"] = "Precipitable water (cm) calculated from ambient air temperature (C) and relative humidity (%)."
@@ -331,6 +408,18 @@ def _calculate_precipitable_water(temperature, relative_humidity):
     return precipitable_water
 
 def _convert_celsius(ds):
+    """Converts a temperature in Kelvin to a temperate in Celsius.
+
+    Parameters
+    ----------
+    temperature : numeric
+        A temperature in Celsius [C].
+
+    Returns
+    -------
+    temperature : numeric
+        A temperature in Kelvin [K].
+    """
     return ds - 273.15
 
 def _prepare_pvlib_ds(cutout, *varnames):
