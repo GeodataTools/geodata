@@ -171,6 +171,8 @@ def pv_system(*args, **kwargs):
         - NxM total modules arranged in M strings of N modules each 
           (modules_per_string=N, strings_per_inverter=M).
 
+    For full documentation, see: https://pvlib-python.readthedocs.io/en/stable/reference/generated/pvlib.pvsystem.PVSystem.html
+
     Parameters
     ----------
     arrays : array (optional)
@@ -212,7 +214,6 @@ def pv_system(*args, **kwargs):
             Losses parameters as defined by PVWatts or other.    
     name : string (optional)
     
-    See also: https://pvlib-python.readthedocs.io/en/stable/reference/generated/pvlib.pvsystem.PVSystem.html
     """
     return pvsystem.PVSystem(*args, **kwargs)
 
@@ -230,8 +231,8 @@ def pvlib_model(
     ):
 
     """
-    Wrapper function that applies a pvlib model as defined by pvlib.modelchain.ModelChain across all unique coordinates
-    represented by a geodata cutout.  
+    Wrapper function that applies a pvlib model as defined by :code:`pvlib.modelchain.ModelChain()` across all unique coordinates
+    represented by a `geodata` cutout.  
 
     Parameters
     ----------
@@ -271,6 +272,26 @@ def pvlib_model(
 
 ## solar PV - pvlib
 def _calculate_pvlib_solarposition(ds):
+    """
+    Wrapper for :code:`pvlib.solarposition.get_solarposition()`.  
+    Allows for vectorized calculation of solar position across an xarray dataset.
+    The solar zenith angle is a required input for :code:`_calculate_ghi()`.
+
+    For full documentation on how :code:`pvlib.solarposition.get_solarposition()` calculates precipitable water,
+    see: `the pvlib API reference for pvlib.solarposition.get_solarposition() <https://pvlib-python.readthedocs.io/en/v0.4.2/generated/pvlib.solarposition.get_solarposition.html>`.
+
+    Parameters
+    ----------
+    ds : xarray dataset
+        An xarray dataset containing series for both influx diffuse (dhi) and influx direct (dni).
+    zenith : numeric
+        Zenith angle of the sun in degrees, as calculated by :code:`_calculate_pvlib_solarposition()`.
+
+    Returns
+    -------
+    solarposition : dataframe
+        Dataframe containing solar zenith angle for a given time and set of coordinates.
+    """
     nt, ny, nx = ds.sizes['time'], ds.sizes['y'], ds.sizes['x']
     time_expanded = np.broadcast_to(ds.time.values[:, None, None], (nt, ny, nx)).ravel()
     yy, xx = np.meshgrid(ds.y, ds.x, indexing="ij")
@@ -289,7 +310,7 @@ def _calculate_ghi(ds, zenith):
 
     GHI = DHI + DNI * cos(Z)
 
-    where Z representst the solar zenith as calculated by :code:`_calculate_pvlib_solarposition()` (LINK)
+    where Z representst the solar zenith as calculated by :code:`_calculate_pvlib_solarposition()`.
 
     Parameters
     ----------
@@ -336,35 +357,35 @@ def _calculate_ghi(ds, zenith):
 
 def _calculate_relative_humidity(temperature, dewpoint_temperature):
     """
-        Calculates relative humidity based on air temperature and dewpoint temperature.
-        Needed in order to calculate precipitable water using pvlib's :code:`gueymard94_pw()` function.
+    Calculates relative humidity based on air temperature and dewpoint temperature.
+    Needed in order to calculate precipitable water using pvlib's :code:`gueymard94_pw()` function.
 
-        Relative humidity is calculated using a version of the 
-        August-Roche-Magnus equation as follows: 
-        
-        .. math::
+    Relative humidity is calculated using a version of the 
+    August-Roche-Magnus equation as follows: 
+    
+    .. math::
 
-            RH = 100 \cdot \frac{{\exp\left(\frac{{17.625 \cdot TD}}{{243.04 + TD}}\right)}}{{\exp\left(\frac{{17.625 \cdot T}}{{243.04 + T}}\right)}}
+        RH = 100 \cdot \frac{{\exp\left(\frac{{17.625 \cdot TD}}{{243.04 + TD}}\right)}}{{\exp\left(\frac{{17.625 \cdot T}}{{243.04 + T}}\right)}}
 
-        where, RH is % relative humidity, TD is dew-point temperature (celsius), and T is air temperature (celsius).[#1]_ [#2]_
+    where, RH is % relative humidity, TD is dew-point temperature (celsius), and T is air temperature (celsius).[#1]_ [#2]_
 
-        Parameters
-        ----------
-        temperature : numeric
-            Ambient air temperature at the surface. [C]
-        dewpoint_temperature : numeric
-            Dewpoint temperature at the surface. [C]
+    Parameters
+    ----------
+    temperature : numeric
+        Ambient air temperature at the surface. [C]
+    dewpoint_temperature : numeric
+        Dewpoint temperature at the surface. [C]
 
-        Returns
-        -------
-        relative_humidity : numeric
-            Percent relative humidity. [%]
+    Returns
+    -------
+    relative_humidity : numeric
+        Percent relative humidity. [%]
 
-        References
-        ----------
-        .. [#1] `United States Environmental Protection Agency. Hydrologic Micro Services. Meteorology - Humidity.  <https://qed.epa.gov/hms/meteorology/humidity/algorithms/>`_
+    References
+    ----------
+    .. [#1] `United States Environmental Protection Agency. Hydrologic Micro Services. Meteorology - Humidity.  <https://qed.epa.gov/hms/meteorology/humidity/algorithms/>`_
 
-        .. [#2] `University of Miami. Calculate Temperature, Dewpoint, or Relative Humidity. <https://bmcnoldy.earth.miami.edu/Humidity.html>` 
+    .. [#2] `University of Miami. Calculate Temperature, Dewpoint, or Relative Humidity. <https://bmcnoldy.earth.miami.edu/Humidity.html>` 
 
     """
     relative_humidity = 100 * (
@@ -380,24 +401,24 @@ def _calculate_relative_humidity(temperature, dewpoint_temperature):
 
 def _calculate_precipitable_water(temperature, relative_humidity):
     """
-        Calculates precipitable water (cm) from ambient air temperature (C) and relative humidity (%) using 
-        :code:`pvlib.atmosphere.gueymard94_pw()`.  
+    Calculates precipitable water (cm) from ambient air temperature (C) and relative humidity (%) using 
+    :code:`pvlib.atmosphere.gueymard94_pw()`.  
 
-        Precipitable water (cm) is a required input for models using CEC modules from :code:`pvlib`.
-        For full documentation on how :code:`pvlib.atmosphere.gueymard94_pw()` calculates precipitable water,
-        see: `the pvlib API reference for pvlib.atmosphere.gueymard94_pw() <https://pvlib-python.readthedocs.io/en/v0.4.2/generated/pvlib.atmosphere.gueymard94_pw.html>`.
+    Precipitable water (cm) is a required input for models using CEC modules from :code:`pvlib`.
+    For full documentation on how :code:`pvlib.atmosphere.gueymard94_pw()` calculates precipitable water,
+    see: `the pvlib API reference for pvlib.atmosphere.gueymard94_pw() <https://pvlib-python.readthedocs.io/en/v0.4.2/generated/pvlib.atmosphere.gueymard94_pw.html>`.
 
-        Parameters
-        ----------
-        temperature : numeric
-            Ambient air temperature at the surface. [C]
-        relative_humidity : numeric
-            Percent relative humidity. [%]
+    Parameters
+    ----------
+    temperature : numeric
+        Ambient air temperature at the surface. [C]
+    relative_humidity : numeric
+        Percent relative humidity. [%]
 
-        Returns
-        -------
-        precipitable_water : numeric
-            Precipitable water (cm) calculated from ambient air temperature (C) and relative humidity (%). [cm]
+    Returns
+    -------
+    precipitable_water : numeric
+        Precipitable water (cm) calculated from ambient air temperature (C) and relative humidity (%). [cm]
 
     """
     precipitable_water = gueymard94_pw(temperature, relative_humidity)
@@ -408,7 +429,8 @@ def _calculate_precipitable_water(temperature, relative_humidity):
     return precipitable_water
 
 def _convert_celsius(ds):
-    """Converts a temperature in Kelvin to a temperate in Celsius.
+    """
+    Converts a temperature in Kelvin to a temperate in Celsius.
 
     Parameters
     ----------
@@ -423,6 +445,43 @@ def _convert_celsius(ds):
     return ds - 273.15
 
 def _prepare_pvlib_ds(cutout, *varnames):
+    """
+    Prepares an `xarray.Dataset` from a geodata `cutout` class for use in model simulations using `pvlib`.
+    This function extracts specified variables from the `cutout` dataset, calculates additional parameters 
+    like global horizontal irradiance (GHI), precipitable water, and solar position, and renames fields to 
+    align with expected inputs.
+
+    Requires a cutout with the following variables:
+
+      - **influx_diffuse** (*float*) - Diffuse horizontal irradiance.  
+      - **influx_direct** (*float*) - Direct normal irradiance.  
+      - **dewpoint_temperature** (*float*) - Dewpoint temperature in Celsius.  
+      - **temperature** (*float*) - Air temperature in Celsius.  
+      - **wnd100m** (*float*) - Wind speed at 100m.  
+
+    Outputs an `xarray.Dataset` with the following variables:
+
+      - **dhi** (*float*) - Diffuse horizontal irradiance.  
+      - **dni** (*float*) - Direct normal irradiance.  
+      - **ghi** (*float*) - Global horizontal irradiance (calculated via :code:`_calculate_ghi()`).  
+      - **temp_air** (*float*) - Air temperature in Celsius.  
+      - **wind_speed** (*float*) - Wind speed at 100m.  
+      - **precipitable_water** (*float*) - Precipitable water (calculated via :code:`_calculate_precipitable_water()`).
+
+    Parameters
+    ----------
+    cutout : geodata **Cutout** class
+        Cutout generated by `geodata` library.  Must contain following variables: influx_diffuse, influx_direct,
+        dewpoint_temperature, temperature, wnd100m.
+    varnames : string
+        String values representing names of required variables.
+
+    Returns
+    -------
+    weather_data : `xarray.Dataset`
+        Dataset containing necessary variables to run `pvlib` model simulations.
+
+    """
     ds = xr.Dataset({
         name: get_var(cutout, name)
         for name in varnames
