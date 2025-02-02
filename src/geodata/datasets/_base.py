@@ -202,7 +202,20 @@ class BaseDataset(abc.ABC):
         logger.info(f"Downloaded {self}")
         logger.info("Cleaning and renaming coordinates")
 
+        self.apply(self._dataset_postprocess)
         self.apply(self._rename_and_clean_coords)
+
+    def _dataset_postprocess(self, ds: xr.Dataset | xr.DataArray, **kwargs):
+        """Method to postprocess the dataset after it has been downloaded.
+        This method should be implemented by subclasses to handle any
+        additional processing that is required for the dataset.
+
+        Args:
+            ds: The dataset to postprocess.
+            **kwargs: Additional keyword arguments to pass to the function.
+        """
+
+        return ds
 
     @apply
     def trim_variables(
@@ -336,9 +349,7 @@ class BaseDataset(abc.ABC):
                     )
         return catalog
 
-    def _rename_and_clean_coords(
-        ds: xr.Dataset | xr.DataArray, add_lon_lat: bool = True
-    ):
+    def _rename_and_clean_coords(ds: xr.Dataset, add_lon_lat: bool = True):
         """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
 
         Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.

@@ -15,9 +15,9 @@
 
 import logging
 import multiprocessing as mp
-import xarray as xr
 
 import pandas as pd
+import xarray as xr
 from herbie import FastHerbie, Herbie
 
 from ...logging import redirect_stdout_to_logger
@@ -45,10 +45,13 @@ class HRRRHourlyDataset(HRRRBaseDataset):
     product = "sfc"
 
     def _download_file(self, file: dict):
-        year, month = file["year"], file["month"]
+        year, month, day = file["year"], file["month"], file["day"]
 
         date_range = pd.date_range(
-            f"{year}-{month}-01", f"{year}-{month+1}-01", freq="h", inclusive="left"
+            f"{year}-{month}-{day}",
+            f"{year}-{month}-{day+1}" if day != 31 else f"{year}-{month+1}-01",
+            freq="h",
+            inclusive="left",
         )
 
         fh = FastHerbie(
@@ -61,7 +64,6 @@ class HRRRHourlyDataset(HRRRBaseDataset):
         )
 
         with redirect_stdout_to_logger(logger, logging.INFO):
-            logger.info(f"Downloading HRRR wind data in bulk for {year}/{month}")
             fh.download(":[UV]GRD:[1,8]0 m")
             fh.download(":TMP:2 m")
 
@@ -78,19 +80,30 @@ class HRRRHourlyDataset(HRRRBaseDataset):
                 )
 
                 try:
-                    uv_10.append(h.xarray("[UV]GRD:10 m", remove_grib=False))
-                    uv_80.append(
-                        h.xarray("[UV]GRD:80 m", remove_grib=False).rename(
-                            {"u": "u80", "v": "v80"}
-                        )
+                    uv_10.append(
+                        self._preprocess_individual_herbie(h, "[UV]GRD:10 m", hour)
                     )
-                    tmp_2.append(h.xarray("TMP:2 m", remove_grib=False))
+                    uv_80.append(
+                        self._preprocess_individual_herbie(h, "[UV]GRD:80 m", hour)
+                    )
+                    tmp_2.append(
+                        self._preprocess_individual_herbie(h, ":TMP:2 m", hour)
+                    )
+
                 except ValueError:
                     logger.warning(f"No data found for {hour}, skipping.")
 
-            uv_10: xr.Dataset = xr.concat(uv_10, dim="time")
-            uv_80: xr.Dataset = xr.concat(uv_80, dim="time")
-            tmp_2: xr.Dataset = xr.concat(tmp_2, dim="time")
+            # First concat to daily files
+
+            uv_10: xr.Dataset = xr.open_mfdataset(
+                uv_10, concat_dim="time", chunks="auto", combine="nested"
+            )
+            uv_80: xr.Dataset = xr.open_mfdataset(
+                uv_80, concat_dim="time", chunks="auto", combine="nested"
+            )
+            tmp_2: xr.Dataset = xr.open_mfdataset(
+                tmp_2, concat_dim="time", chunks="auto", combine="nested"
+            )
 
             ds = xr.merge([uv_10, uv_80, tmp_2], compat="override").rename(
                 {"latitude": "y", "longitude": "x"}
@@ -101,6 +114,7 @@ class HRRRHourlyDataset(HRRRBaseDataset):
                 del ds.attrs["search"]
                 del ds.attrs["local_grib"]
                 del ds.attrs["remote_grib"]
+                del ds.coords["gribfile_projection"]
             except KeyError:
                 pass
 

@@ -15,8 +15,12 @@
 
 
 import logging
+import os.path as osp
 import tempfile
 
+import herbie
+import pandas as pd
+import xarray as xr
 
 from .._base import BaseDataset
 
@@ -31,6 +35,7 @@ class HRRRBaseDataset(BaseDataset):
 
     module = "hrrr"
     projection = "latlong"
+    frequency = "daily"
     _priority = ["google", "aws", "azure"]
 
     def _extra_setup(self, **kwargs):
@@ -38,3 +43,19 @@ class HRRRBaseDataset(BaseDataset):
 
     def __del__(self):
         self._herbie_save_dir.cleanup()
+
+    def _preprocess_individual_herbie(
+        self, h: herbie.Herbie, search: str, hour: pd.DatetimeIndex
+    ):
+        tmp_ds = h.xarray(search, remove_grib=False)
+        tmp_ds.to_netcdf(osp.join(self._herbie_save_dir.name, f"{hour}_{search}.nc"))
+        tmp_ds.close()
+
+        return osp.join(self._herbie_save_dir.name, f"{hour}_{search}.nc")
+
+    def _dataset_postprocess(self, ds: xr.Dataset, **kwargs):
+        # Because certain hours are missing, we need to reindex the dataset
+        # to include all hours in the range
+
+        logger.debug("Reindexing dataset to include all hours in the range")
+        return ds.resample(time="1h").mean()

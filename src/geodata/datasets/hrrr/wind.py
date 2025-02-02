@@ -45,10 +45,13 @@ class HRRRWindHourlyDataset(HRRRBaseDataset):
     product = "sfc"
 
     def _download_file(self, file: dict):
-        year, month = file["year"], file["month"]
+        year, month, day = file["year"], file["month"], file["day"]
 
         date_range = pd.date_range(
-            f"{year}-{month}-01", f"{year}-{month+1}-01", freq="h", inclusive="left"
+            f"{year}-{month}-{day}",
+            f"{year}-{month}-{day+1}",
+            freq="h",
+            inclusive="left",
         )
 
         fh = FastHerbie(
