@@ -21,6 +21,7 @@ import xarray as xr
 from herbie import FastHerbie, Herbie
 
 from ...logging import redirect_stdout_to_logger
+from .._base import AtomicDataset
 from ._base import HRRRBaseDataset
 
 logger = logging.getLogger(__name__)
@@ -44,8 +45,8 @@ class HRRRHourlyDataset(HRRRBaseDataset):
     weather_config = "wind_solar"
     product = "sfc"
 
-    def _download_file(self, file: dict):
-        year, month, day = file["year"], file["month"], file["day"]
+    def _download_file(self, file: AtomicDataset):
+        year, month, day = file.year, file.month, file.day
 
         date_range = pd.date_range(
             f"{year}-{month}-{day}",
@@ -105,9 +106,7 @@ class HRRRHourlyDataset(HRRRBaseDataset):
                 tmp_2, concat_dim="time", chunks="auto", combine="nested"
             )
 
-            ds = xr.merge([uv_10, uv_80, tmp_2], compat="override").rename(
-                {"latitude": "y", "longitude": "x"}
-            )
+            ds = xr.merge([uv_10, uv_80, tmp_2], compat="override")
 
             try:
                 del ds["heightAboveGround"]
@@ -118,7 +117,7 @@ class HRRRHourlyDataset(HRRRBaseDataset):
             except KeyError:
                 pass
 
-            ds.to_netcdf(file["save_path"])
+            ds.to_netcdf(file.path)
 
         # NOTE: Flush temporary FastHerbie save directory to save space, since we no
         # longer need the raw downloaded files

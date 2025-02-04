@@ -14,6 +14,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import abc
+import dataclasses
+import hashlib
 import itertools
 import logging
 from collections.abc import Sequence
@@ -27,6 +29,82 @@ from ..config import DATASET_ROOT_PATH
 from ..types import BoundRange, DateRange
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class AtomicDataset:
+    """AtomicDataset is a class that encapsulates an individual xarray file that was
+    downloaded. It provides a streamlined workflow for downloading, preprocessing,
+    and integrity checking of these datasets.
+    """
+
+    year: int
+    month: int
+    dataset: "BaseDataset"
+    day: int | None = None
+    file_hash: str | None = None
+    url: str | None = None
+    spinup: bool | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.dataset, BaseDataset):
+            raise ValueError("dataset must be an instance of BaseDataset")
+
+    @property
+    def path(self):
+        """The path where the file should be saved"""
+        if self.day is None:
+            return self.dataset.storage_root / str(self.year) / f"{self.month:02d}.nc"
+        else:
+            return (
+                self.dataset.storage_root
+                / str(self.year)
+                / f"{self.month:02d}"
+                / f"{self.day:02d}.nc"
+            )
+
+    def check(self, integrity: bool = True):
+        """Check the presence of the file and its integrity.
+
+        Args:
+            integrity: A boolean flag indicating whether to check the integrity
+            of the file. If True, the file will be checked against its hash.
+            If False, only the presence of the file will be checked.
+
+        Returns:
+            True if the file is present and its integrity is intact, False otherwise.
+        """
+
+        if not self.path.exists():
+            logger.debug(f"{self.path} does not exist")
+            return False
+
+        if not integrity:
+            return True
+
+        # In case the file just got downloaded
+        if self.file_hash is None:
+            self.file_hash = self._compute_hash()
+            return True
+
+        if self.file_hash != self._compute_hash():
+            logger.warning(f"{self.path} is corrupted")
+            return False
+
+        return True
+
+    def _compute_hash(self):
+        """Compute the hash of the file.
+
+        Returns:
+            The hash of the file.
+        """
+
+        hash_func = hashlib.sha256()
+        with open(self.path, "rb") as f:
+            while chunk := f.read(8192):  # Read file in chunks
+                hash_func.update(chunk)
+        return hash_func.hexdigest()
 
 
 class BaseDataset(abc.ABC):
@@ -130,6 +208,7 @@ class BaseDataset(abc.ABC):
             )
             self.storage_root.mkdir(parents=True)
 
+        self._extra_kwargs = kwargs
         self._extra_setup(**kwargs)
 
     def _extra_setup(self, **kwargs):
@@ -149,11 +228,34 @@ class BaseDataset(abc.ABC):
 
         def wrapper(self, *args, **kwargs):
             for file in self.catalog:
-                with xr.open_dataset(file["save_path"], chunks="auto") as ds:
+                with xr.open_dataset(file.path, chunks="auto") as ds:
                     ds = func(ds, *args, **kwargs)
-                    ds.to_netcdf(file["save_path"])
+                    ds.to_netcdf(file.path)
 
         return wrapper
+
+    def _generate_manifest(self):
+        """Generate a manifest file for the dataset. This file contains
+        metadata about the dataset, including the file paths and their
+        integrity checks.
+
+        TODO! This method is not ready yet!
+
+        Returns:
+            A list of dictionaries containing the metadata of each file in the
+            dataset.
+        """
+
+        manifest = []
+        for file in self.catalog:
+            manifest.append(
+                {
+                    "path": str(file["save_path"]),
+                    "integrity": file["downloaded"],
+                }
+            )
+
+        return manifest
 
     @property
     def downloaded(self):
@@ -166,7 +268,7 @@ class BaseDataset(abc.ABC):
         a more comprehensive check is required.
         """
 
-        return all((file["downloaded"] for file in self.catalog))
+        return all((file.check() for file in self.catalog))
 
     @abc.abstractmethod
     def _download_file(self, file: dict):
@@ -263,6 +365,20 @@ class BaseDataset(abc.ABC):
         return ""
 
     @property
+    def testing(self):
+        """A boolean flag indicating whether the dataset is being used for
+        testing. Under this mode, only the first few days or months of the dataset
+        will be downloaded (depending on the granularity). This is useful for
+        testing the dataset without downloading the entire dataset.
+        """
+
+        if "testing" not in self._extra_kwargs:
+            return False
+        if not isinstance(self._extra_kwargs["testing"], bool):
+            raise ValueError("testing must be a boolean flag")
+        return self._extra_kwargs["testing"]
+
+    @property
     def submodule(self):
         """The submodule of the dataset. This can be defined by the dataset
         using the `weather_config` attribute. If not defined, it will default
@@ -271,7 +387,7 @@ class BaseDataset(abc.ABC):
         return getattr(self, "weather_config", self.__class__.__name__)
 
     @property
-    def catalog(self):
+    def catalog(self) -> list["AtomicDataset"]:
         """A generator that yields all the files that need to be downloaded.
         Each iteration should return a dictionary with the following keys:
             - year: the year of the file
@@ -293,9 +409,6 @@ class BaseDataset(abc.ABC):
                     f"Invalid frequency {self.frequency} defined for this dataset."
                 )
 
-        for file in cat:
-            file["downloaded"] = file["save_path"].exists()
-
         return cat
 
     def _monthly_catalog(self):
@@ -305,12 +418,11 @@ class BaseDataset(abc.ABC):
             range(self.years.start, self.years.stop + 1),
             range(self.months.start, self.months.stop + 1),
         ):
-            save_path = self.storage_root / f"{year}_{month:02d}.nc"
-            catalog.append({"year": year, "month": month, "save_path": save_path})
+            catalog.append(AtomicDataset(year, month, dataset=self))
 
         return catalog
 
-    def _daily_catalog(self):
+    def _daily_catalog(self) -> list["AtomicDataset"]:
         catalog = []
 
         for year, month in itertools.product(
@@ -318,36 +430,33 @@ class BaseDataset(abc.ABC):
             range(self.months.start, self.months.stop + 1),
         ):
             for day in range(1, pd.Timestamp(f"{year}-{month}-1").days_in_month + 1):
-                save_path = self.storage_root / f"{year}_{month:02d}_{day:02d}.nc"
-                catalog.append(
-                    {"year": year, "month": month, "day": day, "save_path": save_path}
-                )
+                catalog.append(AtomicDataset(year, month, day, dataset=self))
 
         return catalog
 
-    def _hourly_catalog(self):
-        catalog = []
+    # def _hourly_catalog(self):
+    #     catalog = []
 
-        for year, month in itertools.product(
-            range(self.years.start, self.years.stop + 1),
-            range(self.months.start, self.months.stop + 1),
-        ):
-            for day in range(1, pd.Timestamp(f"{year}-{month}-1").days_in_month + 1):
-                for hour in range(24):
-                    save_path = (
-                        self.storage_root
-                        / f"{year}_{month:02d}_{day:02d}_{hour:02d}.nc"
-                    )
-                    catalog.append(
-                        {
-                            "year": year,
-                            "month": month,
-                            "day": day,
-                            "hour": hour,
-                            "save_path": save_path,
-                        }
-                    )
-        return catalog
+    #     for year, month in itertools.product(
+    #         range(self.years.start, self.years.stop + 1),
+    #         range(self.months.start, self.months.stop + 1),
+    #     ):
+    #         for day in range(1, pd.Timestamp(f"{year}-{month}-1").days_in_month + 1):
+    #             for hour in range(24):
+    #                 save_path = (
+    #                     self.storage_root
+    #                     / f"{year}_{month:02d}_{day:02d}_{hour:02d}.nc"
+    #                 )
+    #                 catalog.append(
+    #                     {
+    #                         "year": year,
+    #                         "month": month,
+    #                         "day": day,
+    #                         "hour": hour,
+    #                         "save_path": save_path,
+    #                     }
+    #                 )
+    #     return catalog
 
     def _rename_and_clean_coords(ds: xr.Dataset, add_lon_lat: bool = True):
         """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'

@@ -27,23 +27,14 @@ from ._base import HRRRBaseDataset
 logger = logging.getLogger(__name__)
 
 
-class HRRRWindHourlyDataset(HRRRBaseDataset):
-    """HRRRWindHourlyDataset is a class that encaps a dataset from the HRRR
+class HRRR3DWindHourlyDataset(HRRRBaseDataset):
+    """HRRR3DWindHourlyDataset is a class that encaps a dataset from the HRRR
     dataset. It provides a streamlined workflow for downloading, preprocessing,
     and storing of these datasets.
-
-    The HRRR dataset is a high-resolution weather forecast model that provides
-    hourly data for the United States. This dataset is useful for a variety of
-    applications, including renewable energy forecasting, weather prediction,
-    and climate research.
-
-    This class provides a simple interface for downloading and processing the
-    HRRR dataset. It allows users to specify the years and months of interest,
-    as well as the variables they wish to download.
     """
 
     weather_config = "wind"
-    product = "sfc"
+    product = "nat"  # Use "nat" product for 3D data
 
     def _download_file(self, file: AtomicDataset):
         year, month, day = file.year, file.month, file.day

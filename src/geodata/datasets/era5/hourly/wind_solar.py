@@ -22,6 +22,7 @@ from pathlib import Path
 
 import xarray as xr
 
+from ..._base import AtomicDataset
 from .._base import ERA5BaseDataset
 
 logger = logging.getLogger(__name__)
@@ -73,10 +74,10 @@ class ERA5WindSolarHourlyDataset(ERA5BaseDataset):
     product = "reanalysis-era5-single-levels"
     product_type = "reanalysis"
 
-    def _download_file(self, file: dict):
-        year: int = file["year"]
-        month: int = file["month"]
-        save_path: Path = file["save_path"]
+    def _download_file(self, file: AtomicDataset):
+        year: int = file.year
+        month: int = file.month
+        save_path: Path = file.path
 
         full_request = {
             "product_type": self.product_type,

@@ -58,4 +58,11 @@ class HRRRBaseDataset(BaseDataset):
         # to include all hours in the range
 
         logger.debug("Reindexing dataset to include all hours in the range")
-        return ds.resample(time="1h").mean()
+        ds = ds.resample(time="1h").mean()
+
+        # NOTE: For some reasons, HRRR's longitude is in the range of [0, 360]
+        # instead of [-180, 180]. We need to put it back to [-180, 180].
+        logger.debug("Fixing longitude range")
+        ds["longitude"] = (ds["longitude"] % 360 + 540) % 360 - 180
+
+        return ds

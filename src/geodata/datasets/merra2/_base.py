@@ -13,14 +13,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 
 import numpy as np
 import requests
 import xarray as xr
 
 from ...types import CoordRange
-from .._base import BaseDataset
+from .._base import AtomicDataset, BaseDataset
 
 
 class MERRA2BaseDataset(BaseDataset):
@@ -36,17 +35,16 @@ class MERRA2BaseDataset(BaseDataset):
     frequency = "daily"
     url_template = ""
 
-    def _download_file(self, file: dict):
+    def _download_file(self, file: AtomicDataset):
         assert "url" in file, "URL is required to download the file"
 
-        url: str = file["url"]
-        path: Path = file["save_path"]
+        url: str = file.url
 
         # Download the file
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
 
-            with open(path, "wb") as f:
+            with open(file.path, "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     f.write(chunk)
 
@@ -125,7 +123,7 @@ class MERRA2BaseDataset(BaseDataset):
         catalog = super()._daily_catalog()
 
         for file in catalog:
-            file["spinup"] = self.spinup_year(file["year"], file["month"])
-            file["url"] = self.url_template.format(**file)
+            file.spinup = self.spinup_year(file.year, file.month)
+            file.url = self.url_template.format(**vars(file))
 
         return catalog
