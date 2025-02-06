@@ -38,9 +38,9 @@ class AtomicDataset:
     and integrity checking of these datasets.
     """
 
+    dataset: "BaseDataset"
     year: int
     month: int
-    dataset: "BaseDataset"
     day: int | None = None
     file_hash: str | None = None
     url: str | None = None
@@ -216,24 +216,6 @@ class BaseDataset(abc.ABC):
         that is required for the dataset.
         """
 
-    @staticmethod
-    def apply(func: callable, *args, **kwargs):
-        """Method to apply a function to each file in the dataset.
-
-        Args:
-            func: A function that takes an xarray.Dataset as its first argument.
-            *args: Additional arguments to pass to the function.
-            **kwargs: Additional keyword arguments to pass to the function.
-        """
-
-        def wrapper(self, *args, **kwargs):
-            for file in self.catalog:
-                with xr.open_dataset(file.path, chunks="auto") as ds:
-                    ds = func(ds, *args, **kwargs)
-                    ds.to_netcdf(file.path)
-
-        return wrapper
-
     def _generate_manifest(self):
         """Generate a manifest file for the dataset. This file contains
         metadata about the dataset, including the file paths and their
@@ -299,13 +281,22 @@ class BaseDataset(abc.ABC):
             return
 
         for file in tqdm(self.catalog, unit="file", dynamic_ncols=True):
+            # We first must ensure the directory exists
+            file.path.parent.mkdir(parents=True, exist_ok=True)
+
             self._download_file(file)
 
         logger.info(f"Downloaded {self}")
         logger.info("Cleaning and renaming coordinates")
 
-        self.apply(self._dataset_postprocess)
-        self.apply(self._rename_and_clean_coords)
+        # Post-process the dataset
+        for file in tqdm(self.catalog, unit="file", dynamic_ncols=True):
+            if file.check():
+                ds = xr.open_dataset(file.path)
+                ds = self._rename_and_clean_coords(ds)
+                ds = self._dataset_postprocess(ds)
+                ds.to_netcdf(file.path)
+                ds.close()
 
     def _dataset_postprocess(self, ds: xr.Dataset | xr.DataArray, **kwargs):
         """Method to postprocess the dataset after it has been downloaded.
@@ -319,7 +310,6 @@ class BaseDataset(abc.ABC):
 
         return ds
 
-    @apply
     def trim_variables(
         self, variables: Sequence[str] | None = None, **kwargs
     ) -> xr.Dataset | xr.DataArray:
@@ -418,7 +408,7 @@ class BaseDataset(abc.ABC):
             range(self.years.start, self.years.stop + 1),
             range(self.months.start, self.months.stop + 1),
         ):
-            catalog.append(AtomicDataset(year, month, dataset=self))
+            catalog.append(AtomicDataset(self, year, month))
 
         return catalog
 
@@ -429,8 +419,13 @@ class BaseDataset(abc.ABC):
             range(self.years.start, self.years.stop + 1),
             range(self.months.start, self.months.stop + 1),
         ):
-            for day in range(1, pd.Timestamp(f"{year}-{month}-1").days_in_month + 1):
-                catalog.append(AtomicDataset(year, month, day, dataset=self))
+            for day in range(
+                1,
+                pd.Timestamp(f"{year}-{month}-1").days_in_month + 1
+                if not self.testing
+                else 3,
+            ):
+                catalog.append(AtomicDataset(self, year, month, day))
 
         return catalog
 
@@ -458,27 +453,27 @@ class BaseDataset(abc.ABC):
     #                 )
     #     return catalog
 
-    def _rename_and_clean_coords(ds: xr.Dataset, add_lon_lat: bool = True):
+    def _rename_and_clean_coords(self, ds: xr.Dataset, add_lon_lat: bool = False):
         """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
 
         Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
 
         Args:
             ds (xarray.Dataset): Dataset to rename
-            add_lon_lat (bool, optional): Add lon/lat columns. Defaults to True.
+            add_lon_lat (bool, optional): Add lon/lat columns. Defaults to False.
 
         Returns:
             xarray.Dataset: Dataset with renamed coordinates
         """
 
         # Rename latitude / lat -> y, longitude / lon -> x
-        if "latitude" in list(ds.coords):
+        if "latitude" in ds.coords:
             ds = ds.rename({"latitude": "y"})
-        if "longitude" in list(ds.coords):
+        if "longitude" in ds.coords:
             ds = ds.rename({"longitude": "x"})
-        if "lat" in list(ds.coords):
+        if "lat" in ds.coords:
             ds = ds.rename({"lat": "y"})
-        if "lon" in list(ds.coords):
+        if "lon" in ds.coords:
             ds = ds.rename({"lon": "x"})
 
         if add_lon_lat:

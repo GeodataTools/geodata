@@ -50,7 +50,7 @@ class HRRRHourlyDataset(HRRRBaseDataset):
 
         date_range = pd.date_range(
             f"{year}-{month}-{day}",
-            f"{year}-{month}-{day+1}" if day != 31 else f"{year}-{month+1}-01",
+            f"{year}-{month}-{day+1}",
             freq="h",
             inclusive="left",
         )
@@ -71,6 +71,8 @@ class HRRRHourlyDataset(HRRRBaseDataset):
             uv_10 = []
             uv_80 = []
             tmp_2 = []
+            wrfs = []
+
             for hour in date_range:
                 h = Herbie(
                     hour,
@@ -90,6 +92,9 @@ class HRRRHourlyDataset(HRRRBaseDataset):
                     tmp_2.append(
                         self._preprocess_individual_herbie(h, ":TMP:2 m", hour)
                     )
+                    wrfs.append(
+                        self._preprocess_individual_herbie(h, ":..WRF:surface", hour)
+                    )
 
                 except ValueError:
                     logger.warning(f"No data found for {hour}, skipping.")
@@ -101,12 +106,15 @@ class HRRRHourlyDataset(HRRRBaseDataset):
             )
             uv_80: xr.Dataset = xr.open_mfdataset(
                 uv_80, concat_dim="time", chunks="auto", combine="nested"
-            )
+            ).rename({"u": "u80", "v": "v80"})
             tmp_2: xr.Dataset = xr.open_mfdataset(
                 tmp_2, concat_dim="time", chunks="auto", combine="nested"
             )
+            wrfs: xr.Dataset = xr.open_mfdataset(
+                wrfs, concat_dim="time", chunks="auto", combine="nested"
+            )
 
-            ds = xr.merge([uv_10, uv_80, tmp_2], compat="override")
+            ds = xr.merge([uv_10, uv_80, tmp_2, wrfs], compat="override")
 
             try:
                 del ds["heightAboveGround"]
