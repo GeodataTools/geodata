@@ -46,6 +46,10 @@ docs = [
     "sphinx-book-theme>=1.1.3",
     "sphinx-autoapi==3.3.2"
 ]
+pvlib = [
+    "pvlib>=0.11.2",
+    "timezonefinder>=6.5.7",
+]
 
 [tool.uv]
 dev-dependencies = [
