@@ -1,4 +1,6 @@
-# Copyright 2020 Michael Davidson (UCSD).
+# Copyright 2016-2017 Gorm Andresen (Aarhus University), Jonas Hoersch (FIAS), Tom Brown (FIAS)
+# Copyright 2020 Michael Davidson (UCSD), William Honaker, Jiahe Feng (UCSD), Yuanbo Shi
+# Copyright 2023-2024 Xiqiang Liu
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
