@@ -371,7 +371,7 @@ class WindInterpolationModel(WindBaseModel):
                 .drop("model_level")
             )
 
-        return _splev(height, tck=params).astype("float32").chunk()
+        return _splev(height, tck=params).astype("float32").chunk("auto")
 
     def _estimate_cutout(
         self,
