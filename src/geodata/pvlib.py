@@ -249,6 +249,7 @@ def pvlib_model(
     Outputs an `xarray.Dataset` containing:
 
       - **ac** (*float*) - AC photovoltaic output (W).
+      - **pv** (*float*) - Photovoltaic capacity.
 
     Parameters
     ----------
@@ -266,9 +267,11 @@ def pvlib_model(
     Returns
     -------
     xr.Dataset
-        Dataset containing ac power output across all coordinates in the cutout.
+        Dataset containing ac power output and pv capacity across all coordinates in the cutout.
 
     """
+    ptc = system.arrays[0].module_parameters['PTC']
+    n_mods = system.arrays[0].modules_per_string
 
     weather_data = _prepare_pvlib_ds(cutout, *vars).to_dataframe()
     unique_coords = weather_data.index.droplevel('time').drop_duplicates()
@@ -287,6 +290,7 @@ def pvlib_model(
         
         subset['ac'] = mc.results.ac
         subset.loc[subset['ac'] < 0, 'ac'] = 0
+        subset['pv'] = subset['ac'] / (ptc * n_mods)
 
         coord_subsets.append(subset)
 
