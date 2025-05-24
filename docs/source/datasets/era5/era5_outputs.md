@@ -7,6 +7,9 @@
 * Wind generation time-series (`wind`)
 * Wind speed time-series (`windspd`)
 * Solar photovoltaic generation time-series (`pv`)
+* Solar photovoltaic generation time-series using the `pvlib` library (`pvlib`)
+
+
 
 ## Supported ERA5 Outputs
 
