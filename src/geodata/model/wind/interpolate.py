@@ -1,4 +1,4 @@
-# Copyright 2024 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,7 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from typing import Hashable, Optional
+from typing import Hashable
 
 import numpy as np
 import scipy.interpolate as sinterp
@@ -22,7 +22,7 @@ import xarray as xr
 from xarray.namedarray.pycompat import array_type
 
 from ...logging import logger
-from ...utils import get_daterange
+from ...utils import rechunk_dataset
 from ._base import WindBaseModel
 
 # See https://confluence.ecmwf.int/display/UDOC/L137+model+level+definitions
@@ -84,7 +84,7 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
         from dask.array import map_blocks
         from dask.diagnostics import ProgressBar
 
-        logger.info("Computing interpolation coefficients using Dask.")
+        logger.debug("Computing interpolation coefficients using Dask.")
 
         if len(a.data.chunks[0]) > 1:
             a = a.chunk({dim: -1})
@@ -122,6 +122,24 @@ def _splrep(a: xr.DataArray, dim: Hashable, k: int = 3) -> xr.Dataset:
     )
 
 
+def _splev_ker(c: np.ndarray, t: np.ndarray, k: int, height: np.ndarray) -> np.ndarray:
+    return np.atleast_1d(sinterp.splev(height, (t, c, k)))
+
+
+def _splev(da: xr.DataArray, height: float) -> xr.DataArray:
+    height = np.atleast_1d(height)
+    return xr.apply_ufunc(
+        _splev_ker,
+        da["c"],
+        input_core_dims=[["height"]],
+        output_core_dims=[[]],
+        vectorize=True,
+        dask="parallelized",
+        output_dtypes=[da["c"].dtype],
+        kwargs={"t": da.attrs["t"], "k": da.attrs["k"], "height": height},
+    )
+
+
 class WindInterpolationModel(WindBaseModel):
     """Wind speed estimation based on a spline interpolation of the wind speed at different heights.
 
@@ -140,7 +158,7 @@ class WindInterpolationModel(WindBaseModel):
 
     SUPPORTED_WEATHER_DATA_CONFIGS = {"wind_3d_hourly"}
 
-    def _prepare_fn(
+    def _prepare_dataset(
         self,
         ds: xr.Dataset,
         half_precision: bool = True,
@@ -171,87 +189,13 @@ class WindInterpolationModel(WindBaseModel):
         logger.debug("Shape of heights: %s", ds["height"].shape)
         speeds = (ds["u"] ** 2 + ds["v"] ** 2) ** 0.5
 
+        params = _splrep(speeds, "height")
         if half_precision:
-            speeds = speeds.astype(np.float32)
+            params = params.astype(np.float32)
 
-        return _splrep(speeds, "height")
+        return params
 
-    def _estimate_dataset(
-        self,
-        height: int,
-        years: Optional[slice] = None,
-        months: Optional[slice] = None,
-        xs: Optional[slice] = None,
-        ys: Optional[slice] = None,
-        use_real_data: Optional[bool] = False,
-    ) -> xr.Dataset:
-        params = xr.open_mfdataset(self.files).transpose("height", ...)
-
-        if not (xs is None or ys is None):
-            params = params.sel(latitude=ys, longitude=xs)
-
-        if not (years is None and months is None):
-            if months is None:
-                months = slice(1, 13)
-            params = params.sel(
-                valid_time=get_daterange(years, months),
-            )
-
-        # If the height is in the list of known heights, we can directly return
-        # the wind speed to save computation time.
-        if float(height) in LEVEL_TO_HEIGHT.values():
-            params = params.sel(height=height)
-            return (
-                ((params["u"] ** 2 + params["v"] ** 2) ** 0.5)
-                .drop("height")
-                .drop("model_level")
-            )
-
-        params = params[["c"]]
-        spline_params = sinterp.BSpline(
-            params.attrs.get("t"), params.get("c").values, k=3
-        )
-
-        params = params.drop_dims("height")
-        return xr.DataArray(
-            spline_params(height), dims=params.dims, coords=params.coords
-        )
-
-    def _estimate_cutout(
-        self,
-        height: int,
-        years: slice,
-        months: Optional[slice] = None,
-        xs: Optional[slice] = None,
-        ys: Optional[slice] = None,
-        use_real_data: Optional[bool] = False,
-    ) -> xr.Dataset:
-        params = xr.open_mfdataset(self.files).transpose("height", ...)
-
-        if not (xs is None or ys is None):
-            params = params.sel(latitude=ys, longitude=xs)
-
-        if not (years is None and months is None):
-            if months is None:
-                months = slice(1, 13)
-            params = params.sel(
-                valid_time=get_daterange(years, months),
-            )
-
-        if float(height) in LEVEL_TO_HEIGHT.values() and use_real_data:
-            params = params.sel(height=height)
-            return (
-                ((params["u"] ** 2 + params["v"] ** 2) ** 0.5)
-                .drop("height")
-                .drop("model_level")
-            )
-
-        params = params[["c"]]
-        spline_params = sinterp.BSpline(
-            params.attrs.get("t"), params.get("c").values, k=3
-        )
-
-        params = params.drop_dims("height")
-        return xr.DataArray(
-            spline_params(height), dims=params.dims, coords=params.coords
-        )
+    def _estimate_dataset(self, params: xr.Dataset, height: float) -> xr.Dataset:
+        params = params.transpose("height", ...)
+        params = rechunk_dataset(params, force_full_chunk_dims=["height"])
+        return _splev(params, height)

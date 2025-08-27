@@ -28,6 +28,15 @@ Welcome to Geodata's documentation!
 
 .. toctree::
    :maxdepth: 1
+   :caption: Modeling
+   :glob:
+   :hidden:
+
+   modeling/wind/index
+   modeling/*
+
+.. toctree::
+   :maxdepth: 1
    :caption: Mask
    :glob:
    :hidden:
@@ -56,15 +65,6 @@ Welcome to Geodata's documentation!
 ..    :glob:
 
 ..    application/*
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Modeling
-   :glob:
-   :hidden:
-
-   modeling/wind/index
-   modeling/*
 
 .. toctree::
    :maxdepth: 1

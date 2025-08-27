@@ -1,7 +1,8 @@
 Tutorial: Estimate Wind Speed with Extrapolation
 ================================================
 
-In this tutorial, we will learn how to estimate wind speed using the extrapolation model from the geodata library.
+In this tutorial, we will learn how to estimate wind speed using the extrapolation model
+ from the geodata library.
 
 .. warning::
    Performing wind speed estimation using extrapolation requires a dataset with known
@@ -20,10 +21,11 @@ To get started, we need to import the required libraries. We will import the `Wi
 
 .. code:: Python
 
-    import geodata
     import xarray as xr
 
+    from geodata.datasets import load_dataset
     from geodata.model.wind import WindExtrapolationModel
+
 
 Step 2: Load the dataset
 ------------------------
@@ -33,20 +35,25 @@ Next, we need to load the dataset that contains the wind speed data. We will use
 .. code:: Python
 
     # Load the dataset
-    ds = geodata.Dataset(
-        module="merra2",
-        weather_data_config="slv_flux_hourly",
-        years=slice(2010, 2010),
+    ds_cls = load_dataset("slv_flux_hourly")
+    ds = ds_cls(
+        years=slice(2006, 2006),
         months=slice(1, 1),
-        bounds=[-10, 35, 10, 45] # Optional: specify the bounding box
+        bounds=[-10, 35, 10, 45]  # Optional: specify the bounding box
     )
 
-    if not ds.prepared:
-        ds.get_data()  # Download the data if we don't have it locally
+    if not ds.downloaded:
+        ds.download()  # Download the data if we don't have it locally
+
+    print(ds.downloaded)  # Check if the dataset is downloaded. Should return True.
+
 
 Step 3: Compute extrapolation parameters
 --------------------------------------------
-The extrapolation is separated into two steps, first estimating extrapolation parameters using linear regression, and second extrapolating to desired heights). First, we compute the extrapolation parameters. For more information on the model, see below "How the Extrapolation Model Works".
+The extrapolation is separated into two steps, first estimating extrapolation parameters
+using linear regression, and second extrapolating to desired heights.
+First, we compute the extrapolation parameters.
+For more information on the model, see the section below: `How the Extrapolation Model Works`_.
 
 .. code:: Python
 
@@ -57,7 +64,8 @@ The extrapolation is separated into two steps, first estimating extrapolation pa
     model = WindExtrapolationModel(ds)
     model.prepare()
 
-If you have already prepared a cutout with the config :code:`slv_flux_hourly`, you can also pass
+If you have already prepared a cutout with the config :code:`slv_flux_hourly`, you
+can also pass
 that into the model as well. The model treats dataset and cutouts indifferently.
 Simply replace :code:`ds` with your cutout variable.
 
@@ -72,11 +80,11 @@ Simply replace :code:`ds` with your cutout variable.
     point on, you can load and use the model directly without re-preparing it.
 
 Step 4: Estimate using the extrapolation model
-----------------------------------
+----------------------------------------------
 
 Now that we have prepared the model, we can perform the extrapolation to estimate wind
 speed at the desired locations. Suppose we want to estimate the wind speed at a height
-of 60 above ground during Jaunary of 2006 for the entire region covered by the original
+of 60 above ground during January of 2006 for the entire region covered by the original
 dataset, we can do this as follows:
 
 .. code:: Python
@@ -91,13 +99,40 @@ This will return an xarray DataArray containing the estimated wind speed values.
 that you can also select a subset area by passing in :code:`xs=slice(start, end)`
 and/or :code:`ys=slice(start, end)` parameters to the `estimate` method.
 
-.. note::
-    As the underlying MERRA2 dataset already contained wind speed at certain heights, the
-    model also has a feature to return the original wind speed values from the dataset
-    if desired. To do this, simply set the `use_real_data` parameter to `True` in the
-    `estimate` method. You do not need worry about whether the height you queried is
-    available in the dataset; the model will handle that for you. If the height is not
-    available, it will perform extrapolation instead.
+
+Step 5: Estimate Wind Turbine Capacity Factor (CF) using the interpolation model
+--------------------------------------------------------------------------------
+
+Geodata also supports a limited set of wind turbine models to estimate the capacity
+factor (CF) of a wind turbine directly. To get a list of available wind turbine models,
+you can use the `get_available_windturbines` function:
+
+.. code:: Python
+
+    from geodata.resource import get_available_windturbines
+
+    turbines = get_available_windturbines()
+    print(turbines)  # List of available wind turbine configurations
+
+
+To estimate the capacity factor of a wind turbine, you can use the `estimate` method
+and passign in the `turbine` parameter with the name of the wind turbine model.
+
+.. code:: Python
+
+    # Estimate the capacity factor for a specific wind turbine model
+    estimated_cf: xr.Dataset = model.estimate(
+        turbine="Vestas_V112_3MW",  # Example wind turbine model
+        years=slice(2006, 2006),
+        months=slice(1, 1),
+    )
+
+    print(estimated_cf)  # Display the estimated capacity factor
+
+
+The output will be an xarray Dataset containing the estimated capacity factor values
+for the specified wind turbine model over the given time period and region.
+
 
 How the Extrapolation Model Works
 ---------------------------------

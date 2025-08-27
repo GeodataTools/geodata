@@ -17,9 +17,7 @@
 
 import logging
 
-import geodata
-
-import xarray as xr
+from geodata.datasets import DatasetType, load_dataset
 
 logging.basicConfig(level=logging.INFO)
 
@@ -41,24 +39,13 @@ def get_months() -> list[slice]:
     return [slice(1, 2)]
 
 
-def get_xs() -> list[slice]:
-    return [slice(48.5, 49.5)]
-
-
-def get_ys() -> list[slice]:
-    return [slice(1, 2.5)]
-
-
 def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
-    dataset = geodata.Dataset(
-        module="era5",
-        weather_data_config=data_config,
-        years=year,
-        months=month,
-        bounds=bound,
+    dataset_cls = load_dataset(data_config)
+    dataset: DatasetType = dataset_cls(
+        years=year, months=month, bounds=bound, testing=True
     )
-    if not dataset.prepared:
-        dataset.get_data()
+    if not dataset.downloaded:
+        dataset.download()
     return dataset
 
 
@@ -70,19 +57,4 @@ def test_download():
 
     for config, year, month, bound in zip(configs, years, months, bounds):
         dataset = get_era5(config, bound, year, month)
-        assert dataset.prepared
-
-
-def test_trim():
-    configs = get_data_configs()
-    years = get_years()
-    months = get_months()
-    bounds = get_bounds()
-
-    for config, year, month, bound in zip(configs, years, months, bounds):
-        dataset = get_era5(config, bound, year, month)
-        dataset.trim_variables()
-        for f in dataset.downloadedFiles:
-            file_path = f[1]
-            with xr.open_dataset(file_path) as ds:
-                assert list(ds.data_vars) == dataset.weatherconfig["variables"]
+        assert dataset.downloaded

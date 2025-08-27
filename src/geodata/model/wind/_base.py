@@ -1,4 +1,4 @@
-# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2023, 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -39,14 +39,12 @@ Example:
     >>> model.estimate(xs=slice(1, 2), ys=slice(1, 2), years=slice(2010, 2010), months=slice(1, 2))
 """
 
-from pathlib import Path
-from typing import Callable
-
 import xarray as xr
-from tqdm.auto import tqdm
 
-from ...logging import logger
+from ...resource import get_windturbineconfig
 from .._base import BaseModel
+
+from scipy.interpolate import interp1d
 
 HEIGHTS = {"u50m": 50, "u10m": 10, "u2m": 2}
 
@@ -61,62 +59,92 @@ class WindBaseModel(BaseModel):
     """
 
     type: str = "wind"
-    _prepare_fn: Callable[[xr.Dataset], xr.Dataset]
 
-    def _prepare_dataset(self) -> list[tuple[str, Path]]:
-        """Prepare the model from a dataset."""
+    def estimate(
+        self,
+        years: slice | None = None,
+        months: slice | None = None,
+        xs: slice | None = None,
+        ys: slice | None = None,
+        **kwargs,
+    ) -> xr.DataArray:
+        """Estimate wind speed or CF at the given locations and times. If a turbine is
+        specified, the CF is calculated based on the wind speed and the turbine's power curve.
+        Otherwise, pass in the `height` keyword argument to estimate wind speed at a specific height.
 
-        logger.info("Preparing the model from dataset.")
+        Args:
+            years (slice, optional): Years.
+            months (slice, optional): Months. If None, all months are estimated.
+            xs (slice, optional): X coordinates. If None, all x coordinates in source are estimated.
+            ys (slice, optional): Y coordinates. If None, all y coordinates in source are estimated.
+            **kwargs: Additional keyword arguments to pass to the model.
+                - `turbine` (str): Name of the wind turbine to estimate power output.
+                - `height` (int): Height at which to estimate wind speed. If not specified, the model will use the default height.
 
-        prepared_files = []
-        for file_path in tqdm(self.metadata["files_orig"], dynamic_ncols=True):
-            orig_ds_path: Path = self._ref_path / file_path
-            ds = xr.open_dataset(orig_ds_path, chunks="auto")
-            try:
-                ds = self._prepare_fn(ds)
-            except SystemError:
-                logger.warning(
-                    "Could not compute wind speed of %s, possibly due to corrupt file.",
-                    orig_ds_path.name,
-                )
-                continue
+        Raises:
+            ValueError: If neither 'turbine' nor 'height' is specified in kwargs.
 
-            ds_path: Path = (
-                self._path / "nc4" / Path(file_path).with_suffix(".params.nc4")
+        Returns:
+            xr.DataArray: Estimated wind speed.
+        """
+
+        if "turbine" in kwargs:
+            return self._estimate_power(
+                years=years, months=months, xs=xs, ys=ys, **kwargs
             )
-            ds_path.parent.mkdir(parents=True, exist_ok=True)
-            ds.to_netcdf(ds_path)
 
-            prepared_files.append(str(ds_path.relative_to(self._path)))
-
-        return prepared_files
-
-    def _prepare_cutout(self) -> list[tuple[str, Path]]:
-        """Prepare the model from a cutout."""
-
-        logger.info("Preparing the model from cutout.")
-        prepared_files = []
-
-        for yearmonth in tqdm(self.source.coords["year-month"].to_index()):
-            orig_ds_path = Path(self.source.datasetfn(yearmonth))
-
-            ds = xr.open_dataset(orig_ds_path)
-            try:
-                ds = self._prepare_fn(ds)
-            except SystemError:
-                logger.warning(
-                    "Could not compute wind speed of %s, possibly due to corrupt file.",
-                    orig_ds_path.name,
-                )
-                continue
-
-            ds_path = orig_ds_path.relative_to(self._ref_path).with_suffix(
-                ".params.nc4"
+        if "height" not in kwargs:
+            raise ValueError(
+                "Either 'turbine' or 'height' must be specified to estimate wind speed."
             )
-            ds_path = self._path / "nc4" / ds_path
-            ds_path.parent.mkdir(parents=True, exist_ok=True)
-            ds.to_netcdf(ds_path)
 
-            prepared_files.append(str(ds_path.relative_to(self._path)))
+        return super().estimate(years, months, xs, ys, **kwargs)
 
-        return prepared_files
+    def _estimate_power(
+        self,
+        turbine: str,
+        xs: slice | None = None,
+        ys: slice | None = None,
+        years: slice | None = None,
+        months: slice | None = None,
+    ) -> None:
+        """Estimate wind speed at the given locations and times.
+
+        Args:
+            turbine (str): Turbine name.
+            xs (slice, optional): X slice. Defaults to None.
+            ys (slice, optional): Y slice. Defaults to None.
+            years (slice, optional): Year slice. Defaults to None.
+            months (slice, optional): Month slice. Defaults to None.
+
+        Returns:
+            xr.DataArray: Estimated wind speed.
+        """
+
+        # Get the wind turbine configuration
+        try:
+            turbineconf = get_windturbineconfig(turbine)
+        except FileNotFoundError:
+            raise ValueError(f"Wind turbine configuration '{turbine}' not found.")
+
+        speed = self.estimate(
+            years=years, months=months, xs=xs, ys=ys, height=turbineconf["hub_height"]
+        )
+
+        interp_fn = interp1d(
+            turbineconf["V"],
+            turbineconf["POW"],
+            bounds_error=False,
+            fill_value="extrapolate",
+        )
+
+        # Calculate the power output
+        power = xr.apply_ufunc(
+            interp_fn,
+            speed,
+            vectorize=True,
+            dask="parallelized",
+            output_dtypes=[float],
+        )
+
+        return xr.Dataset({"cf": power / turbineconf["P"]})

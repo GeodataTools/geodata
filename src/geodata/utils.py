@@ -1,4 +1,4 @@
-# Copyright 2023 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2023, 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,35 +14,14 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
+import hashlib
 import json
+from pathlib import Path
 
+import dask.array as da
 import numpy as np
 import pandas as pd
-import progressbar as pgb
-
-
-def make_optional_progressbar(show, prefix, max_value):
-    if show:
-        widgets = [
-            pgb.widgets.Percentage(),
-            " ",
-            pgb.widgets.SimpleProgress(),
-            " ",
-            pgb.widgets.Bar(),
-            " ",
-            pgb.widgets.Timer(),
-            " ",
-            pgb.widgets.ETA(),
-        ]
-        if not prefix.endswith(": "):
-            prefix = prefix.strip() + ": "
-        maybe_progressbar = pgb.ProgressBar(
-            prefix=prefix, widgets=widgets, max_value=max_value
-        )
-    else:
-        maybe_progressbar = lambda x: x  # noqa: E731
-
-    return maybe_progressbar
+import xarray as xr
 
 
 def dummy_njit(f=None, *args, **kwargs):
@@ -69,7 +48,7 @@ def get_daterange(years: slice, months: slice):
         months (slice): The months range.
 
     Returns:
-        pd.
+        pd.DatetimeIndex: The date range.
     """
 
     assert years.start <= years.stop, "Start year must be less than stop year."
@@ -95,3 +74,109 @@ class NpEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NpEncoder, self).default(obj)
+
+
+def ensure_slice(obj: slice | list):
+    """Ensure that the input is a slice object. If the input is a list, convert it to a slice object.
+
+    Args:
+        obj (slice | list): The input object.
+
+    Returns:
+        slice: The converted slice object.
+    """
+    if isinstance(obj, list) and (len(obj) == 2 or len(obj) == 3):
+        return slice(*obj)
+    elif isinstance(obj, slice):
+        return obj
+    else:
+        raise TypeError("Input must be a slice or a list.")
+
+
+def check_hash(file: Path, saved_hash: str | None = None) -> tuple[bool, str]:
+    """Check if the hash of a file matches the given hash.
+
+    Args:
+        file (Path): The path to the file.
+        saved_hash (str | None): The hash to compare against. If None, the function will compute the hash of the file.
+            If provided, the function will compare the computed hash with this value.
+            If the hashes match, the function will return True and the computed hash.
+            If the hashes do not match, the function will return False and the computed hash.
+
+    Returns:
+        tuple[bool, str]: A tuple containing a boolean indicating if the hash matches and the computed hash.
+    """
+
+    if not file.exists():
+        return False, ""
+
+    with open(file, "rb") as f:
+        computed_hash = hashlib.sha256(f.read()).hexdigest()
+
+    if saved_hash is None:
+        return True, computed_hash
+    else:
+        return computed_hash == saved_hash, computed_hash
+
+
+def rechunk_dataset(
+    data: xr.DataArray | xr.Dataset,
+    target_chunk_bytes: int = 20 * 1024**2,
+    force_full_chunk_dims: list[str] | None = None,
+):
+    """
+    Rechunk xarray DataArray or Dataset to maximize chunk size
+    under a memory limit, while forcing certain dimensions to be unchunked
+    (i.e., use only one chunk across that dimension).
+
+    Parameters:
+        data: xr.DataArray or xr.Dataset
+        target_chunk_bytes: maximum memory per chunk (in bytes)
+        force_full_chunk_dims: list of dimension names to not chunk (single chunk along that dim)
+    """
+    if force_full_chunk_dims is None:
+        force_full_chunk_dims = []
+
+    if isinstance(data, xr.Dataset):
+        vars_to_chunk = {
+            name: rechunk_dataset(var, target_chunk_bytes, force_full_chunk_dims)
+            for name, var in data.data_vars.items()
+        }
+        return data.assign(vars_to_chunk)
+
+    if not isinstance(data.data, da.Array):
+        raise ValueError("Data must be a Dask-backed xarray object")
+
+    shape = data.shape
+    dims = data.dims
+    itemsize = data.dtype.itemsize
+
+    # Start with full dims
+    chunk_shape = list(shape)
+    dim_to_index = {dim: i for i, dim in enumerate(dims)}
+
+    # Force full chunks on specified dims
+    for dim in force_full_chunk_dims:
+        if dim in dim_to_index:
+            chunk_shape[dim_to_index[dim]] = shape[dim_to_index[dim]]
+
+    # Reduce non-fixed dims to fit memory budget
+    while True:
+        est_bytes = np.prod(chunk_shape) * itemsize
+        if est_bytes <= target_chunk_bytes:
+            break
+
+        # Pick largest non-fixed dimension to halve
+        candidates = [
+            (i, size)
+            for i, size in enumerate(chunk_shape)
+            if dims[i] not in force_full_chunk_dims and size > 1
+        ]
+        if not candidates:
+            break  # Can't reduce further
+
+        i, _ = max(candidates, key=lambda x: x[1])
+        chunk_shape[i] = max(1, chunk_shape[i] // 2)
+
+    chunk_dict = dict(zip(dims, chunk_shape))
+    return data.chunk(chunk_dict)

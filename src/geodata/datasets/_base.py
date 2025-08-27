@@ -1,0 +1,622 @@
+# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 3 of the
+# License, or (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+import abc
+import dataclasses
+import hashlib
+import itertools
+import logging
+from collections.abc import Sequence
+from pathlib import Path
+from typing import Literal, Type, TypeVar
+
+import pandas as pd
+import xarray as xr
+from tqdm.auto import tqdm
+
+from ..config import DATASET_ROOT_PATH
+from ..types import BoundRange, CoordRange, DateRange
+
+logger = logging.getLogger(__name__)
+DatasetType = TypeVar("DatasetType", bound="BaseDataset")
+
+_registry: dict[str, DatasetType] = {}
+
+
+@dataclasses.dataclass
+class AtomicDataset:
+    """AtomicDataset is a class that encapsulates an individual xarray file that was
+    downloaded. It provides a streamlined workflow for downloading, preprocessing,
+    and integrity checking of these datasets.
+    """
+
+    dataset: DatasetType
+    year: int
+    month: int
+    day: int | None = None
+    file_hash: str | None = None
+    url: str | tuple[str] | None = None
+    spinup: bool | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.dataset, BaseDataset):
+            raise ValueError("dataset must be an instance of BaseDataset")
+
+    @property
+    def path(self):
+        """The path where the file should be saved"""
+        if self.day is None:
+            return self.dataset.storage_root / str(self.year) / f"{self.month:02d}.nc"
+        else:
+            return (
+                self.dataset.storage_root
+                / str(self.year)
+                / f"{self.month:02d}"
+                / f"{self.day:02d}.nc"
+            )
+
+    def check(self, integrity: bool = False):
+        """Check the presence of the file and its integrity.
+
+        Args:
+            integrity: A boolean flag indicating whether to check the integrity
+            of the file. If True, the file will be checked against its hash.
+            If False, only the presence of the file will be checked.
+
+        Returns:
+            True if the file is present and its integrity is intact, False otherwise.
+        """
+
+        if not self.path.exists():
+            logger.debug(f"{self.path} does not exist")
+            return False
+
+        if not integrity:
+            return True
+
+        # In case the file just got downloaded
+        if self.file_hash is None:
+            self.file_hash = self._compute_hash()
+            return True
+
+        if self.file_hash != self._compute_hash():
+            logger.warning(f"{self.path} is corrupted")
+            return False
+
+        return True
+
+    def _compute_hash(self):
+        """Compute the hash of the file.
+
+        Returns:
+            The hash of the file.
+        """
+
+        hash_func = hashlib.sha256()
+        with open(self.path, "rb") as f:
+            while chunk := f.read(8192):  # Read file in chunks
+                hash_func.update(chunk)
+        return hash_func.hexdigest()
+
+
+class BaseDataset(abc.ABC):
+    """Dataset is a class that encapsulates any datasets natively supported
+    by geodata. It provides a streamlined workflow for downloading, preprocessing,
+    and storing of these datasets.
+
+    Args:
+        years: A slice object or sequence of two integers representing the
+            range of years to download.
+        months: A slice object or sequence of two integers representing the
+            range of months to download.
+        bounds (optional): A tuple of four floats representing the bounding box
+            (lon_min, lat_min, lon_max, lat_max)
+        **kwargs: Additional keyword arguments that are passed to the dataset.
+
+    Notes:
+        - Subclasses of BaseDataset must define the following attributes:
+            - module: The module of the dataset.
+            - weather_config: The configuration of the dataset.
+        - Subclasses of BaseDataset must also implement the following methods:
+            - download: Method to download the dataset.
+            - _extra_setup: Method to handle any extra setup that is required
+                for the dataset.
+        - By default, the files downloaded by the dataset are defined to by monthly in
+            nature. That is,  Subclasses can override this behavior by setting the `frequency`
+
+    """
+
+    module: str
+    weather_config: str
+    frequency: Literal["hourly", "daily", "monthly"] = "monthly"
+
+    def __init__(
+        self,
+        years: DateRange,
+        months: DateRange,
+        bounds: BoundRange | None = None,
+        **kwargs,
+    ):
+        if not hasattr(self, "module"):
+            raise ValueError("Subclasses of BaseDataset must define a module attribute")
+
+        if not hasattr(self, "weather_config"):
+            raise ValueError(
+                "Subclasses of BaseDataset must define a weather_config attribute"
+            )
+
+        if not isinstance(years, slice):
+            if isinstance(years, Sequence):
+                if not all(isinstance(year, int) for year in years):
+                    raise ValueError("years must be a sequence of integers")
+                elif not len(years) == 2:
+                    raise ValueError("years must be a sequence of length 2")
+                years = slice(years[0], years[1])
+            else:
+                raise ValueError(
+                    f"""Invalid input {years} for years. Years must either be a
+                    sequence of integers or a slice object"""
+                )
+        self.years = years
+
+        if not isinstance(months, slice):
+            if isinstance(months, Sequence):
+                if not all(isinstance(month, int) for month in months):
+                    raise ValueError("months must be a sequence of integers")
+                elif not len(months) == 2:
+                    raise ValueError("months must be a sequence of length 2")
+                elif not all(1 <= month <= 12 for month in months):
+                    raise ValueError(
+                        "months must be a sequence of integers between 1 and 12"
+                    )
+                months = slice(months[0], months[1])
+            else:
+                raise ValueError(
+                    f"""Invalid input {months} for months. Months must either be a
+                    sequence of integers or a slice object"""
+                )
+        self.months = months
+
+        if bounds is not None:
+            if not all(isinstance(bound, (int, float)) for bound in bounds):
+                raise ValueError("bounds must be a sequence of integers or floats")
+            if not len(bounds) == 4:
+                raise ValueError("bounds must be a sequence of length 4")
+            if not all(-180 <= bound <= 180 for bound in [bounds[0], bounds[2]]):
+                raise ValueError("Longitude bounds must be between -180 and 180")
+            if not all(-90 <= bound <= 90 for bound in [bounds[1], bounds[3]]):
+                raise ValueError("Latitude bounds must be between -90 and 90")
+        self.bounds = bounds
+
+        self.storage_root = DATASET_ROOT_PATH / self.module / self.weather_config
+        if not self.storage_root.exists():
+            logger.info(
+                f"Storage directory for {self.__class__.__name__} does not exist, "
+                f"creating now at {self.storage_root}"
+            )
+            self.storage_root.mkdir(parents=True)
+
+        self._downloaded = False
+
+        self._extra_kwargs = kwargs
+        self._extra_setup(**kwargs)
+
+    def _extra_setup(self, **kwargs):
+        """Method to be implemented by subclasses to handle any extra setup
+        that is required for the dataset.
+        """
+
+    def _generate_manifest(self):
+        """Generate a manifest file for the dataset. This file contains
+        metadata about the dataset, including the file paths and their
+        integrity checks.
+
+        TODO! This method is not ready yet!
+
+        Returns:
+            A list of dictionaries containing the metadata of each file in the
+            dataset.
+        """
+
+        manifest = []
+        for file in self.catalog:
+            manifest.append(
+                {
+                    "path": str(file["save_path"]),
+                    "integrity": file["downloaded"],
+                }
+            )
+
+        return manifest
+
+    @property
+    def downloaded(self):
+        """A boolean flag indicating whether the dataset has been prepared
+        for use. This typically means that the dataset has been downloaded,
+        preprocessed, and stored in a format that is ready for use.
+
+        The basic implementation of this method checks the presence of each file in
+        the catalog in the storage root. Subclasses can override this behavior if
+        a more comprehensive check is required.
+        """
+
+        if not self._downloaded:
+            self._downloaded = self._check_downloaded()
+        return self._downloaded
+
+    def _check_downloaded(self):
+        # Check if the dataset is downloaded
+        for file in tqdm(
+            self.catalog,
+            unit="file",
+            dynamic_ncols=True,
+            desc="Checking Downloaded Files",
+        ):
+            if not file.check():
+                logger.debug(f"{file.path} does not exist")
+                return False
+
+        return True
+
+    @abc.abstractmethod
+    def _download_file(self, file: AtomicDataset):
+        """Method to download a single file from the dataset. This method
+        should download the file and save it to the appropriate location.
+
+        Args:
+            file: An instance of AtomicDataset representing the file to download.
+        """
+
+    def download(self, force: bool = False):
+        """Method to download the dataset. This method should download the
+        dataset files and store them in the appropriate location. If the dataset
+        is specified as a ``testing'' dataset, only the first three (3) days
+        of the dataset will be downloaded.
+
+        Args:
+            force: A boolean flag indicating whether to force the download of
+                the dataset, even if it has already been downloaded.
+        """
+
+        if self.downloaded and not force:
+            logger.info(f"{self} has already been downloaded.")
+            return
+
+        for file in tqdm(self.catalog, unit="file", dynamic_ncols=True):
+            # Skip the file if it has already been downloaded (unless force is True)
+            if file.check() and not force:
+                logger.debug(f"{file.path} already exists, skipping download")
+                continue
+
+            # We first must ensure the directory exists
+            file.path.parent.mkdir(parents=True, exist_ok=True)
+
+            self._download_file(file)
+
+            if file.check():
+                logger.debug("Postprocessing %s", file.path)
+                ds = xr.open_dataset(file.path).chunk("auto")
+                ds = self._rename_and_clean_coords(ds)
+                ds = self._dataset_postprocess(ds)
+
+                # xarray does not support overwriting files, so we must save the
+                # dataset to a new file and then rename it backwards
+                ds.to_netcdf(file.path.with_stem(file.path.stem + "_postprocessed"))
+                ds.close()
+
+                file.path.unlink()
+                file.path.with_stem(file.path.stem + "_postprocessed").rename(file.path)
+
+        logger.info(f"Downloaded {self}")
+        logger.info("Cleaning and renaming coordinates")
+
+    def _dataset_postprocess(self, ds: xr.Dataset | xr.DataArray, **kwargs):
+        """Method to postprocess the dataset after it has been downloaded.
+        This method should be implemented by subclasses to handle any
+        additional processing that is required for the dataset.
+
+        Args:
+            ds: The dataset to postprocess.
+            **kwargs: Additional keyword arguments to pass to the function.
+        """
+
+        return ds
+
+    def trim_variables(
+        self,
+        ds: xr.Dataset | xr.DataArray,
+        variables: Sequence[str] | None = None,
+        **kwargs,
+    ) -> xr.Dataset | xr.DataArray:
+        """Method to trim the dataset to only include the specified variables.
+
+        Args:
+            ds: The dataset to trim.
+            variables: A sequence of strings representing the variables to keep.
+                If None, we will keep the variables specified in the `variables`
+                attribute of the dataset.
+
+        Returns:
+            xr.Dataset | xr.DataArray: The trimmed dataset containing only the
+            specified variables.
+
+        Raises:
+            ValueError: If the dataset does not have a `variables` attribute
+                defined and no variables are specified.
+        """
+
+        if variables is None:
+            if not hasattr(self, "variables"):
+                raise ValueError(
+                    "The dataset does not have a `variables` attribute defined."
+                    "Please specify the variables to keep."
+                )
+            variables: Sequence[str] = getattr(self, "variables")
+
+        return ds[variables]
+
+    def __repr__(self):
+        return "<Dataset Module={} Config={} Years={}-{} Months={}-{} {}{}>".format(
+            self.module,
+            self.weather_config,
+            self.years.start,
+            self.years.stop,
+            self.months.start,
+            self.months.stop,
+            "Downloaded" if self.downloaded else "Not Downloaded",
+            " " + self.extra_repr if self.extra_repr else "",
+        )
+
+    @property
+    @abc.abstractmethod
+    def projection(self):
+        """The projection of the dataset. This should be a string that
+        represents the projection of the dataset.
+        """
+
+    @property
+    @abc.abstractmethod
+    def lat_direction(self) -> bool:
+        """Latitude direction stored in the dataset. This should be a boolean flag.
+        If True, the latitude increases from south to north. If False, the latitude
+        increases from north to south.
+        """
+
+    @property
+    def extra_repr(self):
+        return ""
+
+    @property
+    def testing(self):
+        """A boolean flag indicating whether the dataset is being used for
+        testing. Under this mode, only the first few days or months of the dataset
+        will be downloaded (depending on the granularity). This is useful for
+        testing the dataset without downloading the entire dataset.
+        """
+
+        if "testing" not in self._extra_kwargs:
+            return False
+        if not isinstance(self._extra_kwargs["testing"], bool):
+            raise ValueError("testing must be a boolean flag")
+        return self._extra_kwargs["testing"]
+
+    @property
+    def submodule(self):
+        """The submodule of the dataset. This can be defined by the dataset
+        using the `weather_config` attribute. If not defined, it will default
+        to the name of the dataset class.
+        """
+        return getattr(self, "weather_config", self.__class__.__name__)
+
+    @staticmethod
+    @abc.abstractmethod
+    def tasks_func(
+        cls,
+        xs: CoordRange,
+        ys: CoordRange,
+        yearmonths: xr.DataArray,
+        **meta_attrs,
+    ):
+        """A method that returns a list of tasks that can be run on the dataset."""
+
+    @staticmethod
+    @abc.abstractmethod
+    def meta_prepare_func(cls, xs: slice, ys: slice, year: int, month: int, **kwargs):
+        """A method that generates the metadata for the cutout."""
+
+    @staticmethod
+    @abc.abstractmethod
+    def prepare_func(
+        fn: str | Path, year: int, month: int, xs: CoordRange, ys: CoordRange, **kwargs
+    ):
+        """A method that prepares the cutout for individual dataset."""
+
+    @property
+    def catalog(self) -> list["AtomicDataset"]:
+        """A generator that yields all the files that need to be downloaded.
+        Each iteration should return a dictionary with the following keys:
+            - year: the year of the file
+            - month: the month of the file
+            - day: the day of the file (if applicable)
+            - hour: the hour of the file (if applicable)
+            - save_path: the path where the file should be saved
+        """
+
+        match self.frequency:
+            case "monthly":
+                cat = self._monthly_catalog()
+            case "daily":
+                cat = self._daily_catalog()
+            case _:
+                raise ValueError(
+                    f"Invalid frequency {self.frequency} defined for this dataset."
+                )
+
+        return cat
+
+    def get_monthly_catalog(self, year: int, month: int) -> list["AtomicDataset"]:
+        """Get the catalog for a specific month and year.
+
+        Args:
+            year: The year of the file.
+            month: The month of the file.
+        """
+        if not isinstance(year, int):
+            raise ValueError("year must be an integer")
+        if not isinstance(month, int):
+            raise ValueError("month must be an integer")
+        if not 1 <= month <= 12:
+            raise ValueError("month must be between 1 and 12")
+
+        if not self.years.start <= year <= self.years.stop:
+            raise ValueError(
+                f"year must be between {self.years.start} and {self.years.stop}"
+            )
+
+        match self.frequency:
+            case "monthly":
+                return self._monthly_catalog(year, month)
+            case "daily":
+                return self._daily_catalog(year, month)
+            case _:
+                raise ValueError(
+                    f"Invalid frequency {self.frequency} defined for this dataset."
+                )
+
+    def _monthly_catalog(
+        self, year: int | None = None, month: int | None = None
+    ) -> list["AtomicDataset"]:
+        if year is not None and month is not None:
+            return [AtomicDataset(self, year, month)]
+        if year is not None or month is not None:
+            raise ValueError(
+                "If one of year or month is specified, both must be specified."
+            )
+
+        catalog = []
+
+        for year, month in itertools.product(
+            range(self.years.start, self.years.stop + 1),
+            range(self.months.start, self.months.stop + 1),
+        ):
+            catalog.append(AtomicDataset(self, year, month))
+
+        return catalog
+
+    def _daily_catalog(
+        self, year: int | None = None, month: int | None = None
+    ) -> list["AtomicDataset"]:
+        if year is not None and month is not None:
+            return [
+                AtomicDataset(self, year, month, day)
+                for day in range(
+                    1,
+                    pd.Timestamp(f"{year}-{month}-1").days_in_month + 1
+                    if not self.testing
+                    else 3,
+                )
+            ]
+        if year is not None or month is not None:
+            raise ValueError(
+                "If one of year or month is specified, both must be specified."
+            )
+
+        catalog = []
+
+        for year, month in itertools.product(
+            range(self.years.start, self.years.stop + 1),
+            range(self.months.start, self.months.stop + 1),
+        ):
+            for day in range(
+                1,
+                pd.Timestamp(f"{year}-{month}-1").days_in_month + 1
+                if not self.testing
+                else 3,
+            ):
+                catalog.append(AtomicDataset(self, year, month, day))
+
+        return catalog
+
+    def _rename_and_clean_coords(self, ds: xr.Dataset, add_lon_lat: bool = False):
+        """Rename 'lon'/'longitude' and 'lat'/'latitude' columns to 'x' and 'y'
+
+        Optionally (add_lon_lat, default:True) preserves latitude and longitude columns as 'lat' and 'lon'.
+
+        Args:
+            ds (xarray.Dataset): Dataset to rename
+            add_lon_lat (bool, optional): Add lon/lat columns. Defaults to False.
+
+        Returns:
+            xarray.Dataset: Dataset with renamed coordinates
+        """
+
+        # Rename latitude / lat -> y, longitude / lon -> x
+        if "latitude" in ds.coords:
+            ds = ds.rename({"latitude": "y"})
+        if "longitude" in ds.coords:
+            ds = ds.rename({"longitude": "x"})
+        if "lat" in ds.coords:
+            ds = ds.rename({"lat": "y"})
+        if "lon" in ds.coords:
+            ds = ds.rename({"lon": "x"})
+
+        # Flatten x and y if they are multi-dimensional
+        if ds.coords["x"].ndim > 1:
+            ds = ds.assign_coords(x=("x", ds.coords["x"][0].values))
+        if ds.coords["y"].ndim > 1:
+            ds = ds.assign_coords(y=("y", ds.coords["y"][:, 0].values))
+
+        if add_lon_lat:
+            ds = ds.assign_coords(lon=ds.coords["x"], lat=ds.coords["y"])
+
+        return ds
+
+    @classmethod
+    def _get_files(cls, year: int, month: int):
+        """Get the path where the file should be saved. Internal method used by Cutouts.
+
+        Args:
+            year: The year of the file.
+            month: The month of the file.
+        """
+
+        storage_root = DATASET_ROOT_PATH / cls.module / cls.weather_config
+
+        match cls.frequency:
+            case "monthly":
+                return [storage_root / str(year) / f"{month:02d}.nc"]
+            case "daily":
+                return list((storage_root / str(year) / f"{month:02d}").glob("*.nc"))
+            case _:
+                raise ValueError(
+                    f"Invalid frequency {cls.frequency} defined for this dataset."
+                )
+
+    def __init_subclass__(cls: Type["BaseDataset"], **kwargs):
+        """Register the subclass in the registry. This allows us to
+        dynamically load the dataset from the module.
+
+        Args:
+            cls: The class of the dataset.
+        """
+
+        super().__init_subclass__(**kwargs)
+        if not hasattr(cls, "weather_config"):
+            # Skip the class if it does not have a weather_config attribute
+            # This could be the case with intermediate base classes
+            return
+
+        _registry[cls.weather_config] = cls
+        logger.debug(f"Registered {cls.weather_config} in the registry")

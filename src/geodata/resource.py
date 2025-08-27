@@ -23,6 +23,7 @@ Geospatial Data Collection and "Pre-Analysis" Tools
 import logging
 from operator import itemgetter
 
+
 import numpy as np
 import yaml
 from scipy.signal import fftconvolve
@@ -32,14 +33,34 @@ from geodata.config import SRC_ROOT
 logger = logging.getLogger(name=__name__)
 
 
-def get_windturbineconfig(turbine):
-    """Load the 'turbine'.yaml file from local disk and provide a turbine dict."""
+def get_windturbineconfig(turbine: str):
+    """Load the 'turbine'.yaml file from local disk and provide a turbine dict.
+
+    Args:
+        turbine (str): Name of the wind turbine configuration file (without .yaml).
+
+    Returns:
+        dict: Dictionary containing the wind turbine configuration.
+            - V: Wind speed array
+            - POW: Power output array
+            - hub_height: Hub height
+            - P: Rated power output
+    """
 
     res_name = "resources/windturbine/" + turbine + ".yaml"
     with open(SRC_ROOT / res_name, "r") as resource_file:
         turbineconf = yaml.safe_load(resource_file)
     V, POW, hub_height = itemgetter("V", "POW", "HUB_HEIGHT")(turbineconf)
-    return dict(V=np.array(V), POW=np.array(POW), hub_height=hub_height, P=np.max(POW))
+
+    # Let's make sure that the wind speed and power output arrays are sorted
+    V = np.asarray(V)
+    POW = np.asarray(POW)
+
+    sorted_indices = np.argsort(V)
+    V = V[sorted_indices]
+    POW = POW[sorted_indices]
+
+    return {"V": V, "POW": POW, "hub_height": hub_height, "P": POW.max()}
 
 
 def get_solarpanelconfig(panel):
@@ -140,3 +161,15 @@ def windturbine_smooth(turbine, params):
         )
 
     return turbine
+
+
+def get_available_windturbines():
+    """Get a list of available wind turbine configurations."""
+    res_path = SRC_ROOT / "resources/windturbine"
+    return [p.stem for p in res_path.glob("*.yaml") if p.is_file()]
+
+
+def get_available_solarpanels():
+    """Get a list of available solar panel configurations."""
+    res_path = SRC_ROOT / "resources/solarpanel"
+    return [p.stem for p in res_path.glob("*.yaml") if p.is_file()]

@@ -21,7 +21,7 @@ The following procedure is sourced from [GES DISC's documentation](https://disc.
 
 ## Configure API Crendentials
 
-To download MERRA2 data via **geodata** you'll need to install the API credentials locally.  
+To download MERRA2 data via **geodata** you'll need to install the API credentials locally.
 
 ### macOS/Linux
 
@@ -36,17 +36,14 @@ where `[login]` is your Earthdata user name and `[password]` is your Earthdata L
 ### Windows
 
 For Windows, open Notepad and enter the following line in a new document, making sure to substitute `<uid>` and `<password>`for your Earthdata login credentials:
- 
+
 `machine urs.earthdata.nasa.gov login <uid> password <password>`
 
 Save the file to `C:\Users\<username>\.netrc`
 
 ## What' next?
 
-We provide a few more tutorials on how to download and utilize the MERRA2 dataset with Geodata. You can find them below.
-
-```{toctree}
-:maxdepth: 2
-:glob:
-*
-```
+Now that you have configured your Earthdata Login credentials, you have successfully set up access to the MERRA-2 data.
+Please subsequently refer to the [general documentation on datasets](../overview.rst)
+for more information on how to download ERA5-based datasets using the `geodata`
+package.

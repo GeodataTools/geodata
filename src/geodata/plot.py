@@ -479,3 +479,6 @@ def save_animation(file_name: str):
     """
     )
     return javascript
+
+
+__all__ = ["time_series", "heatmap", "heatmap_animation", "save_animation"]
