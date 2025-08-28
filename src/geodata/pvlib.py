@@ -226,7 +226,8 @@ def pvlib_model(
         vars = [
             'influx_diffuse', 
             'influx_direct', 
-            'dewpoint_temperature',
+            #'dewpoint_temperature',
+            'd2m', 
             'temperature', 
             'wnd100m'
         ]
@@ -360,7 +361,8 @@ def _calculate_ghi(ds, zenith):
     ghi = np.clip(
         dhi + dni * np.cos(zenith),
         0,
-        np.Inf
+        #np.Inf
+        np.inf # `np.Inf` was removed in the NumPy 2.0 release.
     )
 
     reshaped_ghi = ghi.values.reshape(
