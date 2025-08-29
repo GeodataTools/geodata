@@ -524,7 +524,7 @@ def _prepare_pvlib_ds(cutout, *varnames):
     relative_humidity = _calculate_relative_humidity(
         temperature_celsius,
         #_convert_celsius(ds.dewpoint_temperature),
-        convert_celsius(ds.d2m),
+        _convert_celsius(ds.d2m),
     )
 
     precipitable_water = _calculate_precipitable_water(
