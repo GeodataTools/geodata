@@ -7,6 +7,9 @@
 * Wind generation time-series (`wind`)
 * Wind speed time-series (`windspd`)
 * Solar photovoltaic generation time-series (`pv`)
+* Solar photovoltaic generation time-series using the `pvlib` library (`pvlib`). For information on using `pvlib` with `geodata`, see: [era5_pvlib.py](https://github.com/GeodataTools/geodata/blob/master/docs/source/datasets/era5/era5_pvlib.md).
+
+
 
 ## Supported ERA5 Outputs
 

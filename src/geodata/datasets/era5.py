@@ -391,7 +391,7 @@ def prepare_meta_era5(xs, ys, year, month, template, module, **kwargs):
 
 def prepare_month_era5(fn, year, month, xs, ys):
     # Reference of the quantities
-    # https://confluence.ecmwf.int/display/CKB/ERA5+data+documentation
+    # https://confluence.ecmwf.int/display/CKB/ERA5%3A+data+documentation
     # (shortName) | (name)                                      | (paramId)
     # tisr        | TOA incident solar radiation                | 212
     # ssrd        | Surface Solar Rad Downwards                 | 169
@@ -399,6 +399,7 @@ def prepare_month_era5(fn, year, month, xs, ys):
     # fdir        | Total sky direct solar radiation at surface | 228021
     # ro          | Runoff                                      | 205
     # 2t          | 2 metre temperature                         | 167
+    # 2d          | 2 metre dewpoint temperature                | 168
     # sp          | Surface pressure                            | 134
     # stl4        | Soil temperature level 4                    | 236
     # fsr         | Forecast surface roughnes                   | 244
@@ -436,10 +437,11 @@ def prepare_month_era5(fn, year, month, xs, ys):
         ds = ds.rename(
             {
                 "ro": "runoff",
+                "d2m": "dewpoint_temperature",
                 "t2m": "temperature",
                 "sp": "pressure",
                 "stl4": "soil temperature",
-                "fsr": "roughness",
+                "fsr": "roughness"
             }
         )
 
@@ -500,14 +502,17 @@ weather_data_config = {
         tasks_func=tasks_monthly_era5,
         meta_prepare_func=prepare_meta_era5,
         prepare_func=prepare_month_era5,
-        template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
-        fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
+        #template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
+        template=os.path.join(era5_dir, "wind_solar_hourly/{year}/{month:0>2}.nc"),
+        #fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_hourly.nc"),
+        fn=os.path.join(era5_dir, "wind_solar_hourly/{year}/{month:0>2}.nc"),
         product="reanalysis-era5-single-levels",
         product_type="reanalysis",
         keywords=[
             "100m_u_component_of_wind",
             "100m_v_component_of_wind",
             "2m_temperature",
+            "2m_dewpoint_temperature",
             "runoff",
             "soil_temperature_level_4",
             "surface_net_solar_radiation",
@@ -522,6 +527,7 @@ weather_data_config = {
             "u100",
             "v100",
             "t2m",
+            "d2m",
             "ro",
             "stl4",
             "ssr",
@@ -539,8 +545,10 @@ weather_data_config = {
         tasks_func=tasks_monthly_era5,
         meta_prepare_func=prepare_meta_era5,
         prepare_func=prepare_3d_era5,
-        template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
-        fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
+        #template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
+        template=os.path.join(era5_dir, "wind_3d_hourly/{year}/{month:0>2}.nc"),
+        #fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_3d_hourly.nc"),
+        fn=os.path.join(era5_dir, "wind_3d_hourly/{year}/{month:0>2}.nc"),
         product="reanalysis-era5-complete",
         product_type="reanalysis",
         keywords=[131, 132],
@@ -552,8 +560,10 @@ weather_data_config = {
         tasks_func=tasks_monthly_era5,
         meta_prepare_func=prepare_meta_era5,
         prepare_func=prepare_month_era5,
-        template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
-        fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
+        #template=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
+        template=os.path.join(era5_dir, "wind_solar_monthly/{year}/{month:0>2}.nc"),
+        #fn=os.path.join(era5_dir, "{year}/{month:0>2}/wind_solar_monthly.nc"),
+        fn=os.path.join(era5_dir, "wind_solar_monthly/{year}/{month:0>2}.nc"),
         product="reanalysis-era5-single-levels-monthly-means",
         product_type="monthly_averaged_reanalysis",
         keywords=[
