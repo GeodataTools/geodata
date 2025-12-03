@@ -94,7 +94,7 @@ class ERA5BaseDataset(BaseDataset):
         # Geopotential is aka Orography in the CDS:
         # https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
 
-        with xr.open_mfdataset(cls._get_path(year, month), combine="by_coords") as ds:
+        with xr.open_mfdataset(cls._get_files(year, month), combine="by_coords") as ds:
             ds = ds.coords.to_dataset()
             ds = _convert_and_subset_lons_lats_era5(ds, xs, ys)
             meta = ds.load()
