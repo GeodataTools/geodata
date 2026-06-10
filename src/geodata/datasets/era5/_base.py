@@ -1,4 +1,4 @@
-# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD), Keyu Long (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,12 +14,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import os
 
 import numpy as np
 import xarray as xr
 
-from ...types import CoordRange, PathLike
+from geodata.types import CoordRange, PathLike
 from .._base import BaseDataset
 
 logger = logging.getLogger(__name__)
@@ -141,23 +140,16 @@ class ERA5BaseDataset(BaseDataset):
         ys: slice,
         **kwargs,
     ):
-        """Prepare the dataset for a given year and month."""
-        if isinstance(fn, str) and not os.path.exists(fn):
-            return
-        if isinstance(fn, list) and not all(os.path.isfile(f) for f in fn):
-            return
-
-        with xr.open_dataset(fn) as ds:
-            logger.info("Opening %s", fn)
-            ds = _subset_x_y_era5(ds, xs, ys)
-
-            # New ERA5 format for hourly datasets
-            # See https://forum.ecmwf.int/t/new-time-format-in-era5-netcdf-files/3796
-            # TODO: We can remove this if we refactor geodata's convert module in the future
-            if "valid_time" in ds.coords:
-                ds = ds.rename({"valid_time": "time"})
-
-            yield (year, month), ds
+        """Prepare the dataset for a given year and month.
+        
+        This method should be overridden by subclasses (e.g., ERA5Wind3DBaseDataset,
+        ERA5WindSolarBaseDataset) to provide dataset-specific preparation logic.
+        """
+        raise NotImplementedError(
+            "prepare_func must be implemented by a subclass. "
+            "Use ERA5Wind3DBaseDataset or ERA5WindSolarBaseDataset, "
+            "or override this method in your subclass."
+        )
 
     def _dataset_postprocess(self, ds, **kwargs):
         return super()._dataset_postprocess(ds, **kwargs)

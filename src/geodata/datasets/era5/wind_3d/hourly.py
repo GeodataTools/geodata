@@ -1,4 +1,4 @@
-# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD), Keyu Long (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -14,6 +14,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import os
 import pprint
 import tempfile
 from pathlib import Path
@@ -21,12 +22,12 @@ from pathlib import Path
 import xarray as xr
 
 from ..._base import AtomicDataset
-from .._base import ERA5BaseDataset
+from ._base import ERA5Wind3DBaseDataset
 
 logger = logging.getLogger(__name__)
 
 
-class ERA5Wind3DHourlyDataset(ERA5BaseDataset):
+class ERA5Wind3DHourlyDataset(ERA5Wind3DBaseDataset):
     """ERA5Wind3DHourlyDataset is a class that handles the downloading,
     preprocessing, and storing of the ERA5 dataset for wind information.
     This dataset is stored in hourly intervals.
@@ -83,6 +84,9 @@ class ERA5Wind3DHourlyDataset(ERA5BaseDataset):
                 try:
                     _count += 1
                     full_result.download(save_path)
+                    # Ensure file is fully written to disk before proceeding
+                    with open(save_path, "rb") as f:
+                        os.fsync(f.fileno())
                     logger.info("File downloaded: %s", save_path)
                     return
                 except Exception as e:
@@ -98,19 +102,25 @@ class ERA5Wind3DHourlyDataset(ERA5BaseDataset):
                 try:
                     _count += 1
                     full_result.download(tmpfile.name)
+                    # Ensure file is fully written to disk before proceeding
+                    os.fsync(tmpfile.fileno())
                     logger.info("File downloaded: %s", save_path)
                     break
                 except Exception as e:
                     logger.error("Download failed: %s", e)
                     if _count == 3:
                         raise
-            with xr.open_dataset(tmpfile.name, chunks="auto") as ds:
+            with xr.open_dataset(tmpfile.name, chunks="auto", engine="h5netcdf") as ds:
                 ds = ds.sel(
                     longitude=slice(*sorted([self.bounds[0], self.bounds[2]])),
                     latitude=slice(
                         *sorted([self.bounds[1], self.bounds[3]], reverse=True)
                     ),
                 )
-                ds.to_netcdf(save_path)
+                ds.to_netcdf(save_path, engine="h5netcdf")
+                # Ensure file is fully written to disk before proceeding
+                with open(save_path, "rb") as f:
+                    os.fsync(f.fileno())
 
         logger.info("File downloaded: %s", save_path)
+

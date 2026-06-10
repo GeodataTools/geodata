@@ -1,0 +1,8 @@
+# Sphinx stack (matches pyproject [project.optional-dependencies] docs)
+sphinx>=8.0.0
+myst-nb>=1.1.2
+sphinx-book-theme>=1.1.3
+sphinx-autoapi==3.3.2
+
+# Install geodata itself without pulling the full runtime dependency tree
+# (see .readthedocs.yaml: pip install --no-deps .)

@@ -1,4 +1,4 @@
-# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2024-2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD), Keyu Long (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -23,12 +23,12 @@ from pathlib import Path
 import xarray as xr
 
 from ..._base import AtomicDataset
-from .._base import ERA5BaseDataset
+from ._base import ERA5WindSolarBaseDataset
 
 logger = logging.getLogger(__name__)
 
 
-class ERA5WindSolarHourlyDataset(ERA5BaseDataset):
+class ERA5WindSolarHourlyDataset(ERA5WindSolarBaseDataset):
     """ERA5WindSolarHourlyDataset is a class that handles the downloading,
     preprocessing, and storing of the ERA5 dataset for wind and solar
     information. This dataset is stored in hourly intervals.
@@ -81,13 +81,16 @@ class ERA5WindSolarHourlyDataset(ERA5BaseDataset):
         month: int = file.month
         save_path: Path = file.path
 
+        # Limit to first 3 days when testing=True
+        max_day = 4 if self.testing else 32
+        
         full_request = {
             "product_type": self.product_type,
             "format": "netcdf",
             "variable": list(self.variables.keys()),
             "year": year,
             "month": month,
-            "day": [f"{d:02d}" for d in range(1, 32)],
+            "day": [f"{d:02d}" for d in range(1, max_day)],
             "time": [f"{t:02d}:00" for t in range(0, 24)],
         }
 
@@ -124,9 +127,10 @@ class ERA5WindSolarHourlyDataset(ERA5BaseDataset):
                         os.path.join(tempdir, f)
                         for f in os.listdir(tempdir)
                         if f.endswith(".nc")
-                    ]
+                    ], engine="h5netcdf"
                 ) as ds:
-                    ds.to_netcdf(save_path)
+                    ds.to_netcdf(save_path, engine="h5netcdf")
 
                 logger.info("Preprocessing complete with zipfile")
                 logger.info("Successfully downloaded to %s", save_path)
+

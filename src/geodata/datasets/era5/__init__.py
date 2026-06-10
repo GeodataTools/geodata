@@ -1,4 +1,4 @@
-# Copyright 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD)
+# Copyright 2025 Michael Davidson (UCSD), Xiqiang Liu (UCSD), Keyu Long (UCSD)
 
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -13,6 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-from . import hourly, monthly
+from . import fixture, wind_3d, wind_solar
 
-__all__ = ["hourly", "monthly"]
+__all__ = ["fixture", "wind_3d", "wind_solar"]

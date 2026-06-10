@@ -20,13 +20,10 @@ Cutout class to handle a subset of a Dataset.
 """
 
 import logging
-from functools import partial
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
-import pyproj
-import shapely
 import xarray as xr
 from shapely.geometry import box
 from tqdm.auto import tqdm
@@ -45,6 +42,7 @@ from .convert import (
 )
 from .datasets._base import BaseDataset
 from .mask import Mask
+from .mask.spatial import calc_grid_area, calc_shp_area, coarsen, ds_reformat_index
 from .preparation import (
     cutout_get_meta,
     cutout_get_meta_view,
@@ -517,145 +515,4 @@ class Cutout:
     pv = pv
 
 
-def ds_reformat_index(ds: xr.DataArray) -> xr.DataArray:
-    """Format the dataArray generated from the convert function.
-
-    Args:
-        ds (xr.DataArray): dataArray generated from the convert function.
-
-    Returns:
-        xr.DataArray: DataArray with lat and lon as dimensions.
-    """
-
-    if "lat" in ds.dims and "lon" in ds.dims:
-        return ds.sortby(["lat", "lon"])
-    elif "lat" in ds.coords and "lon" in ds.coords:
-        return (
-            ds.reset_coords(["lon", "lat"], drop=True)
-            .rename({"x": "lon", "y": "lat"})
-            .sortby(["lat", "lon"])
-        )
-    return ds.rename({"x": "lon", "y": "lat"}).sortby(["lat", "lon"])
-
-
-def _find_intercept(list1, list2, start, threshold=0):
-    """Find_intercept is a helper function to find the best start point for doing coarsening
-    in order to make the coordinates of the coarsen as close to the target as possible.
-    """
-    min_res = 0
-    init = 0
-    for i in range(len(list1) - start):
-        resid = ((list1[start + i] - list2[0]) % (list2[1] - list2[0])).values.tolist()
-        if i == 0:
-            init = resid
-        if resid <= threshold:
-            return i
-        if resid > min_res:
-            min_res = resid
-        else:
-            min_res = resid
-            break
-    if min_res == init:
-        return 0
-    else:
-        return i
-
-
-def coarsen(ori: xr.Dataset, tar: xr.Dataset, func: Literal["sum", "mean"] = "mean"):
-    """This function will reindex the original xarray dataset according to the coordiantes of the target.
-    There might be a bias for lattitudes and longitudes. The bias are normally within 0.01 degrees.
-    In order to not lose too much data, a threshold for bias in degree could be given.
-    When threshold = 0, it means that the function is going to find the best place with smallest bias.
-
-    Args:
-        ori (xr.Dataset): The original xarray dataset.
-        tar (xr.Dataset): The target xarray dataset.
-        func (Literal['sum', 'mean']): The function to be used for reduction. Defaults to "mean".
-
-    Returns:
-        xr.Dataset: The reindexed xarray dataset.
-
-    Raises:
-        ValueError: reduction method can only be 'mean' or 'sum'.
-    """
-    lat_multiple = round(
-        ((tar.lat[1] - tar.lat[0]) / (ori.lat[1] - ori.lat[0])).values.tolist()
-    )
-    lon_multiple = round(
-        ((tar.lon[1] - tar.lon[0]) / (ori.lon[1] - ori.lon[0])).values.tolist()
-    )
-    lat_start = _find_intercept(ori.lat, tar.lat, (lat_multiple - 1) // 2)
-    lon_start = _find_intercept(ori.lon, tar.lon, (lon_multiple - 1) // 2)
-
-    if func == "mean":
-        _coarsen = (
-            ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
-            .coarsen(
-                dim={"lat": lat_multiple, "lon": lon_multiple},
-                side={"lat": "left", "lon": "left"},
-                boundary="pad",
-            )
-            .mean()
-        )
-    elif func == "sum":
-        _coarsen = (
-            ori.isel(lat=slice(lat_start, None), lon=slice(lon_start, None))
-            .coarsen(
-                dim={"lat": lat_multiple, "lon": lon_multiple},
-                side={"lat": "left", "lon": "left"},
-                boundary="pad",
-            )
-            .sum()
-        )
-    else:
-        raise ValueError("func can only be 'mean' or 'sum'")
-
-    return _coarsen.reindex_like(tar, method="nearest")
-
-
-def calc_grid_area(lis_lats_lons):
-    """Calculate area in km^2 for a grid cell given lats and lon border, with help from:
-    https://stackoverflow.com/questions/4681737/how-to-calculate-the-area-of-a-polygon-on-the-earths-surface-using-python
-
-    """
-    lons, lats = zip(*lis_lats_lons)
-    ll = list(set(lats))[::-1]
-    var = []
-    for i in range(len(ll)):
-        var.append("lat_" + str(i + 1))
-    st = ""
-    for v, l in zip(var, ll):  # noqa: E741
-        st = st + str(v) + "=" + str(l) + " " + "+"
-    st = (
-        st
-        + "lat_0="
-        + str(np.mean(ll))
-        + " "
-        + "+"
-        + "lon_0"
-        + "="
-        + str(np.mean(lons))
-    )
-    tx = "+proj=aea +" + st
-    pa = pyproj.Proj(tx)
-
-    x, y = pa(lons, lats)
-    cop = {"type": "Polygon", "coordinates": [zip(x, y)]}
-
-    return shapely.geometry.shape(cop).area / 1000000
-
-
-def calc_shp_area(shp, shp_projection="+proj=latlon"):
-    """calculate area in km^2 of the shapes for each shp object"""
-    temp_shape = shapely.ops.transform(
-        partial(
-            pyproj.transform,
-            pyproj.Proj(shp_projection),
-            pyproj.Proj(proj="aea", lat_1=shp.bounds[1], lat_2=shp.bounds[3]),
-        ),
-        shp,
-    )
-    return temp_shape.area / 1000000
-
-
-__all__ = ["Cutout", "coarsen", "calc_grid_area", "calc_shp_area"]
+__all__ = ["Cutout", "coarsen", "calc_grid_area", "calc_shp_area", "ds_reformat_index"]

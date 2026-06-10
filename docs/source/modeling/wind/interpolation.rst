@@ -127,16 +127,27 @@ by the original dataset, we can do this as follows:
     )
 
 
-This will return an xarray Dataset containing the estimated wind speed values. Note
-that you can also select a subset area by passing in :code:`xs=slice(start, end)`
-and/or :code:`ys=slice(start, end)` parameters to the `estimate` method.
+This will return an xarray Dataset containing the estimated wind speed values. You can
+also restrict the horizontal domain with ``xs`` and ``ys`` (see
+:doc:`/modeling/wind/index` — **Estimate options** for slice-order behavior on
+ERA5 grids).
+
+.. code:: Python
+
+    estimated_wind_speed = model.estimate(
+        height=60.0,
+        years=slice(2006, 2006),
+        months=slice(1, 1),
+        xs=slice(8, 10),
+        ys=slice(48, 46),
+    )
 
 Step 5: Estimate Wind Turbine Capacity Factor (CF) using the interpolation model
 --------------------------------------------------------------------------------
 
 Geodata also supports a limited set of wind turbine models to estimate the capacity
 factor (CF) of a wind turbine directly. To get a list of available wind turbine models,
-you can use the `get_available_windturbines` function:
+you can use the ``get_available_windturbines`` function:
 
 .. code:: Python
 
@@ -146,20 +157,39 @@ you can use the `get_available_windturbines` function:
     print(turbines)  # List of available wind turbine configurations
 
 
-To estimate the capacity factor of a wind turbine, you can use the `estimate` method
-and passign in the `turbine` parameter with the name of the wind turbine model.
+Pass the YAML **stem** (filename without ``.yaml``) as ``turbine`` — for example
+``Vestas_V112_3MW`` for ``src/geodata/resources/windturbine/Vestas_V112_3MW.yaml``.
 
 .. code:: Python
 
-    # Estimate the capacity factor for a specific wind turbine model
-    estimated_cf: xr.Dataset = model.estimate(
-        turbine="Vestas_V112_3MW",  # Example wind turbine model
+    estimated_cf = model.estimate(
+        turbine="Vestas_V112_3MW",
         years=slice(2006, 2006),
         months=slice(1, 1),
     )
 
-    print(estimated_cf)  # Display the estimated capacity factor
+    print(estimated_cf)
 
+Understanding the output
+~~~~~~~~~~~~~~~~~~~~~~
 
-The output will be an xarray Dataset containing the estimated capacity factor values
-for the specified wind turbine model over the given time period and region.
+``estimate(turbine=...)`` returns an ``xarray.DataArray`` named ``cf`` with dimensions
+``(time, x, y)`` when those coordinates are present.
+
+Geodata computes CF in three steps:
+
+1. **Hub-height wind speed** — interpolate to the turbine's ``HUB_HEIGHT`` from the
+   YAML (same vertical spline as Step 4, but at the turbine height rather than a
+   height you pass manually).
+2. **Power from the power curve** — map wind speed to power (MW) by interpolating the
+   tabulated ``V`` / ``POW`` pairs in the turbine YAML.
+3. **Normalize** — ``cf = power / P``, where ``P`` is the rated power (maximum value
+   in ``POW``).
+
+So ``cf`` is a **dimensionless capacity factor** in ``[0, 1]`` (values can exceed 1
+briefly if the curve extrapolates above rated power). Values outside the tabulated
+wind-speed range use SciPy's ``interp1d`` extrapolation — treat edge cases with care
+in sensitivity analysis.
+
+For implementation details, see ``WindBaseModel._estimate_power`` in the
+:ref:`API reference <modindex>`.

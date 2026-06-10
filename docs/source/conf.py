@@ -6,12 +6,21 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-from geodata import __version__
+import re
+from pathlib import Path
+
+# Read version without importing geodata (RTD installs with --no-deps).
+_version_file = Path(__file__).resolve().parents[2] / "src" / "geodata" / "_version.py"
+_release = re.search(
+    r'^__version__\s*=\s*["\']([^"\']+)["\']', _version_file.read_text(), re.M
+)
+if _release is None:
+    raise RuntimeError(f"Could not parse __version__ from {_version_file}")
+release = _release.group(1)
 
 project = "Geodata"
 copyright = "2025, Geodata Contributors"
 author = "Geodata Contributors"
-release = __version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -24,7 +24,7 @@ import requests
 import xarray as xr
 from tqdm.auto import tqdm
 
-from ...types import CoordRange, PathLike
+from geodata.types import CoordRange, PathLike
 from .._base import AtomicDataset, BaseDataset
 
 logger = logging.getLogger(__name__)

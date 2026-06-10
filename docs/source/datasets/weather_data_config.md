@@ -4,8 +4,10 @@ In Geodata, every downloadable dataset are associated with a unique `(module, we
 In this tuple, the `module` typicallly refers to the source of dataset, while the `weather_data_config` is 
 a dictionary that contains the information needed to download the specific form of the dataset. 
 
-As Geodata currently supports `ERA5` and `MERRA2` modules, you can find all relevant weather data configuration
-in each module's introduction pages here ([ERA5](era5/index.md), [MERRA2](merra2/index.md)). To find each config's actual definition, you can go to `src/geodata/datasets`. Within it, all available weather data configurations are located at the bottom of the file. 
+Geodata supports ERA5 through the modern `load_dataset` registry and MERRA2 through the legacy
+`Dataset(module="merra2", ...)` API. Introduction pages: [ERA5](era5.rst),
+[MERRA2 (legacy)](../legacy/merra2/index.md). To find each config's actual definition, go to
+`src/geodata/datasets` — weather data configurations are defined at the bottom of each module file. 
 
 In this tutorial, we will discuss the structure of each `weather_data_config` in more details.
 

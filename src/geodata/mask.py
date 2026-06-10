@@ -144,7 +144,7 @@ class Mask:
         # replace layer by default
         if layer_name in self.layers:
             if replace is True:
-                self.layers[layer_name].close()
+                _close_dataset(self.layers[layer_name])
                 del self.layers[layer_name]  # delete old layer from memory
                 logger.info("Overwriting existing layer %s.", layer_name)
             else:
@@ -231,7 +231,7 @@ class Mask:
             name (str): The name of the layer to be removed.
         """
         if name in self.layers:
-            self.layers[name].close()
+            _close_dataset(self.layers[name])
             del self.layers[name]
         else:
             raise KeyError(f"No layer name {name} found in the mask.")
@@ -474,8 +474,8 @@ class Mask:
             merging_layers += list(temp_layers.values())
 
             arr, aff = merge(merging_layers, method=_sum_method, **kwargs)
-            for layer in temp_layers.values():
-                layer.close()
+            for layer in merging_layers:
+                _close_dataset(layer)
         else:
             raise ValueError(f"Method {method} is not supported.")
 
@@ -491,13 +491,16 @@ class Mask:
         if attribute_save is True:
             if self.merged_mask:
                 logger.info("Overwriting current merged_mask.")
+                _close_dataset(self.merged_mask)
             self.merged_mask = return_ras
             logger.info("Merged Mask saved as attribute 'merged_mask'.")
 
+        self.saved = False
         return return_ras
 
     def remove_merge_layer(self):
         """Remove the saved merged mask."""
+        _close_dataset(self.merged_mask)
         self.merged_mask = None
 
     def add_shape_layer(
@@ -684,7 +687,7 @@ class Mask:
             return_shape[key] = raster
             if attribute_save:
                 if key in self.shape_mask:
-                    self.shape_mask[key].close()
+                    _close_dataset(self.shape_mask[key])
                     logger.info(
                         "[Overwritten] Extracted shape %s added to attribute 'shape_mask'.",
                         key,
@@ -714,7 +717,7 @@ class Mask:
         for name in names:
             if name not in self.shape_mask.values():
                 raise KeyError(f"Shape mask {name} not found in the object.")
-            self.shape_mask[name].close()
+            _close_dataset(self.shape_mask[name])
             del self.shape_mask[name]
 
     def load_merged_xr(self) -> xr.DataArray:
@@ -774,14 +777,13 @@ class Mask:
         """Close all the opened rasters. This method will disable further save_mask() call."""
 
         for layer in self.layers.values():
-            layer.close()
+            _close_dataset(layer)
 
-        if self.merged_mask:
-            self.merged_mask.close()
+        _close_dataset(self.merged_mask)
 
         if self.shape_mask:
             for mask in self.shape_mask.values():
-                mask.close()
+                _close_dataset(mask)
 
     def save_mask(
         self,
@@ -991,6 +993,52 @@ def ras_to_xarr(
     return xarr
 
 
+def _attach_memfile(
+    dataset: ras.DatasetReader, memfile: MemoryFile
+) -> ras.DatasetReader:
+    """Pin ``memfile`` on ``dataset`` so in-memory GDAL paths stay valid."""
+    dataset._geodata_memfile = memfile  # type: ignore[attr-defined]
+    return dataset
+
+
+def _close_dataset(dataset: ras.DatasetReader | None) -> None:
+    """Close a dataset and its pinned ``MemoryFile``, if any."""
+    if dataset is None or dataset.closed:
+        return
+    memfile = getattr(dataset, "_geodata_memfile", None)
+    dataset.close()
+    if memfile is not None:
+        memfile.close()
+
+
+def _open_memory_dataset(
+    arr: np.ndarray,
+    transform: ras.Affine,
+    *,
+    crs: str | ras.crs.CRS = "+proj=latlong",
+    compress: str = "lzw",
+    count: int = 1,
+) -> ras.DatasetReader:
+    """Write ``arr`` to a GeoTIFF in memory and return an open reader."""
+    memfile = MemoryFile()
+    with memfile.open(
+        driver="GTiff",
+        height=arr.shape[0],
+        width=arr.shape[1],
+        count=count,
+        dtype=arr.dtype,
+        compress=compress,
+        crs=crs,
+        transform=transform,
+    ) as dst:
+        if arr.ndim == 2:
+            dst.write(arr, 1)
+        else:
+            dst.write(arr)
+    dataset = memfile.open()
+    return _attach_memfile(dataset, memfile)
+
+
 def create_temp_tif(
     arr: np.ndarray, transform: ras.Affine, open_raster: bool = True
 ) -> ras.DatasetReader | str:
@@ -1008,25 +1056,10 @@ def create_temp_tif(
         rasterio.DatasetReader: The temporary raster.
     """
 
-    with MemoryFile() as memfile:
-        with ras.open(
-            memfile.name,
-            "w",
-            driver="GTiff",
-            height=arr.shape[0],
-            width=arr.shape[1],
-            count=1,
-            dtype=arr.dtype,
-            compress="lzw",
-            crs="+proj=latlong",
-            transform=transform,
-        ) as dst:
-            dst.write(arr, 1)
-
-        if open_raster:
-            return ras.open(memfile.name)
-
-        return memfile.name
+    dataset = _open_memory_dataset(arr, transform)
+    if open_raster:
+        return dataset
+    return dataset.name
 
 
 def save_opened_raster(raster: ras.DatasetReader, path: str):
@@ -1038,7 +1071,7 @@ def save_opened_raster(raster: ras.DatasetReader, path: str):
     """
 
     arr, transform = raster.read(1), raster.transform
-    raster.close()
+    _close_dataset(raster)
     save_raster(arr, transform, path)
 
 
@@ -1095,21 +1128,20 @@ def crop_raster(
             (bounds[0], bounds[1]), (bounds[2], bounds[3])
         )
 
-    with MemoryFile() as memfile:
-        kwargs = raster.meta.copy()
-        kwargs.update(
-            {
-                "height": window.height,
-                "width": window.width,
-                "transform": ras.windows.transform(window, raster.transform),
-            }
-        )
-
-        with ras.open(memfile.name, "w", compress="lzw", **kwargs) as dst:
-            dst.write(raster.read(window=window))
-            dst.close()
-
-        return ras.open(memfile.name)
+    data = raster.read(window=window)
+    kwargs = raster.meta.copy()
+    kwargs.update(
+        {
+            "height": window.height,
+            "width": window.width,
+            "transform": ras.windows.transform(window, raster.transform),
+        }
+    )
+    memfile = MemoryFile()
+    with memfile.open(compress="lzw", **kwargs) as dst:
+        dst.write(data)
+    dataset = memfile.open()
+    return _attach_memfile(dataset, memfile)
 
 
 def reproject_raster(
@@ -1143,26 +1175,26 @@ def reproject_raster(
 
     # write it to another file: the CRS corrected one
     # rasterio.readthedocs.io/en/latest/topics/reproject.html
-    with MemoryFile() as memfile:
-        with ras.open(memfile.name, "w", compress="lzw", **kwargs) as dst:
-            for i in range(1, src.count + 1):
-                ras.warp.reproject(
-                    source=ras.band(src, i),
-                    destination=ras.band(dst, i),
-                    src_transform=src.transform,
-                    src_crs=src_crs,
-                    dst_transform=transform,
-                    dst_crs=dst_crs,
-                    resampling=ras.warp.Resampling.nearest,
-                )
+    memfile = MemoryFile()
+    with memfile.open(compress="lzw", **kwargs) as dst:
+        for i in range(1, src.count + 1):
+            ras.warp.reproject(
+                source=ras.band(src, i),
+                destination=ras.band(dst, i),
+                src_transform=src.transform,
+                src_crs=src_crs,
+                dst_transform=transform,
+                dst_crs=dst_crs,
+                resampling=ras.warp.Resampling.nearest,
+            )
 
-        logger.info("Raster %s has been reprojected to %s CRS.", src.name, dst_crs)
-        return_ras = ras.open(memfile.name)
+    logger.info("Raster %s has been reprojected to %s CRS.", src.name, dst_crs)
+    return_ras = _attach_memfile(memfile.open(), memfile)
 
-        if trim:
-            return trim_raster(return_ras)
+    if trim:
+        return trim_raster(return_ras)
 
-        return return_ras
+    return return_ras
 
 
 def apply_fn_to_raster(raster: ras.DatasetReader, fn: callable):

@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ...types import CoordRange
+from geodata.types import CoordRange
 from .._base import BaseDataset
 
 logger = logging.getLogger(__name__)

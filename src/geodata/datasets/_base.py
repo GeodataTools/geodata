@@ -307,17 +307,26 @@ class BaseDataset(abc.ABC):
 
             if file.check():
                 logger.debug("Postprocessing %s", file.path)
-                ds = xr.open_dataset(file.path).chunk("auto")
+                # Check if this is a wind-solar dataset and use h5netcdf engine
+                # is_wind_solar = "wind_solar" in self.weather_config
+                # if is_wind_solar:
+                ds = xr.open_dataset(file.path, engine="h5netcdf").chunk("auto")
+                # else:
+                #     ds = xr.open_dataset(file.path).chunk("auto")
                 ds = self._rename_and_clean_coords(ds)
                 ds = self._dataset_postprocess(ds)
 
                 # xarray does not support overwriting files, so we must save the
                 # dataset to a new file and then rename it backwards
-                ds.to_netcdf(file.path.with_stem(file.path.stem + "_postprocessed"))
+                postprocessed_path = file.path.with_stem(file.path.stem + "_postprocessed")
+                # if is_wind_solar:
+                ds.to_netcdf(postprocessed_path, engine="h5netcdf")
+                # else:
+                #     ds.to_netcdf(postprocessed_path)
                 ds.close()
 
                 file.path.unlink()
-                file.path.with_stem(file.path.stem + "_postprocessed").rename(file.path)
+                postprocessed_path.rename(file.path)
 
         logger.info(f"Downloaded {self}")
         logger.info("Cleaning and renaming coordinates")

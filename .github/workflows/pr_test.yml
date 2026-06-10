@@ -46,4 +46,14 @@ jobs:
           pip install pytest
           pip install setuptools
           pip install -e ".[download]"
-          pytest tests/pr/
+          # Set environment variables for debugging
+          export PYTEST_CURRENT_TEST=1
+          export DASK_DISTRIBUTED__DIAGNOSTICS__NVML=False
+          # Run pytest with verbose output and show all logs
+          pytest tests/pr/ \
+            -v \
+            --tb=long \
+            --log-cli-level=DEBUG \
+            --log-cli-format="%(asctime)s [%(levelname)8s] %(name)s: %(message)s" \
+            --capture=no \
+            -s

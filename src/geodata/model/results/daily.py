@@ -115,9 +115,11 @@ class DailyModelResult(BaseModelResult):
 
         logger.debug("Saving model results to %s", self.path)
 
-        from .._base import XR_ENGINE
+        from .._base import _get_xr_engine
 
-        xr.save_mfdataset(datasets, paths, engine=XR_ENGINE)
+        engine = _get_xr_engine()
+        logger.info(f"register: Saving {len(paths)} files with engine={engine}")
+        xr.save_mfdataset(datasets, paths, engine=engine)
 
         # Write the hash file for integrity checking
         with ThreadPoolExecutor() as executor:

@@ -17,9 +17,12 @@
 import abc
 import importlib.util
 import os
+import platform
 import shutil
-from typing import Optional
+from collections.abc import Collection
+from typing import ClassVar, Optional
 
+import numpy as np
 import xarray as xr
 from tqdm.auto import tqdm
 
@@ -29,15 +32,133 @@ from ..logging import logger
 from .results import DailyModelResult, MonthlyModelResult, ResultType
 
 if importlib.util.find_spec("h5netcdf") is not None:
-    XR_PARALLEL = True
     XR_ENGINE = "h5netcdf"
+    XR_PARALLEL_DEFAULT = True
 else:
-    XR_PARALLEL = False
+    XR_PARALLEL_DEFAULT = False
     XR_ENGINE = None
     logger.warning(
         "h5netcdf is not installed. Parallel reading of netCDF files will be disabled. "
         "This could have some performance implications."
     )
+
+
+def _normalize_slice_for_sel(coord: xr.DataArray, s: slice) -> slice:
+    """Return a slice for ``.sel()`` that matches the coordinate direction.
+
+    xarray's ``.sel(dim=slice(a, b))`` returns empty when the dimension is descending
+    (e.g. ERA5 latitude) or when the user passes ``slice(high, low)`` on an ascending
+    dimension. This helper interprets the slice as the inclusive logical range
+    ``[min(start, stop), max(start, stop)]`` and returns bounds in the order required
+    by ``.sel()`` for that coordinate's monotonic direction.
+    """
+    if not isinstance(s, slice) or s.step not in (None, 1):
+        return s
+    if s.start is None or s.stop is None:
+        return s
+    lo, hi = min(s.start, s.stop), max(s.start, s.stop)
+    vals = np.asarray(coord.values).ravel()
+    if len(vals) < 2:
+        return slice(lo, hi)
+    descending = np.all(np.diff(vals) <= 0)
+    if descending:
+        return slice(hi, lo)
+    return slice(lo, hi)
+
+
+def _is_in_dask_worker_on_linux() -> bool:
+    """Check if we're running in a Dask worker process on Linux.
+    
+    Returns:
+        bool: True if we're in a Dask worker on Linux, False otherwise.
+    """
+    if platform.system() != "Linux":
+        return False
+    
+    try:
+        from dask.distributed import get_worker
+        try:
+            get_worker()
+            return True
+        except ValueError:
+            # Not in a worker process
+            return False
+    except ImportError:
+        # dask.distributed not available
+        return False
+
+
+def _is_dask_using_processes_on_linux() -> bool:
+    """Check if Dask is being used with processes on Linux.
+    
+    Returns:
+        bool: True if Dask is using processes on Linux, False otherwise.
+        
+    Note:
+        This checks if there's an active Dask client using processes.
+        When Dask uses processes, h5netcdf has issues with HDF5 dimension scales.
+    """
+    if platform.system() != "Linux":
+        return False
+    
+    try:
+        from dask.distributed import get_client, get_worker
+        try:
+            get_client()
+            # Check if we're in a worker (which means processes are being used)
+            try:
+                get_worker()
+                return True
+            except ValueError:
+                # Not in a worker, but check if client exists and might use processes
+                # We can't easily detect this from the main process, so we'll be conservative
+                # and assume processes might be used if a client exists
+                # The actual check will happen in workers via _is_in_dask_worker_on_linux
+                return False
+        except ValueError:
+            # No active client
+            return False
+    except ImportError:
+        # dask.distributed not available
+        return False
+
+
+def _get_xr_engine() -> str | None:
+    """Get the appropriate xarray engine to use for opening NetCDF files.
+    
+    Returns:
+        str | None: The engine name to use, or None for default.
+    """
+    logger.debug(f"_get_xr_engine: Returning engine {XR_ENGINE}")
+    return XR_ENGINE
+
+
+def _should_use_parallel_reading() -> bool:
+    """Determine if parallel reading should be used for xarray open_mfdataset.
+    
+    Returns:
+        bool: True if parallel reading should be used, False otherwise.
+        
+    Note:
+        Parallel reading is disabled when Dask is using processes on Linux,
+        as h5netcdf has issues with HDF5 dimension scales in that case.
+    """
+    if not XR_PARALLEL_DEFAULT:
+        logger.debug("_should_use_parallel_reading: XR_PARALLEL_DEFAULT is False, returning False")
+        return False
+    
+    in_worker = _is_in_dask_worker_on_linux()
+    using_processes = _is_dask_using_processes_on_linux()
+    
+    if in_worker or using_processes:
+        logger.info(
+            f"_should_use_parallel_reading: Disabling parallel reading "
+            f"(in_worker={in_worker}, using_processes={using_processes})"
+        )
+        return False
+    
+    logger.debug(f"_should_use_parallel_reading: Returning {XR_PARALLEL_DEFAULT}")
+    return XR_PARALLEL_DEFAULT
 
 # Parse the MAX_WORKERS environment variable if present
 MAX_WORKERS = os.getenv("MAX_WORKERS")
@@ -62,7 +183,7 @@ class BaseModel(abc.ABC):
         **kwargs: Additional keyword arguments to pass to the model.
     """
 
-    SUPPORTED_WEATHER_DATA_CONFIGS: tuple[str]
+    SUPPORTED_WEATHER_DATA_CONFIGS: ClassVar[Collection[str]]
 
     def __init__(self, source: BaseDataset, **kwargs):
         if source.weather_config not in self.SUPPORTED_WEATHER_DATA_CONFIGS:
@@ -189,12 +310,27 @@ class BaseModel(abc.ABC):
             results = self.get_result_year_month(years, months)
 
         files = sum([result.files for result in results], [])
-        params = xr.open_mfdataset(files, engine=XR_ENGINE, parallel=XR_PARALLEL)
+        engine = _get_xr_engine()
+        parallel = _should_use_parallel_reading()
+        logger.info(
+            f"estimate: Opening {len(files)} files with engine={engine}, parallel={parallel}"
+        )
+        params = xr.open_mfdataset(files, engine=engine, parallel=parallel)
 
         if xs is not None:
-            params = params.sel(x=xs)
+            x_slice = (
+                _normalize_slice_for_sel(params.coords["x"], xs)
+                if "x" in params.coords
+                else xs
+            )
+            params = params.sel(x=x_slice)
         if ys is not None:
-            params = params.sel(y=ys)
+            y_slice = (
+                _normalize_slice_for_sel(params.coords["y"], ys)
+                if "y" in params.coords
+                else ys
+            )
+            params = params.sel(y=y_slice)
 
         output = self._estimate_dataset(params, **kwargs)
         params.close()
@@ -235,8 +371,15 @@ class BaseModel(abc.ABC):
                 shutil.rmtree(result.path, ignore_errors=True)
                 result.path.mkdir(parents=True, exist_ok=True)
 
+                engine = _get_xr_engine()
+                parallel = _should_use_parallel_reading()
+                logger.info(
+                    f"prepare: Opening {len(result.ref_files)} files with engine={engine}, parallel={parallel}"
+                )
                 with xr.open_mfdataset(
-                    result.ref_files, engine=XR_ENGINE, parallel=XR_PARALLEL
+                    result.ref_files,
+                    engine=engine,
+                    parallel=parallel,
                 ) as ds:
                     prepared_ds = self._prepare_dataset(ds)
                     result.register(prepared_ds)

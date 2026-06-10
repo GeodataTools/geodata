@@ -1,5 +1,11 @@
 # MERRA2 Related Tutorials
 
+```{note}
+**Legacy documentation.** These tutorials use the older ``Dataset`` / ``Cutout`` API and are
+not part of the current tested workflow. For the recommended ERA5 path, see
+[Dataset module overview](../../datasets/overview.rst) and [ERA5 setup](../../datasets/era5.rst).
+```
+
 This page explains how you can setup access MERRA2 data from NASA's [GES DISC](https://disc.gsfc.nasa.gov/).
 
 ## Creating an Earthdata Login Profile and Approving the GES DISC App
@@ -41,9 +47,12 @@ For Windows, open Notepad and enter the following line in a new document, making
 
 Save the file to `C:\Users\<username>\.netrc`
 
-## What' next?
+## What's next?
 
 Now that you have configured your Earthdata Login credentials, you have successfully set up access to the MERRA-2 data.
-Please subsequently refer to the [general documentation on datasets](../overview.rst)
-for more information on how to download ERA5-based datasets using the `geodata`
-package.
+
+* [Download MERRA2 data and create cutouts](merra2_download.md)
+* [MERRA2 outputs via `convert`](merra2_outputs.md)
+* [MERRA2 workflow notebook](merra2.ipynb)
+
+For the current ERA5 + `load_dataset` workflow, see [Dataset module overview](../../datasets/overview.rst).

@@ -16,10 +16,13 @@
 """Tests in this file are lengthy due to the nature of the dataset being tested."""
 
 import logging
+import os
 
-from geodata.datasets import DatasetType, load_dataset
+from geodata.datasets import load_dataset
 
 logging.basicConfig(level=logging.INFO)
+
+RUN_CDS_TESTS = os.getenv("GEODATA_RUN_CDS_TESTS") == "1"
 
 
 # TODO: Test other functionalities with the 3D dataset
@@ -41,7 +44,7 @@ def get_months() -> list[slice]:
 
 def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
     dataset_cls = load_dataset(data_config)
-    dataset: DatasetType = dataset_cls(
+    dataset = dataset_cls(
         years=year, months=month, bounds=bound, testing=True
     )
     if not dataset.downloaded:
@@ -50,6 +53,11 @@ def get_era5(data_config: str, bound: list[int], year: slice, month: slice):
 
 
 def test_download():
+    if not RUN_CDS_TESTS:
+        # PRs should not require CDS keys / network. Run this test only in
+        # an opt-in integration job: GEODATA_RUN_CDS_TESTS=1.
+        return
+
     configs = get_data_configs()
     years = get_years()
     months = get_months()

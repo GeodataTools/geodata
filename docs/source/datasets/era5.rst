@@ -1,81 +1,89 @@
 ERA5 Specific Instructions
 ==========================
 
-This page explains how you can set up access to ERA5 data from the `Copernicus Data Store <https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=overview>`_.
+This page covers **CDS account and API credential setup** for ERA5. Once credentials
+are in place, use the dataset classes — do not call ``cdsapi`` by hand for routine
+downloads.
+
+Recommended download method
+-----------------------------
+
+The **recommended way** to fetch ERA5 data in Geodata is:
+
+1. Complete the CDS setup below (one-time).
+2. Follow :ref:`downloading-era5-data` in :doc:`overview` — ``load_dataset``,
+   instantiate with ``years`` / ``months`` / optional ``bounds``, then ``download()``.
+
+Geodata's ERA5 classes (for example ``ERA5Wind3DHourlyDataset``) create a
+``cdsapi.Client`` internally and submit the correct product requests for each
+registered ``weather_config``.
 
 Creating a CDS account
 ----------------------
 
-To download ERA5 data from the CDS, you'll need to create a free `CDS account here <https://cds.climate.copernicus.eu/>`_.
+To download ERA5 data from the CDS, create a free `CDS account here <https://cds.climate.copernicus.eu/>`_.
 
-Download data through CDS API
+Configure CDS API credentials
 -----------------------------
 
-Once your account has been created, set up access to the API by following these steps:
+Once your account exists, install local API access:
 
 1. Log into your CDS account and visit your `profile page <https://cds.climate.copernicus.eu/profile>`_.
-2. Install the API key. There will be a section called **Personal Access Token**.
-   Copy these two lines into a file called ``.cdsapirc`` in your user root folder.
+2. Under **Personal Access Token**, copy the two lines for your ``.cdsapirc`` file
+   (URL and key).
 
-- **macOS/Linux**: Open a terminal and run:
-
-  .. code-block:: bash
-
-      touch ~/.cdsapirc
-
-  Then add the lines using:
-
-  .. code-block:: bash
-
-      echo [line 1 of the code] >> ~/.cdsapirc
-      echo [line 2 of the code] >> ~/.cdsapirc
-
-
-  - **Windows**: The process is slightly more complicated. Please refer to the in-depth guide at the Copernicus Knowledge Base `here <https://confluence.ecmwf.int/display/CKB/How+to+install+and+use+CDS+API+on+Windows>`_.
-
-3. Install the CDS API client by opening a terminal/shell and running
+**macOS/Linux** — create ``~/.cdsapirc``:
 
 .. code-block:: bash
 
-     pip install ".[download]"
+   touch ~/.cdsapirc
+   # Paste the two lines from your CDS profile into ~/.cdsapirc
 
-(Assuming you are in Geodata's *root directory*.)
+**Windows** — see the Copernicus guide on
+`installing the CDS API on Windows <https://confluence.ecmwf.int/display/CKB/How+to+install+and+use+CDS+API+on+Windows>`_.
 
-1. Once you've installed the API key and the API client, confirm access by running an
-   example in a Python script or a Jupyter notebook:
+Ensure ``cdsapi`` is available (it is a dependency of Geodata when you install the
+package). Then proceed to :ref:`downloading-era5-data` in :doc:`overview`.
+
+Verify CDS API access (optional)
+--------------------------------
+
+You can confirm credentials with a minimal ``cdsapi`` script. This is **optional** —
+Geodata dataset downloads use the same client and credentials.
 
 .. code-block:: python
 
-     import cdsapi
+   import cdsapi
 
-     c = cdsapi.Client()
+   c = cdsapi.Client()
 
-     c.retrieve(
-          "reanalysis-era5-single-levels",
-          {
-               "product_type": "reanalysis",
-               "format": "netcdf",
-               "variable": [
-                    "2m_dewpoint_temperature",
-                    "2m_temperature",
-               ],
-               "year": "2011",
-               "month": [
-                    "01",
-               ],
-               "day": ["01", "02", "03"],
-               "time": [
-                    "00:00",
-                    "12:00",
-               ],
-          },
-          "download.nc",
-     )
+   c.retrieve(
+       "reanalysis-era5-single-levels",
+       {
+           "product_type": "reanalysis",
+           "format": "netcdf",
+           "variable": [
+               "2m_dewpoint_temperature",
+               "2m_temperature",
+           ],
+           "year": "2011",
+           "month": ["01"],
+           "day": ["01", "02", "03"],
+           "time": ["00:00", "12:00"],
+       },
+       "download.nc",
+   )
 
-The above example downloads 2m temperature and 2m dewpoint temperature with data points
-at 00:00 and 12:00 for each day, from January 1-3, 2011, in NetCDF format.
+This example fetches 2 m temperature and dewpoint at 00:00 and 12:00 UTC for
+2011-01-01 through 2011-01-03. If it succeeds, your ``.cdsapirc`` is valid.
 
-If this works, you have successfully set up access to the ERA5 data through the CDS API.
-Please subsequently refer to the `general documentation on datasets <../overview.rst>`_
-for more information on how to download ERA5-based datasets using the ``geodata``
-package.
+For production workflows, prefer :ref:`downloading-era5-data` in :doc:`overview` so
+Geodata requests the correct ERA5 products, paths, and post-processing for
+``wind_3d_hourly``, ``wind_solar_hourly``, and other registered configs.
+
+What's next
+-----------
+
+- :ref:`downloading-era5-data` in :doc:`overview` — **recommended** download workflow
+- :doc:`../development/offline-era5-fixture-datasets` — offline ``*_test`` configs for CI
+- :doc:`../modeling/wind/index` or :doc:`../modeling/pvlib/index` — run models on downloaded data

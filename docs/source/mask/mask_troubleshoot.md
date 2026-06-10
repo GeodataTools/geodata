@@ -2,6 +2,13 @@
 
 This is a document that includes possible errors for the mask module and troubleshooting information.
 
+## `merge_layer` / `RasterioIOError` (No such file or directory)
+
+This was caused by in-memory (`/vsimem`) layers whose backing `MemoryFile` was closed too early.
+Current geodata pins memory files for the lifetime of each layer reader; filter → merge should work
+without pre-saving layers. If the error persists, see **[merge_layer_known_issues.md](merge_layer_known_issues.md)**
+for historical context and workarounds for older versions.
+
 ## No Affine Transformation
 
 If you run into this error when loading any tif file with the mask module: 

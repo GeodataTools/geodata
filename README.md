@@ -23,7 +23,7 @@ Installation will also install the following dependencies:
 * `bottleneck`
 * `numexpr`
 * `xarray`
-* `netcdf4`
+* `h5netcdf`
 * `dask`
 * `boto3`
 * `toolz`

@@ -44,7 +44,11 @@ class MonthlyModelResult(BaseModelResult):
         return check_hash(self.path / f"{self.month:02d}.params.nc")[0]
 
     def register(self, dataset: xr.Dataset):
-        dataset.to_netcdf(self.path / f"{self.month:02d}.params.nc")
+        from .._base import _get_xr_engine
+        
+        engine = _get_xr_engine()
+        logger.info(f"register: Saving monthly file with engine={engine}")
+        dataset.to_netcdf(self.path / f"{self.month:02d}.params.nc", engine=engine)
         with open(self.path / f"{self.month:02d}.params.nc", "rb") as f:
             self._hashes[f"{self.month:02d}.params.nc"] = hashlib.sha256(
                 f.read()

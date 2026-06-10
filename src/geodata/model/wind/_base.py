@@ -40,6 +40,7 @@ Example:
 """
 
 import xarray as xr
+from typing import Any, cast
 
 from ...resource import get_windturbineconfig
 from .._base import BaseModel
@@ -107,7 +108,7 @@ class WindBaseModel(BaseModel):
         ys: slice | None = None,
         years: slice | None = None,
         months: slice | None = None,
-    ) -> None:
+    ) -> xr.DataArray:
         """Estimate wind speed at the given locations and times.
 
         Args:
@@ -135,7 +136,7 @@ class WindBaseModel(BaseModel):
             turbineconf["V"],
             turbineconf["POW"],
             bounds_error=False,
-            fill_value="extrapolate",
+            fill_value=cast(Any, "extrapolate"),
         )
 
         # Calculate the power output
@@ -147,4 +148,4 @@ class WindBaseModel(BaseModel):
             output_dtypes=[float],
         )
 
-        return xr.Dataset({"cf": power / turbineconf["P"]})
+        return (power / turbineconf["P"]).rename("cf")

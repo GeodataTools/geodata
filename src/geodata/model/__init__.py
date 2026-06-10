@@ -14,5 +14,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 from . import wind
+from . import pvlib
 
-__all__ = ["wind"]
+__all__ = ["wind", "pvlib"]

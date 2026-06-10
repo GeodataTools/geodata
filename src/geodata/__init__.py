@@ -16,12 +16,17 @@
 from ._version import __version__
 from .cutout import Cutout
 from .dataset import Dataset
-from .mask import Mask
+from typing import cast
+
+from . import mask as _mask_pkg
 from .plot import *  # noqa: F403
 from .model import *  # noqa: F403
+
+Mask = cast(type, getattr(_mask_pkg, "Mask"))
+XarrayMask = cast(type, getattr(_mask_pkg, "XarrayMask"))
 
 __author__ = "Michael Davidson (UCSD), William Honaker"
 __copyright__ = "GNU GPL 3 license"
 
 
-__all__ = ["Cutout", "Dataset", "Mask", "__version__"]
+__all__ = ["Cutout", "Dataset", "Mask", "XarrayMask", "__version__"]

@@ -10,6 +10,9 @@
 
 ### MERRA2
 
+MERRA-2 is supported through the **legacy** ``Dataset`` / ``Cutout`` API only. See
+[Legacy workflow → MERRA2](../legacy/merra2/index.md) for download and cutout tutorials.
+
 * [MERRA2 hourly, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2T1NXFLX_5.12.4/summary)
 * [MERRA2 monthly mean, single-level surface flux diagnostics](https://disc.gsfc.nasa.gov/datasets/M2TMNXFLX_5.12.4/summary)
 * [MERRA2 daily mean, single-level diagnostics](https://disc.gsfc.nasa.gov/datasets/M2SDNXSLV_5.12.4/summary)
@@ -31,15 +34,15 @@ The following outputs are currently supported for climate data:
 
 **Wind**
 
-* Wind generation time-series ([MERRA2](../datasets/merra2/merra2_outputs.md#wind-generation-time-series), [ERA5](../datasets/era5/era5_outputs.md#wind-generation-time-series))
-* Wind speed time-series ([MERRA2](../datasets/merra2/merra2_outputs.md#wind-speed-time-series), [ERA5](../datasets/era5/era5_outputs.md#wind-speed-time-series))
-* Wind power density time-series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#wind-power-density-time-series))
+* Wind generation time-series ([ERA5 model outputs](../modeling/era5_outputs.md#wind-generation-time-series), [wind modeling](../modeling/wind/index.rst), [ERA5 setup](../datasets/era5.rst))
+* Wind speed time-series ([ERA5 model outputs](../modeling/era5_outputs.md#wind-speed-time-series), [wind modeling](../modeling/wind/index.rst), [ERA5 setup](../datasets/era5.rst))
+* Wind power density time-series ([MERRA2 only (legacy)](../legacy/merra2/merra2_outputs.md#wind-power-density-time-series))
 
 
 **Solar**
 
-* Solar photovoltaic generation time-series ([ERA5 only](../datasets/era5/era5_outputs.md#solar-photovoltaic-generation-time-series))
-* PV generation time-series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pv-generation-time-series))
+* Solar photovoltaic generation time-series ([ERA5 model outputs](../modeling/era5_outputs.md#solar-photovoltaic-generation-time-series), [PVLib modeling](../modeling/pvlib/index.rst))
+* PV generation time-series ([MERRA2 only (legacy)](../legacy/merra2/merra2_outputs.md#pv-generation-time-series))
 
 
 **Temperature**
@@ -49,7 +52,7 @@ The following outputs are currently supported for climate data:
 
 **Aerosols**
 
-* PM2.5 time series ([MERRA2 only](../datasets/merra2/merra2_outputs.md#pm25-time-series))
+* PM2.5 time series ([MERRA2 only (legacy)](../legacy/merra2/merra2_outputs.md#pm25-time-series))
 
 ### Mask Specific
 
