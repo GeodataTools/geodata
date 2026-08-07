@@ -513,6 +513,9 @@ class Mask:
             if self.merged_mask:
                 logger.info("Overwriting current merged_mask.")
             self.merged_mask = return_ras
+            # invalidate the saved flag so save_mask() actually rewrites the
+            # merged mask on disk instead of serving the previous merge
+            self.saved = False
             logger.info("Merged Mask saved as attribute 'merged_mask'.")
 
         return return_ras
@@ -624,6 +627,9 @@ class Mask:
 
             self.layers[key] = shape_raster
             logger.info("Layer %s added to the mask %s.", key, self.name)
+
+        # invalidate the saved flag so save_mask() persists the new layers
+        self.saved = False
 
     def extract_shapes(
         self,
