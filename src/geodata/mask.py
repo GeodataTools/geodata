@@ -1041,26 +1041,36 @@ def create_temp_tif(
         rasterio.DatasetReader: The temporary raster.
     """
 
-    with MemoryFile() as memfile:
-        with ras.open(
-            memfile.name,
-            "w",
-            driver="GTiff",
-            height=arr.shape[0],
-            width=arr.shape[1],
-            count=1,
-            dtype=arr.dtype,
-            compress="lzw",
-            crs=crs,
-            transform=transform,
-            nodata=nodata,
-        ) as dst:
-            dst.write(arr, 1)
+    # NOTE: the MemoryFile must outlive the returned reader. Closing it here
+    # (the previous ``with MemoryFile()`` block) unlinks the /vsimem file, and
+    # any code path that re-opens the raster BY PATH -- e.g. the boundless
+    # reads rasterio.merge performs -- then fails with
+    # "CPLE_OpenFailedError: No such file or directory". We therefore keep the
+    # MemoryFile open and pin it on the returned reader so it is released
+    # together with it.
+    memfile = MemoryFile()
+    with ras.open(
+        memfile.name,
+        "w",
+        driver="GTiff",
+        height=arr.shape[0],
+        width=arr.shape[1],
+        count=1,
+        dtype=arr.dtype,
+        compress="lzw",
+        crs=crs,
+        transform=transform,
+        nodata=nodata,
+    ) as dst:
+        dst.write(arr, 1)
 
-        if open_raster:
-            return ras.open(memfile.name)
+    if open_raster:
+        raster = ras.open(memfile.name)
+        # keep the backing in-memory file alive for the reader's lifetime
+        raster._memfile = memfile
+        return raster
 
-        return memfile.name
+    return memfile.name
 
 
 def save_opened_raster(raster: ras.DatasetReader, path: str):
