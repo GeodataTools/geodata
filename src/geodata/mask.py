@@ -1411,19 +1411,30 @@ def _sum_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff)
     """The sum method will add up the values from all the layers. We can also
     customize the weights. The behind scene of this method is that it multiplys
     each layers with the corresponding weight, and add the in-memory temporary
-    layers together."""
+    layers together.
 
-    if len(np.unique(merged_data)) == 1:
-        mask = np.ones(merged_data.shape, dtype=bool)
-        np.add(
-            np.zeros(merged_data.shape),
-            new_data.data,
-            out=merged_data,
-            where=mask,
-            casting="unsafe",
-        )
+    The first source (``index == 0``) initializes the destination; later
+    sources are accumulated in place. Never-written pixels (still flagged
+    invalid by the rasterio-provided ``merged_mask``) take the new values
+    directly so the nodata fill never leaks into a sum. The previous
+    ``len(np.unique(merged_data)) == 1`` first-write heuristic discarded the
+    accumulated values whenever a merge window happened to be uniform (e.g.
+    uniformly 1 after the first binary layer), so the sum of two all-one
+    layers came out as 1 instead of 2.
+    """
+
+    # Values of the incoming layer; nodata/out-of-extent pixels contribute 0.
+    new_vals = np.ma.filled(new_data, 0)
+
+    if index == 0:
+        # First source: initialize the destination with its values.
+        np.copyto(merged_data, new_vals, casting="unsafe")
     else:
-        np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
+        # Pixels never written by an earlier source still hold the nodata
+        # fill: write the new values there directly. Everywhere else,
+        # accumulate in place.
+        np.copyto(merged_data, new_vals, where=merged_mask, casting="unsafe")
+        np.add(merged_data, new_vals, out=merged_data, where=~merged_mask, casting="unsafe")
 
 
 def _and_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff):
@@ -1431,14 +1442,30 @@ def _and_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff)
     if any of the n grid cells of the n layers at the same location have 0,
     then the returned self.merged_layer will also have 0 at that location.
     In other words, if all the layers indicate that a land is not unavailable (!=0),
-    the merged result will have value 1."""
+    the merged result will have value 1.
 
-    if len(np.unique(merged_data)) == 1:
-        mask = np.ones(merged_data.shape, dtype=bool)
+    The first source (``index == 0``) initializes the destination. For later
+    sources, only pixels still marked valid/available (i.e. not flagged by the
+    rasterio-provided ``merged_mask``, which under the module's nodata=0
+    convention is exactly the nonzero pixels) may change: they adopt the new
+    layer's values, which zeroes them wherever the new layer is 0 or nodata.
+    Pixels already excluded (0) can never be resurrected. The previous
+    ``len(np.unique(merged_data)) == 1`` first-write heuristic fired on ANY
+    uniform window -- e.g. a region a previous layer had fully excluded -- and
+    copied the next layer's values wholesale, resurrecting excluded land.
+    """
+
+    # Values of the incoming layer; nodata/out-of-extent pixels count as 0
+    # ("unavailable"), consistent with the AND semantics.
+    new_vals = np.ma.filled(new_data, 0)
+
+    if index == 0:
+        # First source: initialize the destination with its values.
+        np.copyto(merged_data, new_vals, casting="unsafe")
     else:
-        mask = merged_data != 0
-
-    np.copyto(merged_data, new_data.data, where=mask, casting="unsafe")
+        # Only still-available (nonzero) pixels may change; excluded and
+        # never-written pixels stay 0.
+        np.copyto(merged_data, new_vals, where=~merged_mask, casting="unsafe")
 
 
 def show(
