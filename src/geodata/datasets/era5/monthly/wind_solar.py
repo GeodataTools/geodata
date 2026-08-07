@@ -74,7 +74,9 @@ class ERA5WindSolarMonthlyDataset(ERA5WindSolarHourlyDataset):
         }
 
         if self.bounds is not None:
-            full_request["area"] = self.bounds[::-1]
+            # Canonical bounds are (W, S, E, N); the CDS API expects [N, W, S, E].
+            b = self.bounds
+            full_request["area"] = [b[3], b[0], b[1], b[2]]
 
         logger.debug("Full request for download: %s", pprint.pformat(full_request))
 
@@ -112,3 +114,16 @@ class ERA5WindSolarMonthlyDataset(ERA5WindSolarHourlyDataset):
 
                 logger.info("Preprocessing complete with zipfile")
                 logger.info("Successfully downloaded to %s", save_path)
+        else:
+            _count = 0
+            for _ in range(3):
+                try:
+                    _count += 1
+                    full_result.download(save_path)
+                    break
+                except Exception as e:
+                    logger.error("Error downloading file: %s", e)
+                    if _count == 3:
+                        raise
+
+            logger.info("Successfully downloaded to %s", save_path)
