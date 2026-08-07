@@ -1261,8 +1261,8 @@ def trim_raster(raster: ras.DatasetReader) -> ras.DatasetReader:
             ]
         )
 
-    The bounds of valid values will be (2, 4, 0, 4);
-    The all zero columns and rows at the border of the array will be removed.
+    The valid values span rows 0-4 and columns 2-4 (both inclusive), so the
+    trimmed raster keeps ``arr[0:5, 2:5]`` and has shape ``(5, 3)``.
 
     Args:
         raster (ras.DatasetReader): The source raster
@@ -1273,40 +1273,23 @@ def trim_raster(raster: ras.DatasetReader) -> ras.DatasetReader:
 
     arr = raster.read(1)
 
-    all_zero_col = np.argwhere(np.all(arr[..., :] == 0, axis=0)).reshape(-1)
-    all_zero_row = np.argwhere(np.all(arr[:, ...] == 0, axis=1)).reshape(-1)
+    # Indices of the rows/columns that contain at least one nonzero value.
+    # The previous scan-based implementation produced inclusive stop indices
+    # but fed them into end-exclusive Window slices, silently cropping away
+    # the last data row and column (and it under-trimmed the leading border
+    # by one when the leading all-zero run was perfectly contiguous).
+    rows = np.flatnonzero(arr.any(axis=1))
+    cols = np.flatnonzero(arr.any(axis=0))
 
-    l_idx, t_idx = 0, 0
-    r_idx, b_idx = arr.shape[1] - 1, arr.shape[0] - 1
+    if rows.size == 0 or cols.size == 0:
+        logger.warning(
+            "trim_raster: raster contains no nonzero values, returning it unchanged."
+        )
+        return raster
 
-    # find left and right index where all empty column start and ends
-    if len(all_zero_col) != 0:
-        if all_zero_col[0] == 0:
-            for i in range(len(all_zero_col) - 1):
-                l_idx += 1
-                if all_zero_col[i + 1] != all_zero_col[i] + 1:
-                    break
-        if all_zero_col[-1] == r_idx:
-            for i in range(len(all_zero_col) - 1, 0, -1):
-                r_idx -= 1
-                if all_zero_col[i] != all_zero_col[i - 1] + 1:
-                    break
-
-    # find top and bottom index where all empty column start and ends
-    if len(all_zero_row) != 0:
-        if all_zero_row[0] == 0:
-            for i in range(len(all_zero_row) - 1):
-                t_idx += 1
-                if all_zero_row[i + 1] != all_zero_row[i] + 1:
-                    break
-
-        if all_zero_row[-1] == b_idx:
-            for i in range(len(all_zero_row) - 1, 0, -1):
-                b_idx -= 1
-                if all_zero_row[i] != all_zero_row[i - 1] + 1:
-                    break
-
-    bounds = (t_idx, b_idx, l_idx, r_idx)
+    # (top, bottom, left, right) with end-EXCLUSIVE bottom/right, matching
+    # the Window.from_slices semantics used by crop_raster.
+    bounds = (rows[0], rows[-1] + 1, cols[0], cols[-1] + 1)
 
     return crop_raster(raster, bounds, lat_lon_bounds=False)
 
