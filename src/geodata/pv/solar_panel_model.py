@@ -97,4 +97,4 @@ def SolarPanelModel(ds, irradiance, pc):
     elif model == "bofinger":
         return _power_bofinger(irradiance, ds["temperature"], pc)
     else:
-        AssertionError("Unknown panel model: {}".format(model))
+        raise ValueError("Unknown panel model: {}".format(model))
