@@ -1225,18 +1225,23 @@ def filter_raster(
     if values is None and min_bound is None and max_bound is None:
         raise ValueError("Please specify any of values, min_bound, or max_bound.")
 
-    bool_arr = raster.read(1)
+    # Accumulate every condition against the ORIGINAL data. Chaining
+    # comparisons on the intermediate boolean array (the previous behavior)
+    # made any combination of conditions compare True/False (1/0) against the
+    # next bound, so e.g. min_bound + max_bound together passed every pixel.
+    data = raster.read(1)
+    cond = np.ones(data.shape, dtype=bool)
     if values is not None:
-        bool_arr = np.isin(bool_arr, values)
+        cond &= np.isin(data, values)
     if min_bound is not None:
-        bool_arr = bool_arr > min_bound
+        cond &= data > min_bound
     if max_bound is not None:
-        bool_arr = bool_arr < max_bound
+        cond &= data < max_bound
 
     # if the method return 0 and 1 for the raster
     if binarize:
-        return create_temp_tif(bool_arr.astype(np.uint8), raster.transform)
-    return create_temp_tif(bool_arr * raster.read(1), raster.transform)
+        return create_temp_tif(cond.astype(np.uint8), raster.transform)
+    return create_temp_tif(cond * data, raster.transform)
 
 
 def trim_raster(raster: ras.DatasetReader) -> ras.DatasetReader:
