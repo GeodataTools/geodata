@@ -212,9 +212,11 @@ def cutout_get_meta_view(
     meta.attrs["view"] = {}
 
     if xs is not None:
-        meta.attrs["x"] = xs
+        meta.attrs.setdefault("view", {})["x"] = xs
     if ys is not None:
-        meta.attrs["y"] = _prepare_lat_direction(cutout.dataset_cls.lat_direction, ys)
+        meta.attrs.setdefault("view", {})["y"] = _prepare_lat_direction(
+            cutout.dataset_cls.lat_direction, ys
+        )
 
     meta = (
         meta.unstack("year-month")

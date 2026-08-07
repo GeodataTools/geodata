@@ -121,8 +121,7 @@ class Cutout:
 
         if months is None:
             logger.info("No months specified, defaulting to 1-12")
-            params_dict.update(months=slice(1, 12))
-        params_dict["months"] = ensure_slice(months)
+        params_dict["months"] = slice(1, 12) if months is None else ensure_slice(months)
 
         self.prepared = False
         if self.cutout_dir.is_dir() and self.meta_path.is_file():
