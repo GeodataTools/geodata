@@ -153,19 +153,40 @@ class Mask:
                     "replace the existing one with replace = True."
                 )
 
-        new_raster = ras.open(layer_path, "r+")
-
-        # make sure that nodata value is 0
-        new_raster.nodata = 0
+        # Open the user's file READ-ONLY: geodata must never mutate an input
+        # file (the previous "r+" open persisted ``nodata = 0`` into the
+        # source GeoTIFF on disk, silently re-labeling real nodata fills such
+        # as -9999 as valid data for every other tool).
+        new_raster = ras.open(layer_path, "r")
 
         if not src_crs:
             src_crs = new_raster.crs
+
+        # Normalize to the module-wide convention (0 == "unavailable"/nodata)
+        # in an in-memory copy: pixels flagged by the file's ORIGINAL nodata
+        # value are masked out to 0 so that fill values (e.g. -9999) never
+        # leak into filters or merges as valid data.
+        if new_raster.nodata is not None and new_raster.nodata != 0:
+            masked_band = new_raster.read(1, masked=True)
+            source_raster = new_raster
+            new_raster = create_temp_tif(
+                np.ma.filled(masked_band, 0),
+                source_raster.transform,
+                crs=source_raster.crs,
+                nodata=0,
+            )
+            source_raster.close()
 
         if src_crs != dest_crs:
             # check if CRS is lat-lon system
             if ras.crs.CRS.from_string(dest_crs) != new_raster.crs:
                 new_raster = reproject_raster(
-                    new_raster, src_crs=src_crs, dst_crs=dest_crs, trim=trim
+                    new_raster,
+                    src_crs=src_crs,
+                    dst_crs=dest_crs,
+                    trim=trim,
+                    src_nodata=0,
+                    dst_nodata=0,
                 )
 
         self.layers[layer_name] = new_raster
@@ -492,6 +513,9 @@ class Mask:
             if self.merged_mask:
                 logger.info("Overwriting current merged_mask.")
             self.merged_mask = return_ras
+            # invalidate the saved flag so save_mask() actually rewrites the
+            # merged mask on disk instead of serving the previous merge
+            self.saved = False
             logger.info("Merged Mask saved as attribute 'merged_mask'.")
 
         return return_ras
@@ -603,6 +627,9 @@ class Mask:
 
             self.layers[key] = shape_raster
             logger.info("Layer %s added to the mask %s.", key, self.name)
+
+        # invalidate the saved flag so save_mask() persists the new layers
+        self.saved = False
 
     def extract_shapes(
         self,
@@ -992,7 +1019,11 @@ def ras_to_xarr(
 
 
 def create_temp_tif(
-    arr: np.ndarray, transform: ras.Affine, open_raster: bool = True
+    arr: np.ndarray,
+    transform: ras.Affine,
+    open_raster: bool = True,
+    crs: str = "+proj=latlong",
+    nodata: Optional[float] = None,
 ) -> ras.DatasetReader | str:
     """Create a ras.DatasetReader object openning a temporary rasterio file
 
@@ -1003,30 +1034,43 @@ def create_temp_tif(
         arr (ArrayLike): An ArrayLike object that contains values of the layer.
         transform (rasterio.Affine): Affine transformation for the layer.
         open_raster (bool): Whether the raster will be opened. True by default.
+        crs: Coordinate reference system of the layer. Lat-lon by default.
+        nodata (float): Optional nodata value recorded in the temporary raster.
 
     Returns:
         rasterio.DatasetReader: The temporary raster.
     """
 
-    with MemoryFile() as memfile:
-        with ras.open(
-            memfile.name,
-            "w",
-            driver="GTiff",
-            height=arr.shape[0],
-            width=arr.shape[1],
-            count=1,
-            dtype=arr.dtype,
-            compress="lzw",
-            crs="+proj=latlong",
-            transform=transform,
-        ) as dst:
-            dst.write(arr, 1)
+    # NOTE: the MemoryFile must outlive the returned reader. Closing it here
+    # (the previous ``with MemoryFile()`` block) unlinks the /vsimem file, and
+    # any code path that re-opens the raster BY PATH -- e.g. the boundless
+    # reads rasterio.merge performs -- then fails with
+    # "CPLE_OpenFailedError: No such file or directory". We therefore keep the
+    # MemoryFile open and pin it on the returned reader so it is released
+    # together with it.
+    memfile = MemoryFile()
+    with ras.open(
+        memfile.name,
+        "w",
+        driver="GTiff",
+        height=arr.shape[0],
+        width=arr.shape[1],
+        count=1,
+        dtype=arr.dtype,
+        compress="lzw",
+        crs=crs,
+        transform=transform,
+        nodata=nodata,
+    ) as dst:
+        dst.write(arr, 1)
 
-        if open_raster:
-            return ras.open(memfile.name)
+    if open_raster:
+        raster = ras.open(memfile.name)
+        # keep the backing in-memory file alive for the reader's lifetime
+        raster._memfile = memfile
+        return raster
 
-        return memfile.name
+    return memfile.name
 
 
 def save_opened_raster(raster: ras.DatasetReader, path: str):
@@ -1117,6 +1161,8 @@ def reproject_raster(
     src_crs: str,
     dst_crs: str = "EPSG:4326",
     trim: bool = False,
+    src_nodata: Optional[float] = None,
+    dst_nodata: Optional[float] = None,
     **kwargs,
 ) -> ras.DatasetReader:
     """Convert CRS of TIFF file from one to another. By default, we want to make the destination raster
@@ -1128,6 +1174,9 @@ def reproject_raster(
         dst_crs (str): By default, we want to make the destination raster in lat/lon coordinate system.
             However, this can still be changed by specifying the dst_crs.
         trim (bool): False by default. If True, we will trim the empty border to save space.
+        src_nodata (float): Nodata value of the source passed explicitly to the warp,
+            so nodata pixels are never resampled into valid data.
+        dst_nodata (float): Nodata value used to initialize/fill the destination.
 
     Returns:
         ras.DatasetReader: The reprojected raster.
@@ -1140,6 +1189,8 @@ def reproject_raster(
     kwargs.update(
         {"crs": dst_crs, "transform": transform, "width": width, "height": height}
     )
+    if dst_nodata is not None:
+        kwargs["nodata"] = dst_nodata
 
     # write it to another file: the CRS corrected one
     # rasterio.readthedocs.io/en/latest/topics/reproject.html
@@ -1153,6 +1204,8 @@ def reproject_raster(
                     src_crs=src_crs,
                     dst_transform=transform,
                     dst_crs=dst_crs,
+                    src_nodata=src_nodata,
+                    dst_nodata=dst_nodata,
                     resampling=ras.warp.Resampling.nearest,
                 )
 
@@ -1225,18 +1278,23 @@ def filter_raster(
     if values is None and min_bound is None and max_bound is None:
         raise ValueError("Please specify any of values, min_bound, or max_bound.")
 
-    bool_arr = raster.read(1)
+    # Accumulate every condition against the ORIGINAL data. Chaining
+    # comparisons on the intermediate boolean array (the previous behavior)
+    # made any combination of conditions compare True/False (1/0) against the
+    # next bound, so e.g. min_bound + max_bound together passed every pixel.
+    data = raster.read(1)
+    cond = np.ones(data.shape, dtype=bool)
     if values is not None:
-        bool_arr = np.isin(bool_arr, values)
+        cond &= np.isin(data, values)
     if min_bound is not None:
-        bool_arr = bool_arr > min_bound
+        cond &= data > min_bound
     if max_bound is not None:
-        bool_arr = bool_arr < max_bound
+        cond &= data < max_bound
 
     # if the method return 0 and 1 for the raster
     if binarize:
-        return create_temp_tif(bool_arr.astype(np.uint8), raster.transform)
-    return create_temp_tif(bool_arr * raster.read(1), raster.transform)
+        return create_temp_tif(cond.astype(np.uint8), raster.transform)
+    return create_temp_tif(cond * data, raster.transform)
 
 
 def trim_raster(raster: ras.DatasetReader) -> ras.DatasetReader:
@@ -1256,8 +1314,8 @@ def trim_raster(raster: ras.DatasetReader) -> ras.DatasetReader:
             ]
         )
 
-    The bounds of valid values will be (2, 4, 0, 4);
-    The all zero columns and rows at the border of the array will be removed.
+    The valid values span rows 0-4 and columns 2-4 (both inclusive), so the
+    trimmed raster keeps ``arr[0:5, 2:5]`` and has shape ``(5, 3)``.
 
     Args:
         raster (ras.DatasetReader): The source raster
@@ -1268,40 +1326,23 @@ def trim_raster(raster: ras.DatasetReader) -> ras.DatasetReader:
 
     arr = raster.read(1)
 
-    all_zero_col = np.argwhere(np.all(arr[..., :] == 0, axis=0)).reshape(-1)
-    all_zero_row = np.argwhere(np.all(arr[:, ...] == 0, axis=1)).reshape(-1)
+    # Indices of the rows/columns that contain at least one nonzero value.
+    # The previous scan-based implementation produced inclusive stop indices
+    # but fed them into end-exclusive Window slices, silently cropping away
+    # the last data row and column (and it under-trimmed the leading border
+    # by one when the leading all-zero run was perfectly contiguous).
+    rows = np.flatnonzero(arr.any(axis=1))
+    cols = np.flatnonzero(arr.any(axis=0))
 
-    l_idx, t_idx = 0, 0
-    r_idx, b_idx = arr.shape[1] - 1, arr.shape[0] - 1
+    if rows.size == 0 or cols.size == 0:
+        logger.warning(
+            "trim_raster: raster contains no nonzero values, returning it unchanged."
+        )
+        return raster
 
-    # find left and right index where all empty column start and ends
-    if len(all_zero_col) != 0:
-        if all_zero_col[0] == 0:
-            for i in range(len(all_zero_col) - 1):
-                l_idx += 1
-                if all_zero_col[i + 1] != all_zero_col[i] + 1:
-                    break
-        if all_zero_col[-1] == r_idx:
-            for i in range(len(all_zero_col) - 1, 0, -1):
-                r_idx -= 1
-                if all_zero_col[i] != all_zero_col[i - 1] + 1:
-                    break
-
-    # find top and bottom index where all empty column start and ends
-    if len(all_zero_row) != 0:
-        if all_zero_row[0] == 0:
-            for i in range(len(all_zero_row) - 1):
-                t_idx += 1
-                if all_zero_row[i + 1] != all_zero_row[i] + 1:
-                    break
-
-        if all_zero_row[-1] == b_idx:
-            for i in range(len(all_zero_row) - 1, 0, -1):
-                b_idx -= 1
-                if all_zero_row[i] != all_zero_row[i - 1] + 1:
-                    break
-
-    bounds = (t_idx, b_idx, l_idx, r_idx)
+    # (top, bottom, left, right) with end-EXCLUSIVE bottom/right, matching
+    # the Window.from_slices semantics used by crop_raster.
+    bounds = (rows[0], rows[-1] + 1, cols[0], cols[-1] + 1)
 
     return crop_raster(raster, bounds, lat_lon_bounds=False)
 
@@ -1423,19 +1464,30 @@ def _sum_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff)
     """The sum method will add up the values from all the layers. We can also
     customize the weights. The behind scene of this method is that it multiplys
     each layers with the corresponding weight, and add the in-memory temporary
-    layers together."""
+    layers together.
 
-    if len(np.unique(merged_data)) == 1:
-        mask = np.ones(merged_data.shape, dtype=bool)
-        np.add(
-            np.zeros(merged_data.shape),
-            new_data.data,
-            out=merged_data,
-            where=mask,
-            casting="unsafe",
-        )
+    The first source (``index == 0``) initializes the destination; later
+    sources are accumulated in place. Never-written pixels (still flagged
+    invalid by the rasterio-provided ``merged_mask``) take the new values
+    directly so the nodata fill never leaks into a sum. The previous
+    ``len(np.unique(merged_data)) == 1`` first-write heuristic discarded the
+    accumulated values whenever a merge window happened to be uniform (e.g.
+    uniformly 1 after the first binary layer), so the sum of two all-one
+    layers came out as 1 instead of 2.
+    """
+
+    # Values of the incoming layer; nodata/out-of-extent pixels contribute 0.
+    new_vals = np.ma.filled(new_data, 0)
+
+    if index == 0:
+        # First source: initialize the destination with its values.
+        np.copyto(merged_data, new_vals, casting="unsafe")
     else:
-        np.add(merged_data, new_data.data, out=merged_data, casting="unsafe")
+        # Pixels never written by an earlier source still hold the nodata
+        # fill: write the new values there directly. Everywhere else,
+        # accumulate in place.
+        np.copyto(merged_data, new_vals, where=merged_mask, casting="unsafe")
+        np.add(merged_data, new_vals, out=merged_data, where=~merged_mask, casting="unsafe")
 
 
 def _and_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff):
@@ -1443,14 +1495,30 @@ def _and_method(merged_data, new_data, merged_mask, new_mask, index, roff, coff)
     if any of the n grid cells of the n layers at the same location have 0,
     then the returned self.merged_layer will also have 0 at that location.
     In other words, if all the layers indicate that a land is not unavailable (!=0),
-    the merged result will have value 1."""
+    the merged result will have value 1.
 
-    if len(np.unique(merged_data)) == 1:
-        mask = np.ones(merged_data.shape, dtype=bool)
+    The first source (``index == 0``) initializes the destination. For later
+    sources, only pixels still marked valid/available (i.e. not flagged by the
+    rasterio-provided ``merged_mask``, which under the module's nodata=0
+    convention is exactly the nonzero pixels) may change: they adopt the new
+    layer's values, which zeroes them wherever the new layer is 0 or nodata.
+    Pixels already excluded (0) can never be resurrected. The previous
+    ``len(np.unique(merged_data)) == 1`` first-write heuristic fired on ANY
+    uniform window -- e.g. a region a previous layer had fully excluded -- and
+    copied the next layer's values wholesale, resurrecting excluded land.
+    """
+
+    # Values of the incoming layer; nodata/out-of-extent pixels count as 0
+    # ("unavailable"), consistent with the AND semantics.
+    new_vals = np.ma.filled(new_data, 0)
+
+    if index == 0:
+        # First source: initialize the destination with its values.
+        np.copyto(merged_data, new_vals, casting="unsafe")
     else:
-        mask = merged_data != 0
-
-    np.copyto(merged_data, new_data.data, where=mask, casting="unsafe")
+        # Only still-available (nonzero) pixels may change; excluded and
+        # never-written pixels stay 0.
+        np.copyto(merged_data, new_vals, where=~merged_mask, casting="unsafe")
 
 
 def show(
