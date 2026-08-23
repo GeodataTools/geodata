@@ -94,7 +94,7 @@ class ERA5BaseDataset(BaseDataset):
         # Geopotential is aka Orography in the CDS:
         # https://confluence.ecmwf.int/pages/viewpage.action?pageId=78296105
 
-        with xr.open_mfdataset(cls._get_path(year, month), combine="by_coords") as ds:
+        with xr.open_mfdataset(cls._get_files(year, month), combine="by_coords") as ds:
             ds = ds.coords.to_dataset()
             ds = _convert_and_subset_lons_lats_era5(ds, xs, ys)
             meta = ds.load()
@@ -107,26 +107,25 @@ class ERA5BaseDataset(BaseDataset):
         xs: CoordRange,
         ys: CoordRange,
         yearmonths: xr.DataArray,
-        prepare_func: callable,
-        **meta_attrs,
+        **kwargs,
     ):
-        if not isinstance(xs, slice):
+        if xs is None:
+            xs = slice(None)
+        elif not isinstance(xs, slice):
             xs = slice(*xs.values[[0, -1]])
-        if not isinstance(ys, slice):
+        if ys is None:
+            ys = slice(None)
+        elif not isinstance(ys, slice):
             ys = slice(*ys.values[[0, -1]])
-        fn = meta_attrs["fn"]
-
-        logger.info(yearmonths)
-        logger.info(list(yearmonths))
 
         return [
             dict(
-                prepare_func=prepare_func,
+                prepare_func=cls.prepare_func,
                 xs=xs,
                 ys=ys,
                 year=year,
                 month=month,
-                fn=fn.format(year=year, month=month),
+                fn=cls._get_files(year, month),
             )
             for year, month in yearmonths
         ]
@@ -147,7 +146,7 @@ class ERA5BaseDataset(BaseDataset):
         if isinstance(fn, list) and not all(os.path.isfile(f) for f in fn):
             return
 
-        with xr.open_dataset(fn) as ds:
+        with xr.open_mfdataset(fn, combine="by_coords") as ds:
             logger.info("Opening %s", fn)
             ds = _subset_x_y_era5(ds, xs, ys)
 
