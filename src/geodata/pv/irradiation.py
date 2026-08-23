@@ -190,7 +190,7 @@ def TiltedIrradiation(
     else:
         diffuse_t = TiltedDiffuseIrrad(solar_position, surface_orientation, direct, diffuse)
         direct_t = TiltedDirectIrrad(solar_position, surface_orientation, direct)
-        ground_t = TiltedGroundIrrad(solar_position, surface_orientation, direct + diffuse)
+        ground_t = TiltedGroundIrrad(ds, surface_orientation, direct + diffuse)
 
         total_t = (direct_t + diffuse_t + ground_t).rename("total tilted")
 

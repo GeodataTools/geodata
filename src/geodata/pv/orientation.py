@@ -73,7 +73,7 @@ def make_latitude_optimal():
         slope[~below_25 & below_50] = 0.76 * lat.values[~below_25 & below_50] + np.deg2rad(0.31)
         slope[~below_50] = np.deg2rad(40.0)
 
-        return dict(slope=xr.DataArray(slope, coords=lat.coords), azimuth=180.0)
+        return dict(slope=xr.DataArray(slope, coords=lat.coords), azimuth=np.deg2rad(180.0))
 
     return latitude_optimal
 
